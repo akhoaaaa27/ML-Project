@@ -1,0 +1,337 @@
+{
+  "candidate_budgets": {
+    "Decision Tree": 25,
+    "Linear Regression": 4,
+    "Random Forest": 25,
+    "XGBoost": 25
+  },
+  "dataset_sha256": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+  "development_seasons": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "excluded_seasons": [
+    2024,
+    2025
+  ],
+  "features": [
+    "is_home",
+    "matches_seen",
+    "short_history",
+    "xg_avg5",
+    "xga_avg5",
+    "gf_avg5",
+    "ga_avg5",
+    "shot_avg5",
+    "sot_avg5",
+    "opponent_xg_avg5",
+    "opponent_xga_avg5",
+    "opponent_matches_seen",
+    "opponent_short_history"
+  ],
+  "folds": [
+    {
+      "fold": 1,
+      "train_end": "2021-05-23",
+      "train_samples": 1520,
+      "train_seasons": [
+        2019,
+        2020
+      ],
+      "train_start": "2019-08-16",
+      "validation_end": "2022-05-22",
+      "validation_samples": 760,
+      "validation_season": 2021,
+      "validation_start": "2021-08-13"
+    },
+    {
+      "fold": 2,
+      "train_end": "2022-05-22",
+      "train_samples": 2280,
+      "train_seasons": [
+        2019,
+        2020,
+        2021
+      ],
+      "train_start": "2019-08-16",
+      "validation_end": "2023-06-04",
+      "validation_samples": 760,
+      "validation_season": 2022,
+      "validation_start": "2022-08-12"
+    },
+    {
+      "fold": 3,
+      "train_end": "2023-06-04",
+      "train_samples": 3040,
+      "train_seasons": [
+        2019,
+        2020,
+        2021,
+        2022
+      ],
+      "train_start": "2019-08-16",
+      "validation_end": "2024-05-26",
+      "validation_samples": 760,
+      "validation_season": 2023,
+      "validation_start": "2023-08-11"
+    }
+  ],
+  "models": {
+    "Decision Tree": {
+      "best_params": {
+        "max_depth": 3,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2
+      },
+      "candidate_count": 25,
+      "candidate_id": 10,
+      "fixed_parameters": {
+        "ccp_alpha": 0.0,
+        "criterion": "squared_error",
+        "max_features": null,
+        "max_leaf_nodes": null,
+        "min_impurity_decrease": 0.0,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "random_state": 42,
+        "splitter": "best"
+      },
+      "mean_validation_mae": 0.5748650036217309,
+      "mean_validation_rmse": 0.7431329927922019,
+      "search_seed": 42,
+      "std_validation_mae": 0.0031645818627885377,
+      "std_validation_rmse": 0.01065570380903655
+    },
+    "Linear Regression": {
+      "best_params": {
+        "fit_intercept": true,
+        "positive": false
+      },
+      "candidate_count": 4,
+      "candidate_id": 2,
+      "fixed_parameters": {
+        "copy_X": true,
+        "n_jobs": 1,
+        "tol": 1e-06
+      },
+      "mean_validation_mae": 0.5588376439037144,
+      "mean_validation_rmse": 0.7242882064788644,
+      "search_seed": 42,
+      "std_validation_mae": 0.019845768371470306,
+      "std_validation_rmse": 0.026047814159823747
+    },
+    "Random Forest": {
+      "best_params": {
+        "max_depth": 4,
+        "max_features": 1.0,
+        "min_samples_leaf": 2,
+        "n_estimators": 100
+      },
+      "candidate_count": 25,
+      "candidate_id": 17,
+      "fixed_parameters": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "criterion": "squared_error",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_jobs": 1,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "mean_validation_mae": 0.5642623615923715,
+      "mean_validation_rmse": 0.7264353923566554,
+      "search_seed": 42,
+      "std_validation_mae": 0.013206806360810371,
+      "std_validation_rmse": 0.01912328411817477
+    },
+    "XGBoost": {
+      "best_params": {
+        "colsample_bytree": 0.7,
+        "learning_rate": 0.05,
+        "max_depth": 2,
+        "min_child_weight": 3,
+        "n_estimators": 100,
+        "reg_lambda": 10,
+        "subsample": 0.85
+      },
+      "candidate_count": 25,
+      "candidate_id": 4,
+      "fixed_parameters": {
+        "base_score": null,
+        "booster": null,
+        "callbacks": null,
+        "colsample_bylevel": null,
+        "colsample_bynode": null,
+        "device": "cpu",
+        "early_stopping_rounds": null,
+        "enable_categorical": true,
+        "eval_metric": null,
+        "feature_types": null,
+        "feature_weights": null,
+        "gamma": null,
+        "grow_policy": null,
+        "importance_type": null,
+        "interaction_constraints": null,
+        "max_bin": null,
+        "max_cat_threshold": null,
+        "max_cat_to_onehot": null,
+        "max_delta_step": null,
+        "max_leaves": null,
+        "missing": "nan",
+        "monotone_constraints": null,
+        "multi_strategy": null,
+        "n_jobs": 1,
+        "num_parallel_tree": null,
+        "objective": "reg:squarederror",
+        "random_state": 42,
+        "reg_alpha": null,
+        "sampling_method": null,
+        "scale_pos_weight": null,
+        "tree_method": "hist",
+        "validate_parameters": null,
+        "verbosity": null
+      },
+      "mean_validation_mae": 0.5623028409794757,
+      "mean_validation_rmse": 0.7240730404889136,
+      "search_seed": 42,
+      "std_validation_mae": 0.013783969454141476,
+      "std_validation_rmse": 0.020581277119787262
+    }
+  },
+  "pipeline": [
+    "preprocessing",
+    "model"
+  ],
+  "schema_version": 1,
+  "scoring": {
+    "final_tie_break": "canonical_hyperparameters_then_candidate_id",
+    "fold_weighting": "equal",
+    "mae_tie_atol": 1e-12,
+    "minimum_prediction": 0,
+    "primary": "clipped_mae",
+    "refit": false,
+    "rmse_tie_atol": 1e-12,
+    "secondary": "clipped_rmse",
+    "std_ddof": 0,
+    "tie_rtol": 0
+  },
+  "search_seed": 42,
+  "search_spaces": {
+    "Decision Tree": {
+      "max_depth": [
+        3,
+        5,
+        8,
+        12,
+        null
+      ],
+      "min_samples_leaf": [
+        1,
+        2,
+        5,
+        10,
+        20
+      ],
+      "min_samples_split": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    "Linear Regression": {
+      "fit_intercept": [
+        true,
+        false
+      ],
+      "positive": [
+        true,
+        false
+      ]
+    },
+    "Random Forest": {
+      "max_depth": [
+        4,
+        8,
+        12,
+        null
+      ],
+      "max_features": [
+        0.6,
+        0.8,
+        1.0
+      ],
+      "min_samples_leaf": [
+        1,
+        2,
+        5,
+        10
+      ],
+      "n_estimators": [
+        100,
+        200,
+        300
+      ]
+    },
+    "XGBoost": {
+      "colsample_bytree": [
+        0.7,
+        0.85,
+        1.0
+      ],
+      "learning_rate": [
+        0.02,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "max_depth": [
+        2,
+        3,
+        4,
+        6
+      ],
+      "min_child_weight": [
+        1,
+        3,
+        5,
+        10
+      ],
+      "n_estimators": [
+        100,
+        200,
+        350
+      ],
+      "reg_lambda": [
+        1,
+        5,
+        10
+      ],
+      "subsample": [
+        0.7,
+        0.85,
+        1.0
+      ]
+    }
+  },
+  "target": "xg",
+  "versions": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "python": "3.14.0",
+    "scipy": "1.18.1",
+    "sklearn": "1.9.1",
+    "threadpoolctl": "3.8.0",
+    "xgboost": "3.4.1"
+  }
+}
