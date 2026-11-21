@@ -1,0 +1,705 @@
+{
+  "checked_on": "2026-11-21",
+  "base_url": "https://mcp.strikerapi.com",
+  "league": "laliga",
+  "sources": [
+    "https://mcp.strikerapi.com/v1/tools",
+    "https://mcp.strikerapi.com/openapi.json"
+  ],
+  "source_sha256": {
+    "tools": "ab0c18bbf7e06ac897f14f8d262183e635c7885136aa1b78217b2eb186240eba",
+    "openapi": "6773888344db1245a35283ce8de5786b5575670286e76a5667d6bd56b9edc5e6"
+  },
+  "tools": {
+    "list_teams": {
+      "credits": 1,
+      "request": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "season": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "teams": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "count": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "season",
+              "teams",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "list_games": {
+      "credits": 2,
+      "request": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "league",
+              "knockout"
+            ]
+          },
+          "team": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "final"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "games": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "count": {
+                "type": "number"
+              },
+              "next_offset": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "games",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "get_schedule": {
+      "credits": 2,
+      "request": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "team": {
+            "type": "string"
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "days": {
+                "type": "number"
+              },
+              "games": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "count": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "days",
+              "games",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "get_game": {
+      "credits": 5,
+      "request": {
+        "type": "object",
+        "properties": {
+          "game_id": {
+            "type": "string"
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "required": [
+          "game_id"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "game": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "team_stats": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "key_events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "odds": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "box_score_note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "game",
+              "team_stats",
+              "players",
+              "key_events",
+              "odds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "get_team_stats": {
+      "credits": 5,
+      "request": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "team": {
+            "type": "string"
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "season": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "teams": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "count": {
+                "type": "number"
+              },
+              "method": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "season",
+              "teams",
+              "count",
+              "method"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "get_shot_map": {
+      "credits": 10,
+      "request": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "type": "string"
+          },
+          "player": {
+            "type": "string"
+          },
+          "against": {
+            "type": "boolean"
+          },
+          "season": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "game_id": {
+            "type": "string"
+          },
+          "include_shots": {
+            "type": "boolean"
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "goals_only": {
+                "type": "object",
+                "properties": {
+                  "goals": {
+                    "type": "number"
+                  },
+                  "matches": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "goals",
+                  "matches"
+                ],
+                "additionalProperties": false
+              },
+              "goals_only_note": {
+                "type": "string"
+              },
+              "season": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "zones": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "shots_total": {
+                "type": "number"
+              },
+              "totals": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "shots": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "shots_note": {
+                "type": "string"
+              },
+              "unlocated_shots": {
+                "type": "number"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "season",
+              "zones",
+              "shots_total",
+              "totals"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "get_events": {
+      "credits": 10,
+      "request": {
+        "type": "object",
+        "properties": {
+          "game_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "goals",
+              "shots",
+              "cards",
+              "substitutions",
+              "set_pieces",
+              "fouls",
+              "all"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "league": {
+            "type": "string",
+            "enum": [
+              "soccer",
+              "mls",
+              "laliga",
+              "seriea",
+              "bundesliga",
+              "ligue1",
+              "ucl",
+              "championship",
+              "nwsl",
+              "ligamx",
+              "uel",
+              "uecl",
+              "eredivisie",
+              "primeira",
+              "scotland",
+              "brazil",
+              "argentina"
+            ]
+          }
+        },
+        "required": [
+          "game_id"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "count": {
+                "type": "number"
+              },
+              "next_offset": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "events",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    }
+  }
+}

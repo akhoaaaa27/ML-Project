@@ -1,0 +1,68 @@
+{
+  "status": "dry_run",
+  "phase": "8.5.1",
+  "reference": {
+    "local_match_id": 1521,
+    "season": 2023,
+    "date": "2023-08-11",
+    "home_team": "Almeria",
+    "away_team": "Rayo Vallecano",
+    "home_goals": 0,
+    "away_goals": 2,
+    "source_rows": [
+      1584,
+      1508
+    ],
+    "total_fbref_xg": 3.5
+  },
+  "plan": [
+    {
+      "tool": "list_games",
+      "params": {
+        "league": "laliga",
+        "season": 2023,
+        "date": "2023-08-11",
+        "timezone": "Europe/Madrid",
+        "status": "final",
+        "limit": 20
+      },
+      "documented_credits": 2,
+      "cumulative_estimated_max": 2,
+      "conditional_only_if_missing_team_xg": false
+    },
+    {
+      "tool": "get_game",
+      "params": {
+        "league": "laliga",
+        "game_id": "<ID_ghép_chắc_chắn_từ_list_games>"
+      },
+      "documented_credits": 5,
+      "cumulative_estimated_max": 7,
+      "conditional_only_if_missing_team_xg": false
+    },
+    {
+      "tool": "get_shot_map",
+      "params": {
+        "league": "laliga",
+        "game_id": "<cùng_ID>",
+        "include_shots": true
+      },
+      "documented_credits": 10,
+      "cumulative_estimated_max": 17,
+      "conditional_only_if_missing_team_xg": true
+    }
+  ],
+  "max_credits": 25,
+  "worst_case_additional_credits_without_cache": 17,
+  "estimated_max_fits_remaining_budget": true,
+  "expanded_sample_count": 24,
+  "expanded_sample_executed": false,
+  "production_approved": false,
+  "real_sample_collected": false,
+  "population_compatibility_established": false,
+  "raw_responses_safe_to_commit": false,
+  "billable_posts_this_run": 0,
+  "public_schema_gets_this_run": 0,
+  "cumulative_conservative_reserved_credits": 0,
+  "request_history": []
+}

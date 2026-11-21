@@ -1,0 +1,59 @@
+{
+  "phase": "8.5.1",
+  "implementation_complete": true,
+  "research_compatibility_accepted": false,
+  "real_match_response_retrieved": false,
+  "real_billable_requests": 0,
+  "credits_consumed": 0,
+  "public_schema_gets_without_auth": 2,
+  "default_mode": "dry_run",
+  "max_credit_budget": 25,
+  "initial_plan_max_credits": 17,
+  "initial_plan_credits_if_get_game_complete": 7,
+  "selected_local_match_id": 1521,
+  "selected_fixture": "Almeria - Rayo Vallecano",
+  "selected_date": "2023-08-11",
+  "expanded_plan_count": 24,
+  "expanded_plan_executed": false,
+  "tests": {
+    "run": 150,
+    "new": 41,
+    "existing": 109,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "protected_files_count": 107,
+  "protected_files_unchanged": true,
+  "private_dotenv_not_modified": true,
+  "env_example_empty_key": true,
+  "root_gitignore_unchanged": true,
+  "production_history_unchanged": true,
+  "model_retrained": false,
+  "production_provider_approved": false,
+  "dependencies": {
+    "python-dotenv": "1.2.3",
+    "requests": "2.34.2"
+  },
+  "source_sha256": {
+    "scripts/data_provider/compatibility_audit.py": "476fcc7b18842419f82ccccc6ca3137e2c8debc10aa63bb3962dc7ec7fc72d81",
+    "scripts/data_provider/normalize_strikerapi.py": "7807e83b8219aa1610f482345eb8dd545cd87d55eca22a1a13a211d12d911b53",
+    "scripts/data_provider/requirements.txt": "aedf2c927c6434ddf5e11d74fe65b211676ea390c42e99435ae00e7029cdc459",
+    "scripts/data_provider/sample_selector.py": "549b25da8bbf146230b6c93be09ec8c8dd54516c08da5ec3d41f9c1dc67e607b",
+    "scripts/data_provider/strikerapi_client.py": "990c692f5875c707c0172d07a707c27fa293fb4ff3ca25adbf1e849fe9aabd0a",
+    "scripts/data_provider/strikerapi_contract.json": "68b94640bc806578638b36c8b56e7e70430d0d181b9ca5fe58d4e55a03f242fc",
+    "scripts/data_provider/test_connection.py": "3dffda1789b9b577471eac0d5a45d805d0fd9b3fad8f0b14a400b1f7dff700cf",
+    "scripts/data_provider/__init__.py": "ce1812811b4ffe27c531ef884f6cc4fb367a0ec502290f097d6e44657b2a9171"
+  },
+  "evidence_sha256": {
+    "connection_report.json": "7d2cf155275dc87075949c658f9940dd32df8399656597db393b3bb4d7680846",
+    "poc_summary.json": "87b5802f044cd1290d0d4839501e26bc8e9594f7e244383cabb54965b18a12d3",
+    "protected_files.json": "c3747965e7f5e86418236adfc6f2c8d0044e532c3a2fafeb987d2d2dde309cc3",
+    "security_and_integrity.json": "f724e2777a3e66696238991357ef042e12c4e58fc2ac4825953ce4114eb9c875",
+    "test_results.json": "046ce95ab6ad1edbe04eb3099d29ce82d2e5076276121652961dd18ae37b6f57"
+  },
+  "documents_sha256": {
+    "docs/STRIKERAPI_POC_GUIDE.md": "f23be91b30c4e5dc8bc2cc1ccee2cce8f0d73cb6a7c94ad5721c95b9b3a86ac8",
+    "Phases/Evaluate StrikerAPI Compatibility with FBref La Liga Data.md": "3251ebbe2dd13c712b29b22b9019b2659204754c1a084e3aa841fad409c8c4ec"
+  }
+}

@@ -1,0 +1,10 @@
+# Raw/cache và dữ liệu provider chỉ giữ local, chưa được duyệt phân phối.
+/raw/
+/samples/
+/comparisons/
+/staging/
+/logs/
+*.log
+*.tmp
+*.sqlite3*
+# reports/ chỉ chứa summaries đã sanitize, hashes và test evidence.

@@ -1,0 +1,15 @@
+{
+  "private_dotenv_unchanged_in_dry_runs": true,
+  "private_dotenv_ignored": true,
+  "private_dotenv_tracked": false,
+  "env_example_safe": true,
+  "committable_files_scanned_for_current_key": 20,
+  "current_key_found_in_committable_files": false,
+  "real_billable_posts": 0,
+  "actual_credits_consumed": 0,
+  "public_schema_authenticated": false,
+  "frozen_files_checked": 107,
+  "frozen_files_unchanged": true,
+  "production_history_modified": false,
+  "root_credit_ledger_exists": false
+}
