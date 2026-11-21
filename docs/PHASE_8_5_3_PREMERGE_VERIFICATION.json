@@ -1,0 +1,213 @@
+{
+  "status": "PASS",
+  "decision": "PASS ? Research Merge Ready",
+  "scope": "research_merge_only_not_production_approval",
+  "verification_started_at": "2026-11-22T04:58:21.414388+07:00",
+  "verification_completed_at": "2026-11-22T05:04:44.035764+07:00",
+  "implementation_commit": "68234d5c481009d077bf607fe579a0d54845cb2e",
+  "verified_remote_refs": {
+    "origin/main": "84f14fd0638661c44933f917ce69effe518252ff",
+    "origin/phase8.5.2-multisource-dataset": "2ae0f8920ca0435b8c32c1b4763bc30ec370ba5b",
+    "origin/phase8.5.3-composite-history-integration": "68234d5c481009d077bf607fe579a0d54845cb2e"
+  },
+  "ancestry": {
+    "main_is_ancestor": true,
+    "phase852_is_ancestor": true,
+    "merge_base_main": "84f14fd0638661c44933f917ce69effe518252ff",
+    "merge_base_phase852": "2ae0f8920ca0435b8c32c1b4763bc30ec370ba5b",
+    "unmerged_striker_branches_not_in_ancestry": true
+  },
+  "diff": {
+    "added": 21,
+    "modified": 0,
+    "deleted": 0,
+    "insertions": 3525,
+    "main_tree_files_unchanged": 129,
+    "files": [
+      "Phases/Phase 8.5.2 - Multi-source Dataset Feasibility.md",
+      "Phases/Phase 8.5.3 - Composite History Integration.md",
+      "data/external/.gitignore",
+      "data/history/.gitignore",
+      "docs/COMPOSITE_HISTORY_INTEGRATION.md",
+      "docs/COMPOSITE_HISTORY_VALIDATION.json",
+      "docs/MULTISOURCE_LALIGA_DATASET_AUDIT.md",
+      "docs/MULTISOURCE_LALIGA_DATASET_MANIFEST.json",
+      "scripts/multisource/__init__.py",
+      "scripts/multisource/acquire.py",
+      "scripts/multisource/build_composite.py",
+      "scripts/multisource/composite_features.py",
+      "scripts/multisource/composite_history.py",
+      "scripts/multisource/composite_inference.py",
+      "scripts/multisource/features.py",
+      "scripts/multisource/mapping.py",
+      "scripts/multisource/match_registry.py",
+      "scripts/multisource/run_audit.py",
+      "scripts/multisource/team_registry.py",
+      "tests/test_composite_history.py",
+      "tests/test_multisource.py"
+    ],
+    "unexpected_binary_files": 0
+  },
+  "tests": {
+    "command": ".venv/Scripts/python.exe data/external/multisource/premerge_20261121T215821Z/run_full_suite.py",
+    "run": 208,
+    "passed": 208,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "elapsed_seconds": 71.966,
+    "network_disabled": true,
+    "environment_api_key_removed": true,
+    "groups": {
+      "test_composite_history": 37,
+      "test_evaluation": 13,
+      "test_final_test": 18,
+      "test_history_store": 14,
+      "test_inference": 23,
+      "test_model_export": 10,
+      "test_multisource": 21,
+      "test_strikerapi_client": 18,
+      "test_strikerapi_compatibility": 10,
+      "test_strikerapi_normalization": 13,
+      "test_training": 19,
+      "test_tuning": 12
+    },
+    "python_version": "3.14.0"
+  },
+  "frozen": {
+    "actual_sha256": {
+      "models/laliga_lr_pipeline.joblib": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+      "models/model_metadata.json": "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c",
+      "data/matches_laliga.csv": "3cfeb29ea2e76d6a8a411f31af6182c6951fd477903b8b6d0401b58e10b415e2",
+      "data/laliga_processed_normalized.csv": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+      "data/history/laliga_history.sqlite3": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982"
+    },
+    "protected_manifests": [
+      {
+        "path": "outputs\\inference\\protected_files.json",
+        "files": 77,
+        "mismatches": 0
+      },
+      {
+        "path": "outputs\\provider_poc\\reports\\protected_files.json",
+        "files": 107,
+        "mismatches": 0
+      }
+    ],
+    "imputer_fit_rows": 3800,
+    "coefficients_match_metadata": true,
+    "imputer_statistics_match_metadata": true,
+    "features": [
+      "is_home",
+      "matches_seen",
+      "short_history",
+      "xg_avg5",
+      "xga_avg5",
+      "gf_avg5",
+      "ga_avg5",
+      "shot_avg5",
+      "sot_avg5",
+      "opponent_xg_avg5",
+      "opponent_xga_avg5",
+      "opponent_matches_seen",
+      "opponent_short_history"
+    ],
+    "preexisting_tracked_files_unchanged": 150
+  },
+  "security": {
+    "introduced_files_scanned": 21,
+    "findings": 0,
+    "actual_local_secret_scan": true,
+    "raw_third_party_datasets_introduced": false,
+    "research_databases_introduced": false,
+    "private_logs_or_predictions_introduced": false,
+    "ignore_rules_verified": true,
+    "redistribution_rights_not_assumed": true
+  },
+  "inputs": {
+    "manifest_inputs_verified": 17,
+    "acquisition_files_verified": 13,
+    "raw_csv_files": 9,
+    "coverage_team_season_rows": 160,
+    "expected_completed_perspectives": 5566,
+    "hashes_match_manifests": true,
+    "redownloaded": false
+  },
+  "rebuild": {
+    "command": ".venv/Scripts/python.exe data/external/multisource/premerge_20261121T215821Z/rebuild_offline.py",
+    "summary": {
+      "version_id": "premerge_20261121T215821Z",
+      "registry_fixtures": 3040,
+      "verified_completed": 2783,
+      "complete_statistics": 2779,
+      "pending_statistics": 4,
+      "unverified": 257,
+      "unresolved_conflicts": 0,
+      "targets": 123,
+      "successful_fixtures": 123,
+      "predictions": 246,
+      "previously_blocked": 12,
+      "unlocked": 12,
+      "parity_fixtures": 111,
+      "parity_passed": 111,
+      "max_feature_delta": 0.0,
+      "max_prediction_delta": 0.0,
+      "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+      "production_approved": false,
+      "strikerapi_credits": 0,
+      "rebuild_elapsed_seconds": 42.71,
+      "network_disabled": true
+    },
+    "checks": {
+      "sqlite_integrity": "ok",
+      "foreign_key_violations": 0,
+      "registry_business_equal": true,
+      "statistics_business_equal": true,
+      "catalogue_business_equal": true,
+      "team_coverage_equal": true,
+      "source_versions_equal": true,
+      "input_hashes_equal": true,
+      "rebuilt_database_sha256": "93309da5adf561302f3f8686e555d92a25b7c3771dc77b46498cf5fd396d90d6",
+      "original_database_sha256": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+      "registry_fixtures": 3040,
+      "match_status_counts": {
+        "VERIFIED_COMPLETED": 2783,
+        "UNVERIFIED": 257
+      },
+      "statistics_status_counts": {
+        "COMPLETE_STATISTICS": 2779,
+        "PENDING_UPDATE": 4,
+        "UNVERIFIED": 257
+      },
+      "statistics_records": 5566,
+      "pending_null_records_preserved": 8,
+      "parity_against_phase853_fixtures": 123,
+      "max_feature_delta": 0.0,
+      "max_prediction_delta": 0.0,
+      "independent_team_window_checks": 246,
+      "max_independent_feature_delta": 0.0,
+      "inside_window_negative_control": "MISSING_ROLLING_STATISTICS",
+      "production_mode_negative_control": "PRODUCTION_NOT_APPROVED",
+      "production_predictor_rejected_composite": true,
+      "default_provider_policy_unmodified": true,
+      "fitted_imputer_and_coefficients_unchanged": true,
+      "read_only_delete_and_attach_denied": true,
+      "old_versions_unchanged": true
+    },
+    "old_database_files_unchanged": 6
+  },
+  "production_approved": false,
+  "strikerapi_calls": 0,
+  "strikerapi_credits": 0,
+  "implementation_files_changed_during_verification": 0,
+  "limitations": [
+    "Four completed fixtures remain pending statistics",
+    "Coverage is reviewed export-catalogue snapshot scope",
+    "Current-source penalty semantics and mixed xG model performance remain unvalidated",
+    "As-of-vintage, freshness and production provider policies are not approved",
+    "Raw-data redistribution rights are not inferred from research merge"
+  ],
+  "merge_recommendation": "User may create PR phase8.5.3-composite-history-integration -> main for research integration",
+  "pull_request_created": false,
+  "merged": false
+}
