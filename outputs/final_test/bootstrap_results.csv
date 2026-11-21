@@ -1,0 +1,11 @@
+test_split,comparison_id,model_a,model_b,observed_delta_mae,bootstrap_mean_delta,ci_lower,ci_upper,interval_contains_zero,n_matches,n_bootstrap,random_seed
+main_final_test,lr_minus_baseline,Linear Regression,Historical Baseline,-0.070245830539551135,-0.07060324632397405,-0.094564799223378695,-0.046450642071088524,False,380,2000,42
+main_final_test,lr_minus_xgb,Linear Regression,XGBoost,-0.010079883309312643,-0.010180999384377526,-0.020992170754561647,0.00067182079609095613,True,380,2000,42
+main_final_test,rf_minus_baseline,Random Forest,Historical Baseline,-0.050309232964776185,-0.05055236834426053,-0.074478312848974479,-0.026023552587137299,False,380,2000,42
+main_final_test,dt_minus_baseline,Decision Tree,Historical Baseline,-0.051830360255993302,-0.052120309656418722,-0.077628475545713102,-0.026248475931973832,False,380,2000,42
+main_final_test,xgb_minus_baseline,XGBoost,Historical Baseline,-0.060165947230238492,-0.060422246939596518,-0.082765380000857619,-0.037492857666965473,False,380,2000,42
+supplemental_test,lr_minus_baseline,Linear Regression,Historical Baseline,-0.055119256159375407,-0.05525944185517636,-0.11590170546413592,0.0048147809716150005,True,70,2000,42
+supplemental_test,lr_minus_xgb,Linear Regression,XGBoost,0.0045590106866041369,0.0045233216126637481,-0.0266855383351879,0.034446670059997631,True,70,2000,42
+supplemental_test,rf_minus_baseline,Random Forest,Historical Baseline,-0.050626541290553773,-0.050632647937161164,-0.10572103335695827,0.0042777037515153082,True,70,2000,42
+supplemental_test,dt_minus_baseline,Decision Tree,Historical Baseline,-0.042538039479313783,-0.04266337925040814,-0.10340395545845908,0.017340052003622895,True,70,2000,42
+supplemental_test,xgb_minus_baseline,XGBoost,Historical Baseline,-0.059678266845979544,-0.059782763467840103,-0.11259506704347377,-0.0057841706843654228,False,70,2000,42

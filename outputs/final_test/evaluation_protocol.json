@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "phase": 7,
+  "purpose": "pre_evaluation_frozen_protocol",
+  "dataset": {
+    "path": "data\\laliga_processed_normalized.csv",
+    "sha256": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+    "shape": [
+      4700,
+      26
+    ]
+  },
+  "partitions": {
+    "development": {
+      "seasons": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "n_observations": 3800,
+      "n_matches": 1900,
+      "start": "2019-08-16",
+      "end": "2024-05-26"
+    },
+    "main_final_test": {
+      "seasons": [
+        2024
+      ],
+      "n_observations": 760,
+      "n_matches": 380,
+      "start": "2024-08-15",
+      "end": "2025-05-25"
+    },
+    "supplemental_test": {
+      "seasons": [
+        2025
+      ],
+      "n_observations": 140,
+      "n_matches": 70,
+      "start": "2025-08-15",
+      "end": "2025-09-30"
+    }
+  },
+  "features": [
+    "is_home",
+    "matches_seen",
+    "short_history",
+    "xg_avg5",
+    "xga_avg5",
+    "gf_avg5",
+    "ga_avg5",
+    "shot_avg5",
+    "sot_avg5",
+    "opponent_xg_avg5",
+    "opponent_xga_avg5",
+    "opponent_matches_seen",
+    "opponent_short_history"
+  ],
+  "target": "xg",
+  "methods": [
+    "Historical Baseline",
+    "Linear Regression",
+    "Decision Tree",
+    "Random Forest",
+    "XGBoost"
+  ],
+  "primary_candidate": "Linear Regression",
+  "main_challenger": "XGBoost",
+  "benchmark": "Historical Baseline",
+  "best_params_sha256": "c664b9844986dd80bdef1de7ab16a8a136c29cc0dc7c18bc77d674e51cc10115",
+  "selected_models": {
+    "Decision Tree": {
+      "best_params": {
+        "max_depth": 3,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2
+      },
+      "candidate_count": 25,
+      "candidate_id": 10,
+      "fixed_parameters": {
+        "ccp_alpha": 0.0,
+        "criterion": "squared_error",
+        "max_features": null,
+        "max_leaf_nodes": null,
+        "min_impurity_decrease": 0.0,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "random_state": 42,
+        "splitter": "best"
+      },
+      "mean_validation_mae": 0.5748650036217309,
+      "mean_validation_rmse": 0.7431329927922019,
+      "search_seed": 42,
+      "std_validation_mae": 0.0031645818627885377,
+      "std_validation_rmse": 0.01065570380903655
+    },
+    "Linear Regression": {
+      "best_params": {
+        "fit_intercept": true,
+        "positive": false
+      },
+      "candidate_count": 4,
+      "candidate_id": 2,
+      "fixed_parameters": {
+        "copy_X": true,
+        "n_jobs": 1,
+        "tol": 1e-06
+      },
+      "mean_validation_mae": 0.5588376439037144,
+      "mean_validation_rmse": 0.7242882064788644,
+      "search_seed": 42,
+      "std_validation_mae": 0.019845768371470306,
+      "std_validation_rmse": 0.026047814159823747
+    },
+    "Random Forest": {
+      "best_params": {
+        "max_depth": 4,
+        "max_features": 1.0,
+        "min_samples_leaf": 2,
+        "n_estimators": 100
+      },
+      "candidate_count": 25,
+      "candidate_id": 17,
+      "fixed_parameters": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "criterion": "squared_error",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_jobs": 1,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "mean_validation_mae": 0.5642623615923715,
+      "mean_validation_rmse": 0.7264353923566554,
+      "search_seed": 42,
+      "std_validation_mae": 0.013206806360810371,
+      "std_validation_rmse": 0.01912328411817477
+    },
+    "XGBoost": {
+      "best_params": {
+        "colsample_bytree": 0.7,
+        "learning_rate": 0.05,
+        "max_depth": 2,
+        "min_child_weight": 3,
+        "n_estimators": 100,
+        "reg_lambda": 10,
+        "subsample": 0.85
+      },
+      "candidate_count": 25,
+      "candidate_id": 4,
+      "fixed_parameters": {
+        "base_score": null,
+        "booster": null,
+        "callbacks": null,
+        "colsample_bylevel": null,
+        "colsample_bynode": null,
+        "device": "cpu",
+        "early_stopping_rounds": null,
+        "enable_categorical": true,
+        "eval_metric": null,
+        "feature_types": null,
+        "feature_weights": null,
+        "gamma": null,
+        "grow_policy": null,
+        "importance_type": null,
+        "interaction_constraints": null,
+        "max_bin": null,
+        "max_cat_threshold": null,
+        "max_cat_to_onehot": null,
+        "max_delta_step": null,
+        "max_leaves": null,
+        "missing": "nan",
+        "monotone_constraints": null,
+        "multi_strategy": null,
+        "n_jobs": 1,
+        "num_parallel_tree": null,
+        "objective": "reg:squarederror",
+        "random_state": 42,
+        "reg_alpha": null,
+        "sampling_method": null,
+        "scale_pos_weight": null,
+        "tree_method": "hist",
+        "validate_parameters": null,
+        "verbosity": null
+      },
+      "mean_validation_mae": 0.5623028409794757,
+      "mean_validation_rmse": 0.7240730404889136,
+      "search_seed": 42,
+      "std_validation_mae": 0.013783969454141476,
+      "std_validation_rmse": 0.020581277119787262
+    }
+  },
+  "effective_estimator_parameters": {
+    "Linear Regression": {
+      "copy_X": true,
+      "fit_intercept": true,
+      "n_jobs": 1,
+      "positive": false,
+      "tol": 1e-06
+    },
+    "Decision Tree": {
+      "ccp_alpha": 0.0,
+      "criterion": "squared_error",
+      "max_depth": 3,
+      "max_features": null,
+      "max_leaf_nodes": null,
+      "min_impurity_decrease": 0.0,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "min_weight_fraction_leaf": 0.0,
+      "monotonic_cst": null,
+      "random_state": 42,
+      "splitter": "best"
+    },
+    "Random Forest": {
+      "bootstrap": true,
+      "ccp_alpha": 0.0,
+      "criterion": "squared_error",
+      "max_depth": 4,
+      "max_features": 1.0,
+      "max_leaf_nodes": null,
+      "max_samples": null,
+      "min_impurity_decrease": 0.0,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "min_weight_fraction_leaf": 0.0,
+      "monotonic_cst": null,
+      "n_estimators": 100,
+      "n_jobs": 1,
+      "oob_score": false,
+      "random_state": 42,
+      "verbose": 0,
+      "warm_start": false
+    },
+    "XGBoost": {
+      "objective": "reg:squarederror",
+      "base_score": null,
+      "booster": null,
+      "callbacks": null,
+      "colsample_bylevel": null,
+      "colsample_bynode": null,
+      "colsample_bytree": 0.7,
+      "device": "cpu",
+      "early_stopping_rounds": null,
+      "enable_categorical": true,
+      "eval_metric": null,
+      "feature_types": null,
+      "feature_weights": null,
+      "gamma": null,
+      "grow_policy": null,
+      "importance_type": null,
+      "interaction_constraints": null,
+      "learning_rate": 0.05,
+      "max_bin": null,
+      "max_cat_threshold": null,
+      "max_cat_to_onehot": null,
+      "max_delta_step": null,
+      "max_depth": 2,
+      "max_leaves": null,
+      "min_child_weight": 3,
+      "missing": "nan",
+      "monotone_constraints": null,
+      "multi_strategy": null,
+      "n_estimators": 100,
+      "n_jobs": 1,
+      "num_parallel_tree": null,
+      "random_state": 42,
+      "reg_alpha": null,
+      "reg_lambda": 10,
+      "sampling_method": null,
+      "scale_pos_weight": null,
+      "subsample": 0.85,
+      "tree_method": "hist",
+      "validate_parameters": null,
+      "verbosity": null
+    }
+  },
+  "baseline": {
+    "feature": "xg_avg5",
+    "preprocessing": "reuse_development_fitted_primary_preprocessor",
+    "tuning": false
+  },
+  "imputation": {
+    "strategy": "median",
+    "fit_scope": "development_only",
+    "restored_to_nan": "verified_zero_history_fixed_priors_only",
+    "imputed_columns": [
+      "xg_avg5",
+      "xga_avg5",
+      "gf_avg5",
+      "ga_avg5",
+      "shot_avg5",
+      "sot_avg5",
+      "opponent_xg_avg5",
+      "opponent_xga_avg5"
+    ],
+    "passthrough_columns": [
+      "is_home",
+      "matches_seen",
+      "short_history",
+      "opponent_matches_seen",
+      "opponent_short_history"
+    ],
+    "priors": {
+      "xg_avg5": 1.2,
+      "xga_avg5": 1.24,
+      "gf_avg5": 1.2,
+      "ga_avg5": 1.2,
+      "shot_avg5": 11.2,
+      "sot_avg5": 3.6
+    },
+    "fit_count_per_regressor": 1
+  },
+  "training": {
+    "strategy": "fit_once_evaluate_twice",
+    "estimator_fits_per_regressor": 1,
+    "no_test_fit": true,
+    "serialization": false
+  },
+  "scoring": {
+    "primary": "mae",
+    "secondary": "rmse",
+    "clipping": "maximum(0,raw_prediction)",
+    "residual": "predicted_minus_actual",
+    "std_ddof": 0,
+    "cv_aggregation": "arithmetic_mean_of_three_validation_fold_metrics_not_pooled_rmse",
+    "baseline_improvement": "baseline_mae_minus_model_mae; percent=100*improvement/baseline_mae"
+  },
+  "development_cv": {
+    "Historical Baseline": {
+      "mae": 0.61617251462,
+      "rmse": 0.7965302937883855
+    },
+    "Linear Regression": {
+      "mae": 0.5588376439037145,
+      "rmse": 0.7242882064788644
+    },
+    "Decision Tree": {
+      "mae": 0.5748650036217309,
+      "rmse": 0.7431329927922019
+    },
+    "Random Forest": {
+      "mae": 0.5642623615923715,
+      "rmse": 0.7264353923566554
+    },
+    "XGBoost": {
+      "mae": 0.5623028409794758,
+      "rmse": 0.7240730404889136
+    }
+  },
+  "error_analysis": {
+    "dimensions": [
+      "overall",
+      "season",
+      "venue",
+      "actual_xg",
+      "team_history",
+      "opponent_history",
+      "matchweek"
+    ],
+    "actual_xg_groups": [
+      "<1",
+      "1<=x<2",
+      ">=2"
+    ],
+    "history_groups": [
+      "zero",
+      "one_to_four",
+      "five_or_more"
+    ],
+    "matchweek": "numeric_1_to_38",
+    "large_error_threshold": 1.0,
+    "disagreement_threshold": 0.5,
+    "small_sample_threshold": 30,
+    "notable_top_n": 15
+  },
+  "bootstrap": {
+    "sampling_unit": "match_id",
+    "paired_home_away": true,
+    "replacement": true,
+    "preserve_multiplicity": true,
+    "same_draws_all_comparisons_within_split": true,
+    "separate_splits": true,
+    "n_bootstrap": 2000,
+    "random_seed": 42,
+    "delta": "mae_A_minus_mae_B",
+    "negative_means": "A_has_lower_MAE",
+    "interval": "percentile",
+    "quantiles": [
+      0.025,
+      0.975
+    ],
+    "quantile_method": "linear",
+    "comparisons": [
+      {
+        "comparison_id": "lr_minus_baseline",
+        "model_a": "Linear Regression",
+        "model_b": "Historical Baseline"
+      },
+      {
+        "comparison_id": "lr_minus_xgb",
+        "model_a": "Linear Regression",
+        "model_b": "XGBoost"
+      },
+      {
+        "comparison_id": "rf_minus_baseline",
+        "model_a": "Random Forest",
+        "model_b": "Historical Baseline"
+      },
+      {
+        "comparison_id": "dt_minus_baseline",
+        "model_a": "Decision Tree",
+        "model_b": "Historical Baseline"
+      },
+      {
+        "comparison_id": "xgb_minus_baseline",
+        "model_a": "XGBoost",
+        "model_b": "Historical Baseline"
+      }
+    ],
+    "multiplicity_correction": "none; intervals_are_marginal"
+  },
+  "temporal_audit": {
+    "rolling_values_checked": 28200,
+    "max_absolute_difference": 3.33333360913457e-09,
+    "stint_count": 38,
+    "same_team_same_date_ambiguous": 0,
+    "resolution": "date_only",
+    "kickoff_timestamp_confirmed": false,
+    "current_and_future_rows_excluded": true,
+    "operation": "read_only_comparison_with_existing_shift1_rolling5_formula",
+    "absolute_tolerance": 5.1e-09,
+    "tolerance_basis": "source_csv_eight_decimal_rounding_for_two_digit_values_plus_float_error"
+  },
+  "decision_source_sha256": {
+    "data/preprocess_laliga.py": "fb5e35f268c7b205dc4d5854c5eba75ad74d903fcc08ae1cb5fdaf9f9963aadb",
+    "scripts/prepare_training_features.py": "59da3125592544ea1c958e7550e57b53d94b3b0c3facf570ec91d4efa8364b7d",
+    "scripts/training/cross_validation.py": "b240eee03801efc8139ec0a2e24fc51620e3bb00f8bdc98ab0adef62a8abc13f",
+    "scripts/training/train_models.py": "2cba8f2053b8742bea671671d67d41d35f64a4d3e73801596da37323456f10d2",
+    "scripts/training/tune_models.py": "e142826684fd48fecddba31eebf6fefe03773ec1fb28a82732ce1221c7057551",
+    "scripts/evaluation/error_analysis.py": "f1c1014d49c24e98138590c0032c9aa4004cbce1548cb7efca1ed142c2e15469",
+    "scripts/evaluation/final_test.py": "7fe222e348f5e47e40b9776c011f784bc6fb1822ef3c26555ca3931e1b44795e",
+    "scripts/evaluation/bootstrap_analysis.py": "ddba796f94558a7510dc143f73e38add4799b0175d5e872b55b60d0e398a9574"
+  },
+  "reference_sha256": {
+    "outputs/tuning/tuning_summary.csv": "a0472aeea2d48d8aec8d989b3ceb8398d9b4d3020c34067123036e97fa9a0907",
+    "outputs/evaluation/analysis_manifest.json": "c57b009ab4874faf7e2e7e2658352c847698e474d62f4540e23ebaf2adab3da1"
+  }
+}

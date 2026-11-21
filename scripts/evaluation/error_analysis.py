@@ -18,18 +18,17 @@ MODEL_SLUGS = {"Historical Baseline": "baseline", "Linear Regression": "linear_r
                "Decision Tree": "decision_tree", "Random Forest": "random_forest", "XGBoost": "xgboost"}
 
 
-def prediction_table(metadata: pd.DataFrame, model: str, fold: int,
-                     y: pd.Series, raw_prediction: np.ndarray) -> pd.DataFrame:
-    require(model in MODEL_NAMES and fold in range(1, len(DEFAULT_FOLDS) + 1), "Sai model hoặc fold của dự báo.")
+def build_prediction_records(metadata: pd.DataFrame, model: str,
+                             y: pd.Series, raw_prediction: np.ndarray) -> pd.DataFrame:
+    """Tạo records sau dự báo; wrapper của mỗi thí nghiệm phải kiểm tra partition."""
+    require(model in MODEL_NAMES, "Sai model của dự báo.")
     require(metadata.index.equals(y.index) and y.equals(metadata.xg), "Metadata/target không khớp từng bản ghi.")
-    require(metadata.season.eq(DEFAULT_FOLDS[fold - 1].validation_season).all(), "Dự báo chứa bản ghi ngoài Validation.")
     require(metadata.groupby("match_id").size().eq(2).all(), "Dự báo thiếu một phía của trận.")
     _, prediction = evaluate_predictions(y, raw_prediction)
     columns = ["season", "date", "round", "match_id", "team", "opponent", "is_home",
                "matches_seen", "opponent_matches_seen", "short_history", "opponent_short_history"]
     result = metadata.loc[:, columns].copy()
     result.insert(0, "source_row", metadata.index.to_numpy())
-    result.insert(0, "fold", fold)
     result["model"] = model
     result["actual_xg"] = y.to_numpy()
     result["predicted_xg"] = prediction
@@ -37,6 +36,15 @@ def prediction_table(metadata: pd.DataFrame, model: str, fold: int,
     result["absolute_error"] = np.abs(result.residual)
     result["squared_error"] = result.residual ** 2
     return result.reset_index(drop=True)
+
+
+def prediction_table(metadata: pd.DataFrame, model: str, fold: int,
+                     y: pd.Series, raw_prediction: np.ndarray) -> pd.DataFrame:
+    require(model in MODEL_NAMES and fold in range(1, len(DEFAULT_FOLDS) + 1), "Sai model hoặc fold của dự báo.")
+    require(metadata.season.eq(DEFAULT_FOLDS[fold - 1].validation_season).all(), "Dự báo chứa bản ghi ngoài Validation.")
+    result = build_prediction_records(metadata, model, y, raw_prediction)
+    result.insert(0, "fold", fold)
+    return result
 
 
 def parse_matchweeks(rounds: pd.Series) -> pd.Series:
@@ -58,7 +66,8 @@ def actual_xg_groups(values: pd.Series) -> pd.Series:
                                default="xg_ge_2"), index=values.index)
 
 
-def summarize_errors(predictions: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+def summarize_errors(predictions: pd.DataFrame, *, partition_column: str = "fold",
+                     scope: str = "pooled_development_validation") -> tuple[pd.DataFrame, list[str]]:
     """Mỗi dòng là một subgroup trong Validation gộp; không trộn với mean-CV RMSE."""
     working = predictions.copy(deep=True)
     dimensions = {
@@ -82,7 +91,8 @@ def summarize_errors(predictions: pd.DataFrame) -> tuple[pd.DataFrame, list[str]
             for label, group in subset.groupby(labels.loc[subset.index], sort=True):
                 metrics, _ = evaluate_predictions(group.actual_xg, group.predicted_xg.to_numpy())
                 rows.append(dict(model=model, dimension=dimension, group=str(label),
-                    scope="pooled_development_validation", folds=";".join(map(str, sorted(group.fold.unique()))),
+                    scope=scope, **{"folds" if partition_column == "fold" else "test_splits":
+                        ";".join(map(str, sorted(group[partition_column].unique())))},
                     seasons=";".join(map(str, sorted(group.season.unique()))),
                     n_observations=len(group), n_matches=group.match_id.nunique(),
                     mae=metrics["mae"], rmse=metrics["rmse"], mean_residual=float(group.residual.mean()),
@@ -117,8 +127,8 @@ def notable_errors(predictions: pd.DataFrame, top_n: int = NOTABLE_CASES) -> pd.
     return pd.concat(rows, ignore_index=True)
 
 
-def match_error_analysis(predictions: pd.DataFrame) -> pd.DataFrame:
-    keys = ["model", "fold", "match_id"]
+def match_error_analysis(predictions: pd.DataFrame, *, partition_column: str = "fold") -> pd.DataFrame:
+    keys = ["model", partition_column, "match_id"]
     require(predictions.groupby(keys).size().eq(2).all(), "Match-level cần đúng hai phía cho mỗi model/trận.")
     common = ["season", "date", "round"]
     fields = ["team", "actual_xg", "predicted_xg", "residual", "absolute_error"]
@@ -133,11 +143,11 @@ def match_error_analysis(predictions: pd.DataFrame) -> pd.DataFrame:
     result["mean_absolute_error"] = result.sum_absolute_error / 2
     result["min_team_absolute_error"] = result[["home_absolute_error", "away_absolute_error"]].min(axis=1)
     result["both_large_errors"] = result.min_team_absolute_error.ge(LARGE_ERROR_THRESHOLD)
-    return result.sort_values(["model", "fold", "match_id"], kind="stable").reset_index(drop=True)
+    return result.sort_values(["model", partition_column, "match_id"], kind="stable").reset_index(drop=True)
 
 
-def cross_model_errors(predictions: pd.DataFrame) -> pd.DataFrame:
-    keys = ["fold", "season", "date", "round", "match_id", "team", "opponent", "is_home", "actual_xg"]
+def cross_model_errors(predictions: pd.DataFrame, *, partition_column: str = "fold") -> pd.DataFrame:
+    keys = [partition_column, "season", "date", "round", "match_id", "team", "opponent", "is_home", "actual_xg"]
     require(not predictions.duplicated(keys + ["model"]).any(), "Trùng khóa dự báo khi đối chiếu model.")
     wide = predictions.set_index(keys + ["model"])[["predicted_xg", "absolute_error"]].unstack("model")
     require(not wide.isna().any().any(), "Không đủ năm model trên cùng bản ghi.")
@@ -151,4 +161,4 @@ def cross_model_errors(predictions: pd.DataFrame) -> pd.DataFrame:
     result["signed_lr_minus_xgb"] = result.linear_regression_predicted_xg - result.xgboost_predicted_xg
     result["lr_xgb_prediction_difference"] = result.signed_lr_minus_xgb.abs()
     result["large_disagreement"] = result.lr_xgb_prediction_difference.ge(DISAGREEMENT_THRESHOLD)
-    return result.sort_values(["fold", "match_id", "is_home"], kind="stable").reset_index(drop=True)
+    return result.sort_values([partition_column, "match_id", "is_home"], kind="stable").reset_index(drop=True)
