@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "phase": "8.5.1",
+  "report_language": "vi",
+  "branch": "phase8.5.1-strikerapi-live-audit",
+  "source_commit": "84f14fd0638661c44933f917ce69effe518252ff",
+  "execution_started_at_utc": "2026-11-21T11:39:09+00:00",
+  "execution_completed_at_utc": "2026-11-21T11:39:11+00:00",
+  "live_audit_command_executed": true,
+  "billable_request_attempted": true,
+  "authentication_succeeded": true,
+  "calls": [
+    {
+      "endpoint": "list_games",
+      "documented_credits": 2,
+      "http_status": 200
+    },
+    {
+      "endpoint": "get_game",
+      "documented_credits": 5,
+      "http_status": 200
+    }
+  ],
+  "api_calls_attempted_or_reserved": 2,
+  "http_responses_confirmed": 2,
+  "maximum_cumulative_credit_budget": 25,
+  "documented_credits_for_this_attempt": 7,
+  "cumulative_reserved_credits": 7,
+  "actual_billed_credits": null,
+  "actual_billed_credits_reliably_confirmed": false,
+  "billing_note": "Chỉ công bố documented/reserved credits; không suy diễn billing từ response headers chưa xác minh semantics.",
+  "reference_fixture_matched": true,
+  "get_game_succeeded": true,
+  "both_team_perspectives_returned": true,
+  "field_availability": {
+    "xg": "available_both_teams",
+    "xga": "derived_from_validated_opponent_xg",
+    "goals": "available_both_teams",
+    "sh": "available_both_teams",
+    "sot": "available_both_teams"
+  },
+  "xg_source": "published_team_match",
+  "shot_map_called": false,
+  "shot_map_required": false,
+  "normalization_succeeded": true,
+  "validation_codes": [
+    "AUTHENTICATION_CONFIRMED",
+    "FIXTURE_MATCH_CONFIRMED",
+    "NORMALIZATION_SUCCEEDED",
+    "COMPARISON_COMPLETED"
+  ],
+  "missing_fields": [],
+  "compatibility_audit_executed": true,
+  "structurally_usable_for_further_research": true,
+  "principal_compatibility_blocker": "SINGLE_FIXTURE_INSUFFICIENT",
+  "larger_sample_required": true,
+  "next_step": "larger_sample_requires_separate_authorization_and_definition_rights_coverage_review",
+  "production_approved": false,
+  "population_compatibility_established": false,
+  "exact_numerical_results_kept_private": true,
+  "provider_statistics_or_shots_published": false,
+  "complete_statistical_audit_published": false,
+  "limitations": [
+    "Một fixture không đại diện population hoặc xác nhận production compatibility.",
+    "Báo cáo public chỉ đánh giá cấu trúc; numerical comparisons và provider records được giữ local.",
+    "Cần review định nghĩa xG, as-of/revision behavior, coverage và quyền sử dụng trước nghiên cứu lớn hơn."
+  ],
+  "tests": {
+    "run": 160,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "protected_research_files_unchanged": true,
+  "model_and_history_unchanged": true,
+  "private_dotenv_ignored_and_untracked": true
+}
