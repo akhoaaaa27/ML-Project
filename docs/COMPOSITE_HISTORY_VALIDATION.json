@@ -1,0 +1,91 @@
+{
+  "phase": "8.5.3",
+  "branch": "phase8.5.3-composite-history-integration",
+  "base_commit": "2ae0f8920ca0435b8c32c1b4763bc30ec370ba5b",
+  "schema_version": 1,
+  "database_sha256": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+  "validation": {
+    "version_id": "phase853_v3_20261122",
+    "registry_fixtures": 3040,
+    "verified_completed": 2783,
+    "complete_statistics": 2779,
+    "pending_statistics": 4,
+    "unverified": 257,
+    "unresolved_conflicts": 0,
+    "targets": 123,
+    "successful_fixtures": 123,
+    "predictions": 246,
+    "previously_blocked": 12,
+    "unlocked": 12,
+    "parity_fixtures": 111,
+    "parity_passed": 111,
+    "max_feature_delta": 0.0,
+    "max_prediction_delta": 0.0,
+    "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+    "production_approved": false,
+    "strikerapi_credits": 0
+  },
+  "tests": {
+    "run": 208,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "elapsed_seconds": 70.099,
+    "network_disabled": true,
+    "environment_api_key_removed": true
+  },
+  "original_tracked_files_unchanged": 139,
+  "production_history_sha256": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+  "old_branch_refs": {
+    "phase8.5.1-strikerapi-live-audit": "ee83689d117620b5085c389ce3266ed2a92cca77",
+    "phase8.5.2-semantic-audit": "425c7736a83e29bac5d313ba1ae7f8f22c6b2e2b",
+    "phase8.5.2-multisource-dataset": "2ae0f8920ca0435b8c32c1b4763bc30ec370ba5b"
+  },
+  "source_families": [
+    "FBref-derived frozen snapshot",
+    "Understat via xGTables",
+    "Sportmonks via xGTables"
+  ],
+  "identity_verification_source": "https://www.laliga.com/en-GB/laliga-easports/clubs",
+  "source_input_sha256": {
+    "acquisition_manifest.json": "d4bc7cba23d9048fc3d562dde8b8f50bb3f68fa7651ea51d5b2f2ae39089a348",
+    "audit_results.json": "dd47e495cc728d92f0cadd17bd109fae50c33b025b99a87f56e1427af50de128",
+    "data/laliga_processed_normalized.csv": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+    "independent_completed.json": "5c14eaaea7e3c70b963e45875a4744e1c72d00c39383ed55adb032fada02546d",
+    "processed/feature_exclusions.csv": "3ffe68ce97330e3db7f5a59cb876afccd838600c4840541c813e170c7ebf4124",
+    "processed/feature_inputs.csv": "86407069c2ddf664c34d228737e6aaebddeae69cd9c047dc54b7911de6225779",
+    "processed/frozen_lr_predictions.csv": "896a91dde19b419e8ef6471b894e74cd1351c4ec5f6939ca408387d652d3e5ba",
+    "processed/laliga_multisource_staging.csv": "1d05265e8a38e77f7a138cc71f9331bde61073b85f0cc72bc32d031c49ac9099",
+    "raw/archive_2019_fixtures.csv": "6ef3bf46c2ab9d527ab02fe08318a8ddbfe6c2656518080e9e52d22476fbd1f0",
+    "raw/archive_2020_fixtures.csv": "e5ae1fec41b48f9a64d1725f9fe5b43ffee7a517fc82a3059f9e8d80227d8085",
+    "raw/archive_2021_fixtures.csv": "a57069a0de5be9d82f1f89cd82749af0033fe6f61add5f9bbdaf6f9ba3b4dfb4",
+    "raw/archive_2022_fixtures.csv": "1516a78b741dac329565007e9da179a5813b747861f722d374831cbe0a9e8024",
+    "raw/archive_2023_fixtures.csv": "4e299928cf1da4995a1a2cdd718caf362fbc61bd356f394b21678b0df82dc1ed",
+    "raw/archive_2024_fixtures.csv": "15399ae278437025e7c176f9541cee4e6bee0b02f8fdb8b735a6caf2b4e298ac",
+    "raw/archive_2025_fixtures.csv": "cf00d4a4298c756303d3f916fd16fa9eded16bd2dd49e24577a8c1141f4805e8",
+    "raw/archive_2025_shots.csv": "84ffc98f9400191f6ae313d8f7cdeb975aa1ab2477a5e952f50aaf71d1be3192",
+    "raw/current_2026_fixtures.csv": "dbbd9d99526717a03af3548375340aaa7364c4699a0689bf9e0d1a6421cd3c0e"
+  },
+  "code_sha256": {
+    "scripts\\multisource\\__init__.py": "836531686e90c7e6d6533c6a113e6900fcb6193350b390e8fbb5152e8492b45d",
+    "scripts\\multisource\\acquire.py": "5b12d6de3353170a8254ed21e459b805e713d91ec520ad0269c4a60afd328969",
+    "scripts\\multisource\\build_composite.py": "191fbcc08f8eec37c336ea47bb1e9ddc00679c67e3674ba6ee9eb14f70036f25",
+    "scripts\\multisource\\composite_features.py": "d3f024dd23f8facc8e9670887c876b6865a8ee58fc2f52a558d164a74be8e92d",
+    "scripts\\multisource\\composite_history.py": "87f7cea382bbcc5f0f2090929c6ee9d5f44a296c6a9a7c5643e7ae9d94cb262f",
+    "scripts\\multisource\\composite_inference.py": "4bf476e6df6c0e1f2f6ec9849ed39cac506d17566695fa80a225f431d115ad87",
+    "scripts\\multisource\\features.py": "641233babfc27f823fa5863cfc4c8c4659982f4d88e3e97a531235206c883990",
+    "scripts\\multisource\\mapping.py": "d45763c9e60e3793837f6fed351ffaafe42c28e93aece2637408d2fcde6cf17a",
+    "scripts\\multisource\\match_registry.py": "4f60968cf9b0cfb5071e6ce600e93b719a31c6c5291b26730750fc65f17c3b97",
+    "scripts\\multisource\\run_audit.py": "1db1f6340f83cc994b3c140f9b97e19a4badd555182127fbaa517cd5c577874e",
+    "scripts\\multisource\\team_registry.py": "5319ff18c5dc1ed98801f51c1d2f6401561ca76b2579af25f94ca9f42991196b"
+  },
+  "revision_counts_from_parent": {
+    "added": 0,
+    "modified": 0,
+    "removed": 0
+  },
+  "research_validation_status": "validated_registry_rolling_features_and_frozen_inference_parity",
+  "third_party_rows_published": false,
+  "private_prediction_records_published": false,
+  "production_approved": false
+}
