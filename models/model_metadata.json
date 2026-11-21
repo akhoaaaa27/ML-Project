@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "model": "Linear Regression",
+  "model_version": "1.0.0",
+  "target": "xg",
+  "target_semantics": "total_team_match_xg_not_shot_probability",
+  "features": [
+    "is_home",
+    "matches_seen",
+    "short_history",
+    "xg_avg5",
+    "xga_avg5",
+    "gf_avg5",
+    "ga_avg5",
+    "shot_avg5",
+    "sot_avg5",
+    "opponent_xg_avg5",
+    "opponent_xga_avg5",
+    "opponent_matches_seen",
+    "opponent_short_history"
+  ],
+  "training_seasons": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "training_observations": 3800,
+  "training_matches": 1900,
+  "training_start": "2019-08-16",
+  "training_end": "2024-05-26",
+  "estimator_fit_calls": 1,
+  "imputer_fit_calls": 1,
+  "effective_estimator_parameters": {
+    "copy_X": true,
+    "fit_intercept": true,
+    "n_jobs": 1,
+    "positive": false,
+    "tol": 1e-06
+  },
+  "imputation_statistics": {
+    "xg_avg5": 1.2,
+    "xga_avg5": 1.24,
+    "gf_avg5": 1.2,
+    "ga_avg5": 1.2,
+    "shot_avg5": 11.2,
+    "sot_avg5": 3.6,
+    "opponent_xg_avg5": 1.2,
+    "opponent_xga_avg5": 1.24
+  },
+  "restored_training_cells": 256,
+  "coefficients": [
+    0.3515081270085958,
+    0.0011188849350143582,
+    -0.09730826667649255,
+    0.16190500367745772,
+    -0.016414041084405494,
+    0.06163122989315046,
+    -0.06780144151883512,
+    0.022714293218334,
+    0.02689493709117104,
+    -0.043829407379499155,
+    0.23920649408814304,
+    -0.001334372337907414,
+    0.09057056375415902
+  ],
+  "intercept": 0.31859045128627117,
+  "clipping_policy": "maximum(0,raw_prediction)",
+  "dataset_sha256": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+  "parameter_file_sha256": "c664b9844986dd80bdef1de7ab16a8a136c29cc0dc7c18bc77d674e51cc10115",
+  "research_references": {
+    "outputs/tuning/best_params.json": "c664b9844986dd80bdef1de7ab16a8a136c29cc0dc7c18bc77d674e51cc10115",
+    "outputs/final_test/evaluation_protocol.json": "0029e8b29bd6b68a544cf8dba32ceb61791b28064846155271093d177654d621",
+    "outputs/final_test/final_test_predictions.csv": "0326181caaea21253e0abb20db4073934c18e980f5c1f404d4cd40860b85b2c1",
+    "outputs/final_test/final_test_manifest.json": "2f5d336f9076e02adc8e3a52801de4f3d910d1c1a63cc18034b49b055aa7e3ec"
+  },
+  "environment": {
+    "python": "3.14.0",
+    "packages": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "scipy": "1.18.1",
+      "scikit-learn": "1.9.1",
+      "joblib": "1.6.0",
+      "threadpoolctl": "3.8.0"
+    }
+  },
+  "serialization": {
+    "format": "joblib",
+    "compression": 3,
+    "pickle_protocol": 5,
+    "cross_environment_byte_identity_promised": false
+  },
+  "custom_transformer": "scripts.prepare_training_features.HistoryMedianImputer",
+  "same_object_serialization_byte_identical": true,
+  "artifact_filename": "laliga_lr_pipeline.joblib",
+  "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+  "exported_at": "2026-11-21T08:16:58+00:00"
+}

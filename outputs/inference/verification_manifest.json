@@ -1,0 +1,166 @@
+{
+  "status": "success",
+  "feature_rows": 4700,
+  "fixtures": 2350,
+  "features": [
+    "is_home",
+    "matches_seen",
+    "short_history",
+    "xg_avg5",
+    "xga_avg5",
+    "gf_avg5",
+    "ga_avg5",
+    "shot_avg5",
+    "sot_avg5",
+    "opponent_xg_avg5",
+    "opponent_xga_avg5",
+    "opponent_matches_seen",
+    "opponent_short_history"
+  ],
+  "feature_atol": 5.1e-09,
+  "feature_max_absolute_delta": 3.33333360913457e-09,
+  "holdout_prediction_rows": 900,
+  "main_prediction_rows": 760,
+  "supplemental_prediction_rows": 140,
+  "prediction_atol": 1e-08,
+  "prediction_rounding_bound": 6.0304090195821425e-09,
+  "prediction_max_absolute_delta": 8.119660499517067e-11,
+  "actual_targets_used_for_parity": false,
+  "phase7_evaluation_rerun": false,
+  "fresh_process_reload": true,
+  "serialized_fitted_state_verified": true,
+  "offline": true,
+  "protected_files_checked": 77,
+  "protected_files_unchanged": true,
+  "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+  "example_replay": {
+    "status": "success",
+    "mode": "replay",
+    "home_team": "Athletic Club",
+    "away_team": "Getafe",
+    "home_team_id": "athletic-club",
+    "away_team_id": "getafe",
+    "match_date": "2024-08-15",
+    "season": 2024,
+    "canonical_fixture_key": "laliga:2024:athletic-club:getafe",
+    "home_xg": 1.3493648382441854,
+    "away_xg": 1.2037992600673975,
+    "model": "Linear Regression",
+    "model_version": "1.0.0",
+    "target": "total_team_match_xg",
+    "data_status": "verified_historical_snapshot",
+    "history_cutoff": "2024-08-15",
+    "temporal_policy": "date_only_strict_before_cutoff",
+    "provider": "fbref_opta_snapshot",
+    "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+    "schedule_status": "historical_completed_fixture",
+    "schedule_provider_fixture_id": null,
+    "history_summary": {
+      "Athletic Club": {
+        "matches_seen": 190,
+        "short_history": 0,
+        "first_date": "2019-08-16",
+        "last_date": "2024-05-25",
+        "stint_start_season": 2019,
+        "rolling_match_keys": [
+          "laliga:2023:getafe:athletic-club",
+          "laliga:2023:athletic-club:osasuna",
+          "laliga:2023:celta-vigo:athletic-club",
+          "laliga:2023:athletic-club:sevilla",
+          "laliga:2023:rayo-vallecano:athletic-club"
+        ],
+        "available_prior_last_date": "2024-05-25"
+      },
+      "Getafe": {
+        "matches_seen": 190,
+        "short_history": 0,
+        "first_date": "2019-08-18",
+        "last_date": "2024-05-26",
+        "stint_start_season": 2019,
+        "rolling_match_keys": [
+          "laliga:2023:getafe:athletic-club",
+          "laliga:2023:cadiz:getafe",
+          "laliga:2023:getafe:atletico-madrid",
+          "laliga:2023:alaves:getafe",
+          "laliga:2023:getafe:mallorca"
+        ],
+        "available_prior_last_date": "2024-05-26"
+      }
+    },
+    "history_provenance": [
+      {
+        "canonical_key": "laliga:2023:alaves:getafe",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1881",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:athletic-club:osasuna",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1862",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:athletic-club:sevilla",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1883",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:cadiz:getafe",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1868",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:celta-vigo:athletic-club",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1874",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:getafe:athletic-club",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1851",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:getafe:atletico-madrid",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1875",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:getafe:mallorca",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1900",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      },
+      {
+        "canonical_key": "laliga:2023:rayo-vallecano:athletic-club",
+        "provider": "fbref_opta_snapshot",
+        "provider_match_id": "legacy-local:1893",
+        "fetched_at": "2026-11-21T08:20:26+00:00",
+        "statistics_version": "normalized_sha256:90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "quality_status": "verified"
+      }
+    ],
+    "clipping_applied": false
+  }
+}

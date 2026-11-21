@@ -1,0 +1,20 @@
+{
+  "command": "python -m scripts.inference.predict_fixture upcoming --home Barcelona --away \"Real Madrid\" --date 2026-11-28 --season 2026",
+  "exit_code": 2,
+  "request_is_illustrative_not_verified_schedule": true,
+  "result": {
+    "status": "error",
+    "mode": "upcoming",
+    "error": {
+      "code": "STALE_DATA",
+      "message": "Lịch sử đội quá cũ cho yêu cầu upcoming.",
+      "details": {
+        "team": "Barcelona",
+        "last_match_date": "2025-09-28",
+        "history_cutoff": "2026-11-21",
+        "age_days": 426,
+        "max_age_days": 45
+      }
+    }
+  }
+}

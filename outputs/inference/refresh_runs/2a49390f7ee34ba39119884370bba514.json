@@ -1,0 +1,19 @@
+{
+  "run_id": "2a49390f7ee34ba39119884370bba514",
+  "timestamp": "2026-11-21T08:20:26+00:00",
+  "status": "success",
+  "automatic": false,
+  "model_retrained": false,
+  "source": {
+    "kind": "frozen_snapshot",
+    "filename": "laliga_processed_normalized.csv",
+    "sha256": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+    "provenance": "FBref/Opta-derived theo hồ sơ dự án; provider match ID gốc và thời điểm fetch gốc chưa được xác nhận"
+  },
+  "provider": "fbref_opta_snapshot",
+  "input_matches": 2350,
+  "inserted_matches": 2350,
+  "unchanged_matches": 0,
+  "schedule_records": 0,
+  "coverage_records": 0
+}
