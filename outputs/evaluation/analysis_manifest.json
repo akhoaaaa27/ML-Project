@@ -1,0 +1,442 @@
+{
+  "best_params_sha256": "c664b9844986dd80bdef1de7ab16a8a136c29cc0dc7c18bc77d674e51cc10115",
+  "csv_hashes": {
+    "ablation_results.csv": "e18633dff212093a7f72446e01ebb12a42ae2bd8db452e51e3fb2e91c9b2d616",
+    "ablation_summary.csv": "d25039948b1409c3d5fd5c5991c71dc635ff7f9200088ceb4c87d64595590e8f",
+    "cross_model_errors.csv": "87c016da2821a3b0bef6fea43b3a069c959a574923bf0781f76bca5c7c395b66",
+    "error_analysis.csv": "26ea63040e4c084f9b7f214daeaa259d40722eccc00445b4510befbe3fa5088f",
+    "full_feature_results.csv": "f893684f8c9236e0f729251c482aeb9b31d391c023b78cd2820b812813015e4c",
+    "match_error_analysis.csv": "fa7803f9a47bb7d949cca13da32fd83db69c28ccd25d3c32df6521317085a208",
+    "notable_errors.csv": "6f8ec6e8c851aa3201514b4df2fbdb791116d8534b4c4638a4274bb1b41b460d",
+    "permutation_fold_summary.csv": "af42586a3078f183d1cd3db14cb55845c8bb6b142f7a36723b253303da30b1e3",
+    "permutation_importance.csv": "e0c6a7fb819494734b411cfc89d5a2aa7e00a57f68bf4a85e75782fe0709542e",
+    "permutation_summary.csv": "b13bbc59717bd5692c92326f9a07e545a813f6dcc321ed95beaaf76f095a9d89",
+    "validation_predictions.csv": "f74dba8fe80b8a9fc00cf620a6664ba130a7567be76d82f67db8a128c8258eef"
+  },
+  "development_seasons": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "error_analysis": {
+    "large_absolute_error": 1.0,
+    "large_lr_xgb_difference": 0.5,
+    "small_sample_n_lt": 30,
+    "top_absolute_cases_per_model": 15
+  },
+  "excluded_seasons": [
+    2024,
+    2025
+  ],
+  "feature_groups": {
+    "G1": [
+      "is_home"
+    ],
+    "G2": [
+      "xg_avg5",
+      "xga_avg5"
+    ],
+    "G3": [
+      "gf_avg5",
+      "ga_avg5"
+    ],
+    "G4": [
+      "shot_avg5",
+      "sot_avg5"
+    ],
+    "G5": [
+      "opponent_xg_avg5",
+      "opponent_xga_avg5"
+    ],
+    "G6": [
+      "matches_seen",
+      "short_history",
+      "opponent_matches_seen",
+      "opponent_short_history"
+    ]
+  },
+  "features": [
+    "is_home",
+    "matches_seen",
+    "short_history",
+    "xg_avg5",
+    "xga_avg5",
+    "gf_avg5",
+    "ga_avg5",
+    "shot_avg5",
+    "sot_avg5",
+    "opponent_xg_avg5",
+    "opponent_xga_avg5",
+    "opponent_matches_seen",
+    "opponent_short_history"
+  ],
+  "figures": [
+    {
+      "dpi": 220,
+      "file": "ablation_delta_mae.png",
+      "output_sha256": "69ca0fd7680c268fac70d5894027a23666b2d8e70628451b4a940301634c8309",
+      "plotted_values": 24,
+      "source_sha256": "d25039948b1409c3d5fd5c5991c71dc635ff7f9200088ceb4c87d64595590e8f",
+      "validation": "Ô heatmap khớp chính xác mean_delta_mae."
+    },
+    {
+      "dpi": 220,
+      "file": "permutation_importance.png",
+      "output_sha256": "a9bcf528a24be6f8b730f5d3babfda29564e30c7102735d23e4e0d98bf8fa0f7",
+      "plotted_values": 52,
+      "source_sha256": "b13bbc59717bd5692c92326f9a07e545a813f6dcc321ed95beaaf76f095a9d89",
+      "validation": "Chiều rộng cột khớp mean_importance_mae; xerr dùng std_between_folds."
+    },
+    {
+      "dpi": 220,
+      "file": "actual_vs_predicted.png",
+      "output_sha256": "f167966e6249b484149b0747216189cb9257c7eec91f6c1810751fe5da44e19e",
+      "plotted_values": 22800,
+      "source_sha256": "f74dba8fe80b8a9fc00cf620a6664ba130a7567be76d82f67db8a128c8258eef",
+      "validation": "Mọi tọa độ scatter khớp actual_xg/predicted_xg; không lấy mẫu bớt bản ghi."
+    },
+    {
+      "dpi": 220,
+      "file": "residual_distribution.png",
+      "output_sha256": "2e81a4254e1f58e22fe12320593983f46e3386b72c0b617da8c74c7f1d004d0a",
+      "plotted_values": 11400,
+      "source_sha256": "f74dba8fe80b8a9fc00cf620a6664ba130a7567be76d82f67db8a128c8258eef",
+      "validation": "Tần số histogram khớp np.histogram với cùng bin ở mọi model."
+    },
+    {
+      "dpi": 220,
+      "file": "mae_by_season.png",
+      "output_sha256": "812dc62f5dbac19e3df6db1cdc1957fa3fbf5d20d71496e636d9545659277897",
+      "plotted_values": 15,
+      "source_sha256": "99f86f89f68b9e3bd2a97a4ef327b03a66222e3e8e2ac3e24555b33dbc7fb79a",
+      "validation": "Chiều cao mọi cột khớp MAE và số quan sát của subgroup đã xuất."
+    },
+    {
+      "dpi": 220,
+      "file": "mae_by_actual_xg.png",
+      "output_sha256": "acfbc2a877c0acc697de91417238d1a6878e746690716a8e28145a8ad1275b3c",
+      "plotted_values": 15,
+      "source_sha256": "7c0f79a56a0df7ad053b63e83e54cda475cbc4578e44edaf947f94c9c4e463b0",
+      "validation": "Chiều cao mọi cột khớp MAE và số quan sát của subgroup đã xuất."
+    },
+    {
+      "dpi": 220,
+      "file": "mae_by_history.png",
+      "output_sha256": "e1445493c0c576c8fbc79f9dfa68de3cbfd2943c5c8737dc045dec699b582eff",
+      "plotted_values": 30,
+      "source_sha256": "dc2fe1b9f7ae23a0246f757530256fb89cda0bdcef34d27a6082db490cb03d03",
+      "validation": "Cột MAE và nhãn n của hai nhóm lịch sử khớp bảng error_analysis."
+    }
+  ],
+  "fits": {
+    "ablated_regression": 72,
+    "full_feature_regression": 12,
+    "permutation": 0,
+    "total_regression": 84
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "train_end": "2021-05-23",
+      "train_samples": 1520,
+      "train_seasons": [
+        2019,
+        2020
+      ],
+      "train_start": "2019-08-16",
+      "validation_end": "2022-05-22",
+      "validation_samples": 760,
+      "validation_season": 2021,
+      "validation_start": "2021-08-13"
+    },
+    {
+      "fold": 2,
+      "train_end": "2022-05-22",
+      "train_samples": 2280,
+      "train_seasons": [
+        2019,
+        2020,
+        2021
+      ],
+      "train_start": "2019-08-16",
+      "validation_end": "2023-06-04",
+      "validation_samples": 760,
+      "validation_season": 2022,
+      "validation_start": "2022-08-12"
+    },
+    {
+      "fold": 3,
+      "train_end": "2023-06-04",
+      "train_samples": 3040,
+      "train_seasons": [
+        2019,
+        2020,
+        2021,
+        2022
+      ],
+      "train_start": "2019-08-16",
+      "validation_end": "2024-05-26",
+      "validation_samples": 760,
+      "validation_season": 2023,
+      "validation_start": "2023-08-11"
+    }
+  ],
+  "metrics": {
+    "clipping_minimum": 0,
+    "cv_aggregation": "equal_fold_means",
+    "error_group_aggregation": "pooled_team_match_observations",
+    "residual": "predicted_xg - actual_xg",
+    "std_ddof": 0
+  },
+  "permutation": {
+    "n_repeats": 10,
+    "primary_baseline_scores": 12,
+    "primary_evaluations": 1560,
+    "random_state": 42,
+    "reproducibility_baseline_scores": 1,
+    "reproducibility_evaluations": 130,
+    "stage": "after_training_fitted_preprocessing"
+  },
+  "schema_version": 1,
+  "selected_hyperparameters": {
+    "Decision Tree": {
+      "max_depth": 3,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2
+    },
+    "Linear Regression": {
+      "fit_intercept": true,
+      "positive": false
+    },
+    "Random Forest": {
+      "max_depth": 4,
+      "max_features": 1.0,
+      "min_samples_leaf": 2,
+      "n_estimators": 100
+    },
+    "XGBoost": {
+      "colsample_bytree": 0.7,
+      "learning_rate": 0.05,
+      "max_depth": 2,
+      "min_child_weight": 3,
+      "n_estimators": 100,
+      "reg_lambda": 10,
+      "subsample": 0.85
+    }
+  },
+  "source_sha256": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+  "table_schemas": {
+    "ablation_results.csv": {
+      "ablated_mae": "float64",
+      "ablated_rmse": "float64",
+      "delta_mae": "float64",
+      "delta_rmse": "float64",
+      "estimator_parameters": "str",
+      "fold": "int64",
+      "full_mae": "float64",
+      "full_rmse": "float64",
+      "group_name": "str",
+      "model": "str",
+      "n_features": "int64",
+      "negative_predictions": "int64",
+      "removed_features": "str",
+      "removed_group": "str",
+      "retained_features": "str",
+      "train_samples": "int64",
+      "train_seasons": "str",
+      "validation_samples": "int64",
+      "validation_season": "int64"
+    },
+    "ablation_summary.csv": {
+      "folds": "int64",
+      "group_name": "str",
+      "mean_ablated_mae": "float64",
+      "mean_ablated_rmse": "float64",
+      "mean_delta_mae": "float64",
+      "mean_delta_rmse": "float64",
+      "mean_full_mae": "float64",
+      "mean_full_rmse": "float64",
+      "model": "str",
+      "positive_delta_folds": "int64",
+      "removed_group": "str",
+      "std_delta_mae": "float64",
+      "std_delta_rmse": "float64"
+    },
+    "cross_model_errors.csv": {
+      "actual_xg": "float64",
+      "all_regressors_large": "bool",
+      "baseline_absolute_error": "float64",
+      "baseline_predicted_xg": "float64",
+      "date": "str",
+      "decision_tree_absolute_error": "float64",
+      "decision_tree_predicted_xg": "float64",
+      "fold": "int64",
+      "is_home": "int64",
+      "large_disagreement": "bool",
+      "linear_regression_absolute_error": "float64",
+      "linear_regression_predicted_xg": "float64",
+      "lr_xgb_prediction_difference": "float64",
+      "match_id": "int64",
+      "mean_regressor_absolute_error": "float64",
+      "multiple_regressors_large": "bool",
+      "opponent": "str",
+      "random_forest_absolute_error": "float64",
+      "random_forest_predicted_xg": "float64",
+      "regression_models_large": "int64",
+      "round": "str",
+      "season": "int64",
+      "signed_lr_minus_xgb": "float64",
+      "team": "str",
+      "xgboost_absolute_error": "float64",
+      "xgboost_predicted_xg": "float64"
+    },
+    "error_analysis.csv": {
+      "absolute_error_std": "float64",
+      "dimension": "str",
+      "folds": "str",
+      "group": "str",
+      "mae": "float64",
+      "max_absolute_error": "float64",
+      "mean_actual_xg": "float64",
+      "mean_predicted_xg": "float64",
+      "mean_residual": "float64",
+      "median_absolute_error": "float64",
+      "model": "str",
+      "n_matches": "int64",
+      "n_observations": "int64",
+      "p90_absolute_error": "float64",
+      "residual_std": "float64",
+      "rmse": "float64",
+      "scope": "str",
+      "seasons": "str",
+      "small_sample": "bool"
+    },
+    "full_feature_results.csv": {
+      "estimator_parameters": "str",
+      "fold": "int64",
+      "mae": "float64",
+      "model": "str",
+      "negative_predictions": "int64",
+      "phase5_hash_matches": "bool",
+      "prediction_sha256": "str",
+      "rmse": "float64",
+      "train_samples": "int64",
+      "train_seasons": "str",
+      "validation_samples": "int64",
+      "validation_season": "int64"
+    },
+    "match_error_analysis.csv": {
+      "away_absolute_error": "float64",
+      "away_actual_xg": "float64",
+      "away_predicted_xg": "float64",
+      "away_residual": "float64",
+      "away_team": "str",
+      "both_large_errors": "bool",
+      "date": "str",
+      "fold": "int64",
+      "home_absolute_error": "float64",
+      "home_actual_xg": "float64",
+      "home_predicted_xg": "float64",
+      "home_residual": "float64",
+      "home_team": "str",
+      "match_id": "int64",
+      "mean_absolute_error": "float64",
+      "min_team_absolute_error": "float64",
+      "model": "str",
+      "round": "str",
+      "season": "int64",
+      "sum_absolute_error": "float64"
+    },
+    "notable_errors.csv": {
+      "absolute_error": "float64",
+      "absolute_error_rank_all": "int64",
+      "actual_xg": "float64",
+      "date": "str",
+      "direction": "str",
+      "fold": "int64",
+      "is_home": "int64",
+      "largest_overprediction": "bool",
+      "largest_underprediction": "bool",
+      "match_id": "int64",
+      "matches_seen": "int64",
+      "model": "str",
+      "opponent": "str",
+      "opponent_matches_seen": "int64",
+      "opponent_short_history": "int64",
+      "predicted_xg": "float64",
+      "residual": "float64",
+      "round": "str",
+      "season": "int64",
+      "short_history": "int64",
+      "source_row": "int64",
+      "squared_error": "float64",
+      "team": "str",
+      "top_absolute_error": "bool"
+    },
+    "permutation_fold_summary.csv": {
+      "feature": "str",
+      "fold": "int64",
+      "mean_importance_mae": "float64",
+      "model": "str",
+      "original_mae": "float64",
+      "repetitions": "int64",
+      "std_repetitions": "float64",
+      "validation_season": "int64"
+    },
+    "permutation_importance.csv": {
+      "feature": "str",
+      "fold": "int64",
+      "importance_mae": "float64",
+      "model": "str",
+      "negative_predictions": "int64",
+      "original_mae": "float64",
+      "permuted_mae": "float64",
+      "random_seed": "int64",
+      "repetition": "int64",
+      "validation_samples": "int64",
+      "validation_season": "int64"
+    },
+    "permutation_summary.csv": {
+      "feature": "str",
+      "folds": "int64",
+      "mean_importance_mae": "float64",
+      "mean_std_within_fold": "float64",
+      "model": "str",
+      "positive_importance_folds": "int64",
+      "std_between_folds": "float64"
+    },
+    "validation_predictions.csv": {
+      "absolute_error": "float64",
+      "actual_xg": "float64",
+      "date": "str",
+      "fold": "int64",
+      "is_home": "int64",
+      "match_id": "int64",
+      "matches_seen": "int64",
+      "model": "str",
+      "opponent": "str",
+      "opponent_matches_seen": "int64",
+      "opponent_short_history": "int64",
+      "predicted_xg": "float64",
+      "residual": "float64",
+      "round": "str",
+      "season": "int64",
+      "short_history": "int64",
+      "source_row": "int64",
+      "squared_error": "float64",
+      "team": "str"
+    }
+  },
+  "versions": {
+    "matplotlib": "3.11.2",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "python": "3.14.0",
+    "scipy": "1.18.1",
+    "sklearn": "1.9.1",
+    "threadpoolctl": "3.8.0",
+    "xgboost": "3.4.1"
+  }
+}
