@@ -1,0 +1,204 @@
+{
+  "phase": "8.5.5",
+  "verdict": "PASS",
+  "scope": "Research integration",
+  "branch": "phase8.5.5-rolling-prematch-forecast",
+  "verified_at_utc": "2026-11-22T08:29:19.237468+00:00",
+  "base_commit": "c1138551121edab1d0c37e0a25f5ed09493f75a3",
+  "tested_commit": "58534c0a12f7a9c7260bcbd61245d440a4377ab0",
+  "source_sha256": {
+    "scripts/multisource/forecast_cli.py": "cec83a9ebdfdd20edfe0b1e797c944aae04b686a2dc9c7999c778d8ab9966b62",
+    "scripts/multisource/forecast_demo.py": "74edd5080338b5380a1b44794c68413c2a87f0abee03107208fc545d8e3a5550",
+    "scripts/multisource/forecast_eligibility.py": "0ec47b199de50dff1e8485a97ef65b6797d05eac84de6fb27d9c480442238d3e",
+    "scripts/multisource/forecast_examples.py": "2684162d299960191d5f5d15aa0ae12b82fb03229889cb8f94470c945cc92b9d",
+    "scripts/multisource/forecast_generation.py": "5fb149430912c0c1e5ee7ab500c87a9feb3e1fd0f845a060447ed2623a39d107",
+    "scripts/multisource/forecast_ledger.py": "5f31019b2fe459082d6dbf807ba7077de784516579425031333928f8668697ba",
+    "scripts/multisource/forecast_service.py": "b84eedb8d40a3cb12fc1d87702dee17282f28c3957ec3c05f202fc56d8692bfd",
+    "tests/test_forecast_eligibility.py": "b12aa52865249d4cb0ab346cb88525c6dd085b2723a625d9dc3ce5b5e33899d6",
+    "tests/test_forecast_generation.py": "2437cbb7693db1a025752050f3182b843890fa7ffed5029824ad92680a877a83",
+    "tests/test_forecast_integration.py": "586bf32f11660532c70af0f9724537499a9d132e6b2b37cc132b6be43df5d23b",
+    "tests/test_forecast_ledger.py": "31f063f89855b35cf11dd13f72b6b3acaacb1ff29ddcf4c49749b9f491be2e95"
+  },
+  "integrity": {
+    "base": "c1138551121edab1d0c37e0a25f5ed09493f75a3",
+    "tested_head": "58534c0a12f7a9c7260bcbd61245d440a4377ab0",
+    "protected_manifest_entries": {
+      "outputs/inference/protected_files.json": 77,
+      "outputs/provider_poc/reports/protected_files.json": 107
+    },
+    "old_snapshot_files": 8,
+    "all_unchanged": true,
+    "artifact_sha256": {
+      "models/laliga_lr_pipeline.joblib": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+      "data/history/laliga_history.sqlite3": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+      "data/history/research/phase853_v3_20261122/laliga_composite.sqlite3": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e"
+    },
+    "real_eligibility_check": {
+      "snapshot": "phase853_v3_20261122",
+      "scanned": 380,
+      "evaluated_at_utc": "2026-11-22T08:25:43.226931Z",
+      "statuses": {
+        "UNAVAILABLE": 124,
+        "READY": 5,
+        "EARLY_READY": 85,
+        "WAITING_DATA": 166
+      },
+      "waiting_reasons": {
+        "MISSING_ROLLING_STATISTICS": 125,
+        "REGISTRY_COVERAGE_UNVERIFIED": 41
+      },
+      "published_real_forecasts": 0
+    }
+  },
+  "tests": {
+    "executed": 326,
+    "passed": 326,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "network_blocked": true,
+    "credentials_required": false,
+    "runtime_seconds": 140.465,
+    "exit_code": 0,
+    "forecast_test_modules": {
+      "test_forecast_eligibility": 14,
+      "test_forecast_generation": 3,
+      "test_forecast_integration": 1,
+      "test_forecast_ledger": 9
+    },
+    "runner_command": ".venv/Scripts/python.exe -m scripts.multisource.validate_refresh --workspace data/external/multisource/forecasts/gate-855-58534c0/regression --output data/external/multisource/forecasts/gate-855-58534c0/regression-report.json"
+  },
+  "demos": {
+    "dataset_kind": "synthetic",
+    "demo_label": "SYNTHETIC_DEMO",
+    "production_approved": false,
+    "code_revision": "58534c0a12f7a9c7260bcbd61245d440a4377ab0",
+    "eligibility_policy_version": "1.0",
+    "fixture_catalogue_version": "1.0",
+    "model_artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+    "environment": {
+      "platform": "Windows",
+      "python": "3.14.0",
+      "packages": {
+        "numpy": "2.5.4",
+        "pandas": "3.1.0",
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "threadpoolctl": "3.8.0"
+      }
+    },
+    "scenarios": {
+      "A": {
+        "forecast_revision": 1,
+        "forecast_stage": "INITIAL",
+        "eligibility_status": "EARLY_READY",
+        "generated_at_utc": "2026-11-19T09:00:00Z",
+        "history_snapshot_version": "initial",
+        "history_database_sha256": "6d331f807547048a1b1afa32dc072f332812714f9d489f3d86b3d85f20fc20e0"
+      },
+      "B": {
+        "forecast_revision": 2,
+        "forecast_stage": "UPDATED",
+        "eligibility_status": "EARLY_READY",
+        "generated_at_utc": "2026-11-21T09:00:00Z",
+        "history_snapshot_version": "updated",
+        "history_database_sha256": "e510e99cbbf571706551363487fe9424bb555d9c12a162be660374e38f9f7370",
+        "history_publication": "PUBLISHED"
+      },
+      "C": {
+        "status": "NO_CHANGE",
+        "snapshot_version": "same-features",
+        "database_sha256": "a653c5daa81315d537fe6842503824c3fd4e1b4667fb475792d39f88d8dd5100"
+      },
+      "D": {
+        "status": "WAITING_DATA",
+        "reason": "MISSING_ROLLING_STATISTICS"
+      },
+      "E": {
+        "status": "UNAVAILABLE"
+      },
+      "F": {
+        "status": "PASS",
+        "mode": "HISTORICAL_REPLAY",
+        "snapshot_version": "phase853_v3_20261122",
+        "database_sha256": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+        "targets": 123,
+        "predictions": 246,
+        "parity": 111,
+        "max_feature_delta": 0.0,
+        "max_raw_prediction_delta": 0.0,
+        "production_approved": false
+      }
+    },
+    "revision_count": 2,
+    "changed_feature_count": 6,
+    "parent_unchanged": true,
+    "limitations": [
+      "Simulated clock for scenarios A–E",
+      "F is a historical replay, separate from current forecasts",
+      "Date-only cutoff and mixed-provider research source semantics"
+    ]
+  },
+  "sqlite_integrity": true,
+  "v3_fingerprints_equal": true,
+  "acceptance_criteria": {
+    "AC-01": {
+      "status": "PASS",
+      "evidence": "Four eligibility states plus kickoff/history freshness."
+    },
+    "AC-02": {
+      "status": "PASS",
+      "evidence": "Early forecast with one or multiple intermediates, Demo A."
+    },
+    "AC-03": {
+      "status": "PASS",
+      "evidence": "Actual last-five and coverage gates. Pending outside the window remains eligible."
+    },
+    "AC-04": {
+      "status": "PASS",
+      "evidence": "Same-day and future outcomes excluded. UTC system clock for real requests."
+    },
+    "AC-05": {
+      "status": "PASS",
+      "evidence": "Demo B uses a verified Phase 8.5.4 successor. V1 and snapshot bindings preserved."
+    },
+    "AC-06": {
+      "status": "PASS",
+      "evidence": "Direct frozen predictor parity. Demo C returns NO_CHANGE."
+    },
+    "AC-07": {
+      "status": "PASS",
+      "evidence": "Checksum, no-clobber atomic publication, lock, stale-write and rollback regressions."
+    },
+    "AC-08": {
+      "status": "PASS",
+      "evidence": "Demo A-F, documented Python and CLI contract, namespace and protected artifact checks."
+    }
+  },
+  "operations": {
+    "production_approved": false,
+    "live_downloads": 0,
+    "provider_api_calls": 0,
+    "production_writes": 0,
+    "model_refits": 0
+  },
+  "publication_safety": {
+    "added_forecast_files_before_report": 14,
+    "existing_tracked_files_changed": 0,
+    "restricted_payloads_committed": false,
+    "private_workspace_ignored": true
+  },
+  "policy": {
+    "eligibility_version": "1.0",
+    "fixture_observation_max_age_hours": 48,
+    "team_history_max_age_days": 45,
+    "uses_real_system_utc_clock": true,
+    "strict_before_date": true
+  },
+  "limitations": [
+    "No new predictive accuracy evaluation or new real-data publication.",
+    "No intraday or historical as-of-vintage guarantee.",
+    "Atomic creation requires hard links on the same local filesystem."
+  ]
+}
