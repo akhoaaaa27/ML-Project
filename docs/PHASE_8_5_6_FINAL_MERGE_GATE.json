@@ -1,0 +1,400 @@
+{
+  "phase": "8.5.6",
+  "gate_date": "2026-11-22",
+  "timezone": "Asia/Saigon",
+  "merge_readiness_verdict": "PASS",
+  "merge_scope": "research-only",
+  "implementation_verdict": "PASS",
+  "scientific_conclusion": "SUPPORTED_WITH_LIMITATIONS",
+  "production_approved": false,
+  "git": {
+    "branch": "phase8.5.6-provider-compatibility-validation",
+    "base_branch": "main",
+    "base_commit": "6c1d0614558d6904185beb8346d6c0dfd31e516c",
+    "tested_implementation_commit": "3355580782cdde75a4df2f40b55033343f04eef5",
+    "gate_reviewed_head": "e99b94246706f44288f56f6f4570b8e15683cf84",
+    "gate_publication_commit_parent": "e99b94246706f44288f56f6f4570b8e15683cf84",
+    "remote_main_and_feature_head_verified_before_gate": true,
+    "initial_working_tree_clean": true,
+    "scope": {
+      "implementation_added": [
+        "scripts/multisource/phase856_validation.py",
+        "scripts/multisource/phase856_reporting.py",
+        "tests/test_phase856_validation.py"
+      ],
+      "validation_added_after_tests": [
+        "docs/PHASE_8_5_6_VALIDATION.md",
+        "docs/PHASE_8_5_6_VALIDATION.json"
+      ],
+      "gate_publication_files": [
+        "docs/PHASE_8_5_6_FINAL_MERGE_GATE.md",
+        "docs/PHASE_8_5_6_FINAL_MERGE_GATE.json"
+      ],
+      "executable_test_or_dependency_changes_after_tested_commit": [],
+      "modified_preexisting_paths_from_base": []
+    }
+  },
+  "validation_evidence": {
+    "aggregate_fields_match_recorded_run": true,
+    "markdown_metrics_match_validation_json": true,
+    "denominators_and_exclusions_reconciled": true,
+    "performance_recomputed": false,
+    "label_provider_pooling": false,
+    "evaluation": "Retrospective date-cutoff replay",
+    "matched_overlap": {
+      "reference_fixtures": 2350,
+      "matched_fixtures": 2350,
+      "reference_team_observations": 4700,
+      "paired_xg_observations": 4698,
+      "excluded_xg_observations": 2,
+      "missing_xg_in_source": 2,
+      "xg_exclusions": {
+        "PROVIDER_FLAGGED_UNRELIABLE": 2
+      },
+      "xg_difference_direction": "external_xg - fbref_xg",
+      "xg_mean_signed_difference": 0.08811919667943804,
+      "xg_mean_absolute_difference": 0.21367323537675606,
+      "xg_pearson_r": 0.9444700527910387,
+      "reviewed_shot_fixtures": 70,
+      "paired_shot_observations_per_field": 140,
+      "shot_observations_without_reviewed_coverage_per_field": 4560
+    },
+    "sportmonks_shots": {
+      "cross_provider_pairs": 0,
+      "export_full_time_fixtures": 120,
+      "missing_or_invalid_within_full_time": 0,
+      "non_full_time_export_rows": 260,
+      "paired_comparison_status": "NO_ATTESTED_SAME_FIXTURE_FBREF_OVERLAP",
+      "penalty_metadata_nonnull": 0,
+      "penalty_semantics": "UNVERIFIED",
+      "structurally_valid_team_observations": 240,
+      "verified_completed_registry_fixtures": 123
+    },
+    "cohorts": {
+      "B1": {
+        "label_source": "Understat",
+        "season": 2025,
+        "catalogue_fixtures": 380,
+        "before_or_at_boundary": 70,
+        "candidate_fixtures": 310,
+        "verified_completed": 310,
+        "blocked_fixtures": 10,
+        "excluded_fixtures": 1,
+        "exclusions": {
+          "BLOCKED": {
+            "MISSING_ROLLING_STATISTICS": 10
+          },
+          "EXCLUDED": {
+            "MISSING_TARGET_XG": 1
+          }
+        },
+        "scored_fixtures": 299,
+        "scored_team_observations": 598,
+        "metrics": {
+          "away": {
+            "baseline": {
+              "mae": 0.6456034327759198,
+              "mean_signed_residual": 0.25376671986622074,
+              "median_absolute_error": 0.5469701999999999,
+              "n": 299,
+              "rmse": 0.8427311268272792
+            },
+            "lr": {
+              "mae": 0.5856021634519402,
+              "mean_signed_residual": -0.07969000814705239,
+              "median_absolute_error": 0.5402486226802896,
+              "n": 299,
+              "rmse": 0.7682593637613209
+            },
+            "lr_minus_baseline_mae": -0.060001269323979645,
+            "short_history_count_including_zero": 0,
+            "zero_history_count": 0
+          },
+          "home": {
+            "baseline": {
+              "mae": 0.6981900989966555,
+              "mean_signed_residual": -0.2767106660869565,
+              "median_absolute_error": 0.5758924000000001,
+              "n": 299,
+              "rmse": 0.8926012840062593
+            },
+            "lr": {
+              "mae": 0.6472015930903442,
+              "mean_signed_residual": -0.2501616974792668,
+              "median_absolute_error": 0.5153795016933238,
+              "n": 299,
+              "rmse": 0.8378232294142797
+            },
+            "lr_minus_baseline_mae": -0.05098850590631132,
+            "short_history_count_including_zero": 0,
+            "zero_history_count": 0
+          },
+          "overall": {
+            "baseline": {
+              "mae": 0.6718967658862877,
+              "mean_signed_residual": -0.011471973110367892,
+              "median_absolute_error": 0.5661202,
+              "n": 598,
+              "rmse": 0.8680244248675261
+            },
+            "lr": {
+              "mae": 0.6164018782711422,
+              "mean_signed_residual": -0.1649258528131596,
+              "median_absolute_error": 0.5205409809664674,
+              "n": 598,
+              "rmse": 0.8037941943536051
+            },
+            "lr_minus_baseline_mae": -0.05549488761514543,
+            "short_history_count_including_zero": 0,
+            "zero_history_count": 0
+          },
+          "paired_fixture_bootstrap": {
+            "fixtures": 299,
+            "interval_95_percentile": [
+              -0.08639280559903578,
+              -0.022316039907065335
+            ],
+            "resamples": 2000,
+            "seed": 856
+          }
+        }
+      },
+      "B2": {
+        "label_source": "Sportmonks",
+        "season": 2026,
+        "catalogue_fixtures": 380,
+        "before_or_at_boundary": 0,
+        "candidate_fixtures": 380,
+        "verified_completed": 123,
+        "blocked_fixtures": 0,
+        "excluded_fixtures": 260,
+        "exclusions": {
+          "BLOCKED": {},
+          "EXCLUDED": {
+            "MISSING_TARGET_XG": 3,
+            "NOT_VERIFIED_COMPLETED": 257
+          }
+        },
+        "scored_fixtures": 120,
+        "scored_team_observations": 240,
+        "metrics": {
+          "away": {
+            "baseline": {
+              "mae": 0.6920924594444444,
+              "mean_signed_residual": 0.11631112911111113,
+              "median_absolute_error": 0.6089713,
+              "n": 120,
+              "rmse": 0.8548808609116996
+            },
+            "lr": {
+              "mae": 0.6175214296643112,
+              "mean_signed_residual": -0.16189933395244058,
+              "median_absolute_error": 0.4746218952070357,
+              "n": 120,
+              "rmse": 0.786241860342286
+            },
+            "lr_minus_baseline_mae": -0.07457102978013319,
+            "short_history_count_including_zero": 8,
+            "zero_history_count": 1
+          },
+          "home": {
+            "baseline": {
+              "mae": 0.6697160492222222,
+              "mean_signed_residual": -0.12731341588888892,
+              "median_absolute_error": 0.5993677000000002,
+              "n": 120,
+              "rmse": 0.8720407440985396
+            },
+            "lr": {
+              "mae": 0.6176321807953956,
+              "mean_signed_residual": -0.028183795093113823,
+              "median_absolute_error": 0.5181009903164363,
+              "n": 120,
+              "rmse": 0.8060431490531818
+            },
+            "lr_minus_baseline_mae": -0.05208386842682655,
+            "short_history_count_including_zero": 7,
+            "zero_history_count": 2
+          },
+          "overall": {
+            "baseline": {
+              "mae": 0.6809042543333333,
+              "mean_signed_residual": -0.005501143388888878,
+              "median_absolute_error": 0.60248,
+              "n": 240,
+              "rmse": 0.8635034295592181
+            },
+            "lr": {
+              "mae": 0.6175768052298535,
+              "mean_signed_residual": -0.0950415645227772,
+              "median_absolute_error": 0.513493162225246,
+              "n": 240,
+              "rmse": 0.7962040633813886
+            },
+            "lr_minus_baseline_mae": -0.06332744910347987,
+            "short_history_count_including_zero": 15,
+            "zero_history_count": 3
+          },
+          "paired_fixture_bootstrap": {
+            "fixtures": 120,
+            "interval_95_percentile": [
+              -0.11567658272324295,
+              -0.009767746865271761
+            ],
+            "resamples": 2000,
+            "seed": 856
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "inherited_from": "3355580782cdde75a4df2f40b55033343f04eef5",
+    "targeted_inherited": {
+      "command": ".venv/Scripts/python.exe -m unittest tests.test_phase856_validation -q",
+      "errors": 0,
+      "executed": 14,
+      "exit_code": 0,
+      "failed": 0,
+      "passed": 14,
+      "skipped": 0
+    },
+    "full_suite_inherited": {
+      "command": ".venv/Scripts/python.exe -m scripts.multisource.phase856_reporting --run-id phase856-3355580 --full-suite",
+      "errors": 0,
+      "executed": 340,
+      "exit_code": 0,
+      "failed": 0,
+      "passed": 340,
+      "runtime_seconds": 136.655,
+      "skipped": 0
+    },
+    "targeted_cases_observed_in_original_full_log": 14,
+    "new_test_cases_executed_at_gate": 0,
+    "recorded_runtime_versions_match_current": true,
+    "tracked_dependency_manifests_unchanged": 4,
+    "recorded_runtime": {
+      "packages": {
+        "joblib": "1.6.0",
+        "numpy": "2.5.4",
+        "pandas": "3.1.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1",
+        "threadpoolctl": "3.8.0"
+      },
+      "python": "3.14.0"
+    },
+    "new_checks": [
+      "Git ancestry and diff",
+      "Validation report and test log consistency",
+      "SHA-256 verification",
+      "Read-only trusted model load and research SQLite sidecar verification"
+    ]
+  },
+  "artifact_integrity": {
+    "newly_verified": {
+      "protected_manifest_entries_matched": {
+        "outputs/inference/protected_files.json": 77,
+        "outputs/provider_poc/reports/protected_files.json": 107
+      },
+      "unique_protected_files_matched": 107,
+      "phase7_outputs_matched": 11,
+      "frozen_lr_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+      "model_metadata_sha256": "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c",
+      "production_history_sha256": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+      "composite_v3_sha256": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+      "fitted_median_verified_by_trusted_loader": true,
+      "frozen_feature_count": 13,
+      "local_attested_input_sha256": {
+        "acquisition_manifest.json": "d4bc7cba23d9048fc3d562dde8b8f50bb3f68fa7651ea51d5b2f2ae39089a348",
+        "data/history/research/phase853_v3_20261122/laliga_composite.sqlite3": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+        "data/laliga_processed_normalized.csv": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+        "independent_completed.json": "5c14eaaea7e3c70b963e45875a4744e1c72d00c39383ed55adb032fada02546d",
+        "raw/archive_2019_fixtures.csv": "6ef3bf46c2ab9d527ab02fe08318a8ddbfe6c2656518080e9e52d22476fbd1f0",
+        "raw/archive_2020_fixtures.csv": "e5ae1fec41b48f9a64d1725f9fe5b43ffee7a517fc82a3059f9e8d80227d8085",
+        "raw/archive_2021_fixtures.csv": "a57069a0de5be9d82f1f89cd82749af0033fe6f61add5f9bbdaf6f9ba3b4dfb4",
+        "raw/archive_2022_fixtures.csv": "1516a78b741dac329565007e9da179a5813b747861f722d374831cbe0a9e8024",
+        "raw/archive_2023_fixtures.csv": "4e299928cf1da4995a1a2cdd718caf362fbc61bd356f394b21678b0df82dc1ed",
+        "raw/archive_2024_fixtures.csv": "15399ae278437025e7c176f9541cee4e6bee0b02f8fdb8b735a6caf2b4e298ac",
+        "raw/archive_2025_fixtures.csv": "cf00d4a4298c756303d3f916fd16fa9eded16bd2dd49e24577a8c1141f4805e8",
+        "raw/archive_2025_shots.csv": "84ffc98f9400191f6ae313d8f7cdeb975aa1ab2477a5e952f50aaf71d1be3192",
+        "raw/current_2026_fixtures.csv": "dbbd9d99526717a03af3548375340aaa7364c4699a0689bf9e0d1a6421cd3c0e"
+      },
+      "missing_local_attested_inputs": [],
+      "research_snapshot_files_matching_phase854_baseline": 8,
+      "snapshot_sidecars_matching_embedded_metadata": 4,
+      "pending_update_fixtures_in_v3": 4
+    },
+    "inherited_from_validation": {
+      "composite_v3_sqlite_integrity_and_foreign_keys": true,
+      "replay_preserved_pending_cases": 4
+    }
+  },
+  "acceptance_criteria": {
+    "AC-01": {
+      "status": "PASS",
+      "evidence": "Verified fixture overlap, provenance and paired xG agree with the recorded run."
+    },
+    "AC-02": {
+      "status": "PASS",
+      "evidence": "Reviewed SH/SOT coverage and unresolved penalty semantics are disclosed."
+    },
+    "AC-03": {
+      "status": "PASS",
+      "evidence": "Independent cohort selections reconcile with the recorded candidate and outcome counts."
+    },
+    "AC-04": {
+      "status": "PASS",
+      "evidence": "Trusted frozen LR and strict-before replay are covered by the tested revision, including the target-label mutation case."
+    },
+    "AC-05": {
+      "status": "PASS",
+      "evidence": "Home, away and overall metrics, baseline pairing, exclusions and denominators reconcile."
+    },
+    "AC-06": {
+      "status": "PASS",
+      "evidence": "Provider-specific labels, retrospective date cutoff and missing historical vintage evidence delimit the claims."
+    },
+    "AC-07": {
+      "status": "PASS",
+      "evidence": "Protected artifacts and local inputs match checksums. The inherited run operated offline."
+    },
+    "AC-08": {
+      "status": "PASS",
+      "evidence": "The tested revision, sanitized reports and bounded research backend implications are documented."
+    }
+  },
+  "scientific_assessment": {
+    "deployment_approval": false,
+    "limitations": [
+      "The frozen snapshot cannot establish historical as-of-vintage availability or independently verified prospective performance.",
+      "Provider-labelled errors depend on verified completion, observed target coverage and representable history.",
+      "Source, calendar period, team roster and selection are confounded in between-cohort feature comparisons.",
+      "The fixture bootstrap preserves home and away pairing but does not model shared-team or temporal dependence."
+    ],
+    "predictive_evidence": "Retrospective date-cutoff replay. On each scored provider-labelled subset, LR MAE is below the same-row rolling baseline and mean residual is negative.",
+    "statistical_equivalence": "INCONCLUSIVE",
+    "statistical_evidence": "Matched FBref and Understat xG differ by provider, season and perspective. Reviewed SH/SOT overlap is limited to 70 fixtures and does not cover Sportmonks.",
+    "structural_compatibility": "Frozen 13-feature input accepted on the eligible B1 and B2 fixtures. The existing builder enforced coverage and actual last-five.",
+    "production_accuracy_guarantees_established": false,
+    "sportmonks_same_fixture_overlap_with_fbref": 0
+  },
+  "backend_handoff": {
+    "blocked_status": "Expose existing readiness or blocked statuses when history or verified statistics are insufficient.",
+    "metric_labelling": "Expose provider-specific retrospective metrics with separate cohort denominators and visible limitations.",
+    "mode": "research/demo",
+    "production_approved": false,
+    "provenance": [
+      "model version",
+      "snapshot version",
+      "target provider",
+      "mixed history or short-history status"
+    ],
+    "publication": "Return permitted aggregate or demo fields. Keep private records, source CSVs and SQLite snapshots in ignored local storage."
+  },
+  "next_action": {
+    "action": "Open a manual pull request for research-only review",
+    "base": "main",
+    "head": "phase8.5.6-provider-compatibility-validation"
+  }
+}
