@@ -1,0 +1,250 @@
+{
+  "phase": "8.5.7",
+  "base_commit": "ea555a05168f773399e154f12d1a2be2a593fca7",
+  "branch": "phase8.5.7-fastapi-frontend-bridge",
+  "integration_verdict": "PASS",
+  "production_approved": false,
+  "research_evidence": "SUPPORTED_WITH_LIMITATIONS",
+  "scope": "Local research and thesis defense",
+  "environment": {
+    "python": "3.14.0",
+    "packages": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "scipy": "1.18.1",
+      "scikit-learn": "1.9.1",
+      "joblib": "1.6.0",
+      "threadpoolctl": "3.8.0"
+    }
+  },
+  "api_packages": {
+    "fastapi": "0.121.3",
+    "starlette": "0.50.0",
+    "pydantic": "2.12.4",
+    "uvicorn": "0.38.0",
+    "httpx": "0.28.1",
+    "playwright": "1.58.0"
+  },
+  "endpoints": {
+    "/api/v1/health/live": [
+      "GET"
+    ],
+    "/api/v1/health/ready": [
+      "GET"
+    ],
+    "/api/v1/bootstrap": [
+      "GET"
+    ],
+    "/api/v1/teams": [
+      "GET"
+    ],
+    "/api/v1/fixtures": [
+      "GET"
+    ],
+    "/api/v1/eligibility": [
+      "GET"
+    ],
+    "/api/v1/data-status": [
+      "GET"
+    ],
+    "/api/v1/forecasts/preview": [
+      "POST"
+    ],
+    "/api/v1/forecasts/publish": [
+      "POST"
+    ],
+    "/api/v1/forecasts": [
+      "GET"
+    ],
+    "/api/v1/forecasts/compare": [
+      "GET"
+    ],
+    "/api/v1/forecasts/{forecast_id}": [
+      "GET"
+    ],
+    "/api/v1/historical/team-stats": [
+      "GET"
+    ],
+    "/api/v1/historical/match-analysis": [
+      "GET"
+    ],
+    "/api/v1/model/summary": [
+      "GET"
+    ]
+  },
+  "artifact_integrity": {
+    "manifests": {
+      "outputs/inference/protected_files.json": 77,
+      "outputs/provider_poc/reports/protected_files.json": 107
+    },
+    "protected_unique": 107,
+    "attested_inputs": 13,
+    "research_snapshot_files": 8,
+    "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+    "metadata_sha256": "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c",
+    "production_history_sha256": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+    "composite_v3_sha256": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+    "mode_probes": {
+      "REAL_RESEARCH": {
+        "readiness": "READY",
+        "fixture_rows": 3040,
+        "upcoming": 256,
+        "freshness": "VERIFIED",
+        "pending": 4,
+        "history_status": "INCOMPLETE_STATISTICS",
+        "preview_reason": null
+      },
+      "HISTORICAL_REFERENCE": {
+        "readiness": "READY",
+        "fixture_rows": 3040,
+        "upcoming": 256,
+        "freshness": "HISTORICAL_ONLY",
+        "pending": 4,
+        "history_status": "INCOMPLETE_STATISTICS",
+        "preview_reason": "HISTORICAL_ONLY"
+      }
+    },
+    "frontend": {
+      "reference_sha256": "f5aada295d659b8856cc5b4c465f1a20ba912056aa431d1565e67426f57728e4",
+      "integrated_sha256": "ffbff2be5620c920e10efb99a47a1f16e29640cef3a44fd7cfde319ac74f82fb",
+      "local_crests": 28
+    }
+  },
+  "real_preview_probe": {
+    "requests": 4,
+    "statuses": {
+      "READY": 4
+    },
+    "blocked_reasons": {},
+    "ledger_unchanged": true
+  },
+  "browser": {
+    "status": "PASS",
+    "browser": "msedge",
+    "browser_version": "158.0.4370.33",
+    "screenshot_count": 41,
+    "console_errors": 0,
+    "uncaught_rejections": 0,
+    "external_requests_allowed": false,
+    "paired_pages": 18,
+    "viewports": {
+      "desktop": [
+        1440,
+        900
+      ],
+      "tablet": [
+        820,
+        1180
+      ],
+      "mobile": [
+        390,
+        844
+      ]
+    },
+    "pages": [
+      "home",
+      "predict",
+      "analysis",
+      "stats",
+      "history",
+      "model"
+    ],
+    "interactive_screenshots": 5
+  },
+  "tests": {
+    "targeted-suite": {
+      "passed": 16,
+      "executed": 16,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "duration_seconds": 7.297
+    },
+    "full-suite": {
+      "passed": 356,
+      "executed": 356,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "duration_seconds": 203.224
+    },
+    "phase856_baseline_included": 340,
+    "pip_check": "PASS"
+  },
+  "synthetic_http": {
+    "A": "PUBLISHED INITIAL / EARLY_READY",
+    "B": "PUBLISHED UPDATED / EARLY_READY",
+    "C": "NO_CHANGE",
+    "D": "WAITING_DATA / MISSING_ROLLING_STATISTICS",
+    "E": "UNAVAILABLE / invalid fixture",
+    "preview_matches_direct_generator": true,
+    "concurrent_publishers": 2,
+    "new_revisions_in_concurrent_test": 1
+  },
+  "historical_parity_F": {
+    "fixture_targets": 123,
+    "team_predictions": 246,
+    "parity_cases_passed": 111,
+    "max_feature_delta": 0,
+    "max_raw_prediction_delta": 0
+  },
+  "acceptance_criteria": {
+    "AC-01": {
+      "status": "PASS",
+      "evidence": "15 strict typed routes, generated OpenAPI and startup readiness"
+    },
+    "AC-02": {
+      "status": "PASS",
+      "evidence": "Canonical team and fixture queries and schedule integrity"
+    },
+    "AC-03": {
+      "status": "PASS",
+      "evidence": "Frozen generation parity and read-only preview"
+    },
+    "AC-04": {
+      "status": "PASS",
+      "evidence": "Schedule freshness, missing last-five data and blocked forecasts"
+    },
+    "AC-05": {
+      "status": "PASS",
+      "evidence": "Immutable publication, same-fixture comparison and NO_CHANGE"
+    },
+    "AC-06": {
+      "status": "PASS",
+      "evidence": "Trusted server modes and synthetic/real isolation"
+    },
+    "AC-07": {
+      "status": "PASS",
+      "evidence": "Historical statistics with sources and frozen model metadata"
+    },
+    "AC-08": {
+      "status": "PASS",
+      "evidence": "Authorization, request validation, filesystem failure and writer races"
+    },
+    "AC-09": {
+      "status": "PASS",
+      "evidence": "V9.12 six-page visual verification at three viewports"
+    },
+    "AC-10": {
+      "status": "PASS",
+      "evidence": "Local browser and HTTP workflows with success and blocked paths"
+    },
+    "AC-11": {
+      "status": "PASS",
+      "evidence": "356 regression tests and protected artifacts verified"
+    },
+    "AC-12": {
+      "status": "PASS",
+      "evidence": "Setup, API and frontend mapping, evidence and handoff recorded"
+    }
+  },
+  "known_limits": [
+    "The existing schedule evidence TTL and trusted local snapshot determine real-research availability.",
+    "Provider-specific label definitions are not established as equivalent.",
+    "Date-cutoff replay lacks historical as-of-vintage guarantees and does not establish prospective accuracy.",
+    "The supplied HTML and embedded media are local-only pending redistribution review."
+  ],
+  "handoff": "Review the branch against main and open the pull request manually. Keep research/demo visibility, server-owned scope, operator authorization and existing trusted forecast services."
+}

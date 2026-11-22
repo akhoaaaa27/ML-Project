@@ -1,0 +1,21 @@
+# Python 3.14.0, using the frozen inference environment.
+-r ../inference/requirements.txt
+-r ../data_provider/requirements.txt
+fastapi==0.121.3
+starlette==0.50.0
+pydantic==2.12.4
+pydantic-core==2.41.5
+uvicorn==0.38.0
+annotated-doc==0.0.7
+annotated-types==0.8.0
+anyio==4.16.0
+click==8.5.1
+h11==0.16.0
+typing-extensions==4.16.0
+typing-inspection==0.4.5
+idna==3.20
+certifi==2026.7.22
+charset-normalizer==3.5.2
+urllib3==2.8.0
+tzdata==2026.6
+python-dateutil==3.0.0
