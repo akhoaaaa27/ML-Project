@@ -1,0 +1,2506 @@
+{
+  "acceptance_criteria": {
+    "AC-01": {
+      "evidence": "2350 reviewed canonical identities and 4698 valid paired provider xG observations.",
+      "status": "PASS"
+    },
+    "AC-02": {
+      "evidence": "140 reviewed SH/SOT pairs and no same-fixture Sportmonks pairs. No speculative normalization.",
+      "status": "PASS"
+    },
+    "AC-03": {
+      "evidence": "Deterministic, separate B1 and B2 selections include every in-scope candidate.",
+      "status": "PASS"
+    },
+    "AC-04": {
+      "evidence": "Trusted frozen LR and strict-before feature construction. Target-label mutation regression passes.",
+      "status": "PASS"
+    },
+    "AC-05": {
+      "evidence": "Cohort metrics and matched baseline preserve label, side, pairing and full denominators.",
+      "status": "PASS"
+    },
+    "AC-06": {
+      "evidence": "Provider-specific labels and historical-vintage limitations bound retrospective conclusions.",
+      "status": "PASS"
+    },
+    "AC-07": {
+      "evidence": "Protected manifests and snapshot hashes match. The replay uses the existing fitted artifact offline.",
+      "status": "PASS"
+    },
+    "AC-08": {
+      "evidence": "Targeted and full offline tests pass. Aggregate evidence and backend handoff are published in this branch.",
+      "status": "PASS"
+    }
+  },
+  "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+  "assumptions": {
+    "baseline": "frozen preprocessing -> xg_avg5",
+    "bootstrap_unit": "fixture, retaining both perspectives",
+    "feature_comparison": "Same feature schema by role across B1/B2, confounded by roster, period and selection",
+    "production_approved": false,
+    "residual": "clipped LR xG minus provider-reported xG",
+    "source_equivalence": "INCONCLUSIVE",
+    "vintage": "No proof of historical as-of-vintage availability"
+  },
+  "backend_handoff": {
+    "blocked_status": "Expose existing readiness or blocked statuses when history or verified statistics are insufficient.",
+    "metric_labelling": "Expose provider-specific retrospective metrics with separate cohort denominators and visible limitations.",
+    "mode": "research/demo",
+    "production_approved": false,
+    "provenance": [
+      "model version",
+      "snapshot version",
+      "target provider",
+      "mixed history or short-history status"
+    ],
+    "publication": "Return permitted aggregate or demo fields. Keep private records, source CSVs and SQLite snapshots in ignored local storage."
+  },
+  "base_commit": "6c1d0614558d6904185beb8346d6c0dfd31e516c",
+  "branch": "phase8.5.6-provider-compatibility-validation",
+  "code_revision": "3355580782cdde75a4df2f40b55033343f04eef5",
+  "cohorts": {
+    "B1": {
+      "before_or_at_boundary": 70,
+      "blocked_fixtures": 10,
+      "candidate_fixtures": 310,
+      "catalogue_fixtures": 380,
+      "cohort": "B1",
+      "excluded_fixtures": 1,
+      "exclusions": {
+        "BLOCKED": {
+          "MISSING_ROLLING_STATISTICS": 10
+        },
+        "EXCLUDED": {
+          "MISSING_TARGET_XG": 1
+        }
+      },
+      "feature_distributions": {
+        "away": {
+          "ga_avg5": {
+            "mean": 1.3391304347826085,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.5800000000000001,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.6,
+              "0.95": 2.2
+            },
+            "std": 0.4853981065639323
+          },
+          "gf_avg5": {
+            "mean": 1.3678929765886287,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.6,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.8,
+              "0.95": 2.4
+            },
+            "std": 0.5676153242230059
+          },
+          "is_home": {
+            "mean": 0.0,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 0.0
+            },
+            "std": 0.0
+          },
+          "matches_seen": {
+            "mean": 186.2876254180602,
+            "n": 299,
+            "quantiles": {
+              "0.05": 16.9,
+              "0.25": 127.0,
+              "0.5": 240.0,
+              "0.75": 252.0,
+              "0.95": 262.09999999999997
+            },
+            "std": 87.84510590574048
+          },
+          "opponent_matches_seen": {
+            "mean": 186.0133779264214,
+            "n": 299,
+            "quantiles": {
+              "0.05": 16.9,
+              "0.25": 122.0,
+              "0.5": 240.0,
+              "0.75": 252.0,
+              "0.95": 263.0
+            },
+            "std": 88.58609633980842
+          },
+          "opponent_short_history": {
+            "mean": 0.0,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 0.0
+            },
+            "std": 0.0
+          },
+          "opponent_xg_avg5": {
+            "mean": 1.4801737051505017,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.79062594,
+              "0.25": 1.148041,
+              "0.5": 1.4310328,
+              "0.75": 1.6931261000000002,
+              "0.95": 2.4552695799999995
+            },
+            "std": 0.5142547740402247
+          },
+          "opponent_xga_avg5": {
+            "mean": 1.5263042630100334,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.9485787999999999,
+              "0.25": 1.2679445999999999,
+              "0.5": 1.4816878,
+              "0.75": 1.7662565000000001,
+              "0.95": 2.1932142199999993
+            },
+            "std": 0.39237142404292236
+          },
+          "short_history": {
+            "mean": 0.0,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 0.0
+            },
+            "std": 0.0
+          },
+          "shot_avg5": {
+            "mean": 12.494314381270904,
+            "n": 299,
+            "quantiles": {
+              "0.05": 8.4,
+              "0.25": 10.4,
+              "0.5": 12.0,
+              "0.75": 14.2,
+              "0.95": 18.41999999999999
+            },
+            "std": 2.9841754532419977
+          },
+          "sot_avg5": {
+            "mean": 4.149832775919732,
+            "n": 299,
+            "quantiles": {
+              "0.05": 2.38,
+              "0.25": 3.2,
+              "0.5": 4.0,
+              "0.75": 4.8,
+              "0.95": 6.6
+            },
+            "std": 1.2751726973958777
+          },
+          "xg_avg5": {
+            "mean": 1.5237632984615384,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.8823300199999999,
+              "0.25": 1.2044323,
+              "0.5": 1.4474420000000001,
+              "0.75": 1.7595418999999999,
+              "0.95": 2.5178620599999957
+            },
+            "std": 0.49960238534839024
+          },
+          "xga_avg5": {
+            "mean": 1.4839620964548494,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.8950719600000001,
+              "0.25": 1.1918061,
+              "0.5": 1.4586652,
+              "0.75": 1.7188899,
+              "0.95": 2.0970314799999996
+            },
+            "std": 0.4019102011435236
+          }
+        },
+        "home": {
+          "ga_avg5": {
+            "mean": 1.3698996655518396,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.6,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.6,
+              "0.95": 2.2
+            },
+            "std": 0.46317077963454295
+          },
+          "gf_avg5": {
+            "mean": 1.3244147157190636,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.5800000000000001,
+              "0.25": 1.0,
+              "0.5": 1.2,
+              "0.75": 1.6,
+              "0.95": 2.4
+            },
+            "std": 0.6013736305668134
+          },
+          "is_home": {
+            "mean": 1.0,
+            "n": 299,
+            "quantiles": {
+              "0.05": 1.0,
+              "0.25": 1.0,
+              "0.5": 1.0,
+              "0.75": 1.0,
+              "0.95": 1.0
+            },
+            "std": 0.0
+          },
+          "matches_seen": {
+            "mean": 186.0133779264214,
+            "n": 299,
+            "quantiles": {
+              "0.05": 16.9,
+              "0.25": 122.0,
+              "0.5": 240.0,
+              "0.75": 252.0,
+              "0.95": 263.0
+            },
+            "std": 88.58609633980842
+          },
+          "opponent_matches_seen": {
+            "mean": 186.2876254180602,
+            "n": 299,
+            "quantiles": {
+              "0.05": 16.9,
+              "0.25": 127.0,
+              "0.5": 240.0,
+              "0.75": 252.0,
+              "0.95": 262.09999999999997
+            },
+            "std": 87.84510590574048
+          },
+          "opponent_short_history": {
+            "mean": 0.0,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 0.0
+            },
+            "std": 0.0
+          },
+          "opponent_xg_avg5": {
+            "mean": 1.5237632984615384,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.8823300199999999,
+              "0.25": 1.2044323,
+              "0.5": 1.4474420000000001,
+              "0.75": 1.7595418999999999,
+              "0.95": 2.5178620599999957
+            },
+            "std": 0.49960238534839024
+          },
+          "opponent_xga_avg5": {
+            "mean": 1.4839620964548494,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.8950719600000001,
+              "0.25": 1.1918061,
+              "0.5": 1.4586652,
+              "0.75": 1.7188899,
+              "0.95": 2.0970314799999996
+            },
+            "std": 0.4019102011435236
+          },
+          "short_history": {
+            "mean": 0.0,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 0.0
+            },
+            "std": 0.0
+          },
+          "shot_avg5": {
+            "mean": 12.25418060200669,
+            "n": 299,
+            "quantiles": {
+              "0.05": 8.0,
+              "0.25": 10.2,
+              "0.5": 11.8,
+              "0.75": 13.6,
+              "0.95": 17.819999999999993
+            },
+            "std": 2.994425623205734
+          },
+          "sot_avg5": {
+            "mean": 3.985953177257525,
+            "n": 299,
+            "quantiles": {
+              "0.05": 2.2,
+              "0.25": 3.2,
+              "0.5": 3.8,
+              "0.75": 4.6,
+              "0.95": 6.4
+            },
+            "std": 1.2695465069743384
+          },
+          "xg_avg5": {
+            "mean": 1.4801737051505017,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.79062594,
+              "0.25": 1.148041,
+              "0.5": 1.4310328,
+              "0.75": 1.6931261000000002,
+              "0.95": 2.4552695799999995
+            },
+            "std": 0.5142547740402247
+          },
+          "xga_avg5": {
+            "mean": 1.5263042630100334,
+            "n": 299,
+            "quantiles": {
+              "0.05": 0.9485787999999999,
+              "0.25": 1.2679445999999999,
+              "0.5": 1.4816878,
+              "0.75": 1.7662565000000001,
+              "0.95": 2.1932142199999993
+            },
+            "std": 0.39237142404292236
+          }
+        }
+      },
+      "label_source": "Understat",
+      "label_versions": {
+        "sha256:cf00d4a4298c756303d3f916fd16fa9eded16bd2dd49e24577a8c1141f4805e8;shots_sha256:84ffc98f9400191f6ae313d8f7cdeb975aa1ab2477a5e952f50aaf71d1be3192": 598
+      },
+      "metrics": {
+        "away": {
+          "baseline": {
+            "mae": 0.6456034327759198,
+            "mean_signed_residual": 0.25376671986622074,
+            "median_absolute_error": 0.5469701999999999,
+            "n": 299,
+            "rmse": 0.8427311268272792
+          },
+          "lr": {
+            "mae": 0.5856021634519402,
+            "mean_signed_residual": -0.07969000814705239,
+            "median_absolute_error": 0.5402486226802896,
+            "n": 299,
+            "rmse": 0.7682593637613209
+          },
+          "lr_minus_baseline_mae": -0.060001269323979645,
+          "short_history_count_including_zero": 0,
+          "zero_history_count": 0
+        },
+        "home": {
+          "baseline": {
+            "mae": 0.6981900989966555,
+            "mean_signed_residual": -0.2767106660869565,
+            "median_absolute_error": 0.5758924000000001,
+            "n": 299,
+            "rmse": 0.8926012840062593
+          },
+          "lr": {
+            "mae": 0.6472015930903442,
+            "mean_signed_residual": -0.2501616974792668,
+            "median_absolute_error": 0.5153795016933238,
+            "n": 299,
+            "rmse": 0.8378232294142797
+          },
+          "lr_minus_baseline_mae": -0.05098850590631132,
+          "short_history_count_including_zero": 0,
+          "zero_history_count": 0
+        },
+        "overall": {
+          "baseline": {
+            "mae": 0.6718967658862877,
+            "mean_signed_residual": -0.011471973110367892,
+            "median_absolute_error": 0.5661202,
+            "n": 598,
+            "rmse": 0.8680244248675261
+          },
+          "lr": {
+            "mae": 0.6164018782711422,
+            "mean_signed_residual": -0.1649258528131596,
+            "median_absolute_error": 0.5205409809664674,
+            "n": 598,
+            "rmse": 0.8037941943536051
+          },
+          "lr_minus_baseline_mae": -0.05549488761514543,
+          "short_history_count_including_zero": 0,
+          "zero_history_count": 0
+        },
+        "paired_fixture_bootstrap": {
+          "fixtures": 299,
+          "interval_95_percentile": [
+            -0.08639280559903578,
+            -0.022316039907065335
+          ],
+          "resamples": 2000,
+          "seed": 856
+        }
+      },
+      "rolling_window_composition": {
+        "fixture_source": {
+          "adjacent_source_changes": 80,
+          "empty_windows": 0,
+          "history_team_rows": {
+            "FBref_frozen_snapshot": 300,
+            "Understat": 2690
+          },
+          "mixed_team_windows": 80
+        },
+        "shots_source": {
+          "adjacent_source_changes": 80,
+          "empty_windows": 0,
+          "history_team_rows": {
+            "FBref_frozen_snapshot": 300,
+            "Understat_shot_events": 2690
+          },
+          "mixed_team_windows": 80
+        },
+        "xg_source": {
+          "adjacent_source_changes": 80,
+          "empty_windows": 0,
+          "history_team_rows": {
+            "FBref_frozen_snapshot": 300,
+            "Understat": 2690
+          },
+          "mixed_team_windows": 80
+        }
+      },
+      "scored_fixtures": 299,
+      "scored_team_observations": 598,
+      "season": 2025,
+      "verified_completed": 310
+    },
+    "B2": {
+      "before_or_at_boundary": 0,
+      "blocked_fixtures": 0,
+      "candidate_fixtures": 380,
+      "catalogue_fixtures": 380,
+      "cohort": "B2",
+      "excluded_fixtures": 260,
+      "exclusions": {
+        "BLOCKED": {},
+        "EXCLUDED": {
+          "MISSING_TARGET_XG": 3,
+          "NOT_VERIFIED_COMPLETED": 257
+        }
+      },
+      "feature_distributions": {
+        "away": {
+          "ga_avg5": {
+            "mean": 1.5039215686274512,
+            "n": 119,
+            "quantiles": {
+              "0.05": 0.7800000000000001,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.8,
+              "0.95": 2.6
+            },
+            "std": 0.6102302129664707
+          },
+          "gf_avg5": {
+            "mean": 1.530112044817927,
+            "n": 119,
+            "quantiles": {
+              "0.05": 0.6,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.8,
+              "0.95": 3.0
+            },
+            "std": 0.7599071869153711
+          },
+          "is_home": {
+            "mean": 0.0,
+            "n": 120,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 0.0
+            },
+            "std": 0.0
+          },
+          "matches_seen": {
+            "mean": 184.41666666666666,
+            "n": 120,
+            "quantiles": {
+              "0.05": 3.95,
+              "0.25": 48.5,
+              "0.5": 267.0,
+              "0.75": 272.0,
+              "0.95": 276.0
+            },
+            "std": 110.90601542613945
+          },
+          "opponent_matches_seen": {
+            "mean": 190.44166666666666,
+            "n": 120,
+            "quantiles": {
+              "0.05": 3.95,
+              "0.25": 76.75,
+              "0.5": 268.0,
+              "0.75": 273.0,
+              "0.95": 277.0
+            },
+            "std": 110.15503176164475
+          },
+          "opponent_short_history": {
+            "mean": 0.058333333333333334,
+            "n": 120,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 1.0
+            },
+            "std": 0.23535538418048801
+          },
+          "opponent_xg_avg5": {
+            "mean": 1.4401583906214688,
+            "n": 118,
+            "quantiles": {
+              "0.05": 0.795908707,
+              "0.25": 1.08938,
+              "0.5": 1.37656,
+              "0.75": 1.66249155,
+              "0.95": 2.395724
+            },
+            "std": 0.556250241844539
+          },
+          "opponent_xga_avg5": {
+            "mean": 1.4276739527683617,
+            "n": 118,
+            "quantiles": {
+              "0.05": 0.8388120300000002,
+              "0.25": 1.1241163,
+              "0.5": 1.3824827000000002,
+              "0.75": 1.62676145,
+              "0.95": 2.1035115999999996
+            },
+            "std": 0.444268594751542
+          },
+          "short_history": {
+            "mean": 0.06666666666666667,
+            "n": 120,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 1.0
+            },
+            "std": 0.2504897164340599
+          },
+          "shot_avg5": {
+            "mean": 13.078011204481793,
+            "n": 119,
+            "quantiles": {
+              "0.05": 8.18,
+              "0.25": 11.0,
+              "0.5": 12.8,
+              "0.75": 15.0,
+              "0.95": 19.02
+            },
+            "std": 3.390947662355999
+          },
+          "sot_avg5": {
+            "mean": 4.632072829131652,
+            "n": 119,
+            "quantiles": {
+              "0.05": 2.38,
+              "0.25": 3.6,
+              "0.5": 4.4,
+              "0.75": 5.4,
+              "0.95": 7.619999999999998
+            },
+            "std": 1.5504269499821675
+          },
+          "xg_avg5": {
+            "mean": 1.452191054565826,
+            "n": 119,
+            "quantiles": {
+              "0.05": 0.7970202,
+              "0.25": 1.1209099,
+              "0.5": 1.3451559999999998,
+              "0.75": 1.6054,
+              "0.95": 2.4206496000000004
+            },
+            "std": 0.5438740793994052
+          },
+          "xga_avg5": {
+            "mean": 1.4460361464425773,
+            "n": 119,
+            "quantiles": {
+              "0.05": 0.8818645999999999,
+              "0.25": 1.1716731,
+              "0.5": 1.3925800000000002,
+              "0.75": 1.677095,
+              "0.95": 2.1357799999999996
+            },
+            "std": 0.40204462363002774
+          }
+        },
+        "home": {
+          "ga_avg5": {
+            "mean": 1.4663841807909608,
+            "n": 118,
+            "quantiles": {
+              "0.05": 0.6,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.8,
+              "0.95": 2.6
+            },
+            "std": 0.6321926414108097
+          },
+          "gf_avg5": {
+            "mean": 1.468502824858757,
+            "n": 118,
+            "quantiles": {
+              "0.05": 0.4,
+              "0.25": 1.0,
+              "0.5": 1.4,
+              "0.75": 1.8,
+              "0.95": 2.8
+            },
+            "std": 0.7640789472912838
+          },
+          "is_home": {
+            "mean": 1.0,
+            "n": 120,
+            "quantiles": {
+              "0.05": 1.0,
+              "0.25": 1.0,
+              "0.5": 1.0,
+              "0.75": 1.0,
+              "0.95": 1.0
+            },
+            "std": 0.0
+          },
+          "matches_seen": {
+            "mean": 190.44166666666666,
+            "n": 120,
+            "quantiles": {
+              "0.05": 3.95,
+              "0.25": 76.75,
+              "0.5": 268.0,
+              "0.75": 273.0,
+              "0.95": 277.0
+            },
+            "std": 110.15503176164475
+          },
+          "opponent_matches_seen": {
+            "mean": 184.41666666666666,
+            "n": 120,
+            "quantiles": {
+              "0.05": 3.95,
+              "0.25": 48.5,
+              "0.5": 267.0,
+              "0.75": 272.0,
+              "0.95": 276.0
+            },
+            "std": 110.90601542613945
+          },
+          "opponent_short_history": {
+            "mean": 0.06666666666666667,
+            "n": 120,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 1.0
+            },
+            "std": 0.2504897164340599
+          },
+          "opponent_xg_avg5": {
+            "mean": 1.452191054565826,
+            "n": 119,
+            "quantiles": {
+              "0.05": 0.7970202,
+              "0.25": 1.1209099,
+              "0.5": 1.3451559999999998,
+              "0.75": 1.6054,
+              "0.95": 2.4206496000000004
+            },
+            "std": 0.5438740793994052
+          },
+          "opponent_xga_avg5": {
+            "mean": 1.4460361464425773,
+            "n": 119,
+            "quantiles": {
+              "0.05": 0.8818645999999999,
+              "0.25": 1.1716731,
+              "0.5": 1.3925800000000002,
+              "0.75": 1.677095,
+              "0.95": 2.1357799999999996
+            },
+            "std": 0.40204462363002774
+          },
+          "short_history": {
+            "mean": 0.058333333333333334,
+            "n": 120,
+            "quantiles": {
+              "0.05": 0.0,
+              "0.25": 0.0,
+              "0.5": 0.0,
+              "0.75": 0.0,
+              "0.95": 1.0
+            },
+            "std": 0.23535538418048801
+          },
+          "shot_avg5": {
+            "mean": 12.978107344632766,
+            "n": 118,
+            "quantiles": {
+              "0.05": 8.31,
+              "0.25": 11.0,
+              "0.5": 12.2,
+              "0.75": 14.8,
+              "0.95": 18.429999999999996
+            },
+            "std": 3.375553627802648
+          },
+          "sot_avg5": {
+            "mean": 4.534180790960453,
+            "n": 118,
+            "quantiles": {
+              "0.05": 2.1700000000000004,
+              "0.25": 3.525,
+              "0.5": 4.4,
+              "0.75": 5.4,
+              "0.95": 7.259999999999997
+            },
+            "std": 1.5131613910404142
+          },
+          "xg_avg5": {
+            "mean": 1.4401583906214688,
+            "n": 118,
+            "quantiles": {
+              "0.05": 0.795908707,
+              "0.25": 1.08938,
+              "0.5": 1.37656,
+              "0.75": 1.66249155,
+              "0.95": 2.395724
+            },
+            "std": 0.556250241844539
+          },
+          "xga_avg5": {
+            "mean": 1.4276739527683617,
+            "n": 118,
+            "quantiles": {
+              "0.05": 0.8388120300000002,
+              "0.25": 1.1241163,
+              "0.5": 1.3824827000000002,
+              "0.75": 1.62676145,
+              "0.95": 2.1035115999999996
+            },
+            "std": 0.444268594751542
+          }
+        }
+      },
+      "label_source": "Sportmonks",
+      "label_versions": {
+        "sha256:dbbd9d99526717a03af3548375340aaa7364c4699a0689bf9e0d1a6421cd3c0e": 240
+      },
+      "metrics": {
+        "away": {
+          "baseline": {
+            "mae": 0.6920924594444444,
+            "mean_signed_residual": 0.11631112911111113,
+            "median_absolute_error": 0.6089713,
+            "n": 120,
+            "rmse": 0.8548808609116996
+          },
+          "lr": {
+            "mae": 0.6175214296643112,
+            "mean_signed_residual": -0.16189933395244058,
+            "median_absolute_error": 0.4746218952070357,
+            "n": 120,
+            "rmse": 0.786241860342286
+          },
+          "lr_minus_baseline_mae": -0.07457102978013319,
+          "short_history_count_including_zero": 8,
+          "zero_history_count": 1
+        },
+        "home": {
+          "baseline": {
+            "mae": 0.6697160492222222,
+            "mean_signed_residual": -0.12731341588888892,
+            "median_absolute_error": 0.5993677000000002,
+            "n": 120,
+            "rmse": 0.8720407440985396
+          },
+          "lr": {
+            "mae": 0.6176321807953956,
+            "mean_signed_residual": -0.028183795093113823,
+            "median_absolute_error": 0.5181009903164363,
+            "n": 120,
+            "rmse": 0.8060431490531818
+          },
+          "lr_minus_baseline_mae": -0.05208386842682655,
+          "short_history_count_including_zero": 7,
+          "zero_history_count": 2
+        },
+        "overall": {
+          "baseline": {
+            "mae": 0.6809042543333333,
+            "mean_signed_residual": -0.005501143388888878,
+            "median_absolute_error": 0.60248,
+            "n": 240,
+            "rmse": 0.8635034295592181
+          },
+          "lr": {
+            "mae": 0.6175768052298535,
+            "mean_signed_residual": -0.0950415645227772,
+            "median_absolute_error": 0.513493162225246,
+            "n": 240,
+            "rmse": 0.7962040633813886
+          },
+          "lr_minus_baseline_mae": -0.06332744910347987,
+          "short_history_count_including_zero": 15,
+          "zero_history_count": 3
+        },
+        "paired_fixture_bootstrap": {
+          "fixtures": 120,
+          "interval_95_percentile": [
+            -0.11567658272324295,
+            -0.009767746865271761
+          ],
+          "resamples": 2000,
+          "seed": 856
+        }
+      },
+      "rolling_window_composition": {
+        "fixture_source": {
+          "adjacent_source_changes": 68,
+          "empty_windows": 3,
+          "history_team_rows": {
+            "Sportmonks": 900,
+            "Understat": 255
+          },
+          "mixed_team_windows": 68
+        },
+        "shots_source": {
+          "adjacent_source_changes": 68,
+          "empty_windows": 3,
+          "history_team_rows": {
+            "Sportmonks": 900,
+            "Understat_shot_events": 255
+          },
+          "mixed_team_windows": 68
+        },
+        "xg_source": {
+          "adjacent_source_changes": 68,
+          "empty_windows": 3,
+          "history_team_rows": {
+            "Sportmonks": 900,
+            "Understat": 255
+          },
+          "mixed_team_windows": 68
+        }
+      },
+      "scored_fixtures": 120,
+      "scored_team_observations": 240,
+      "season": 2026,
+      "verified_completed": 123
+    }
+  },
+  "environment": {
+    "packages": {
+      "joblib": "1.6.0",
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "scikit-learn": "1.9.1",
+      "scipy": "1.18.1",
+      "threadpoolctl": "3.8.0"
+    },
+    "python": "3.14.0"
+  },
+  "evaluation": "Retrospective date-cutoff replay",
+  "expected_input_sha256": {
+    "acquisition_manifest.json": "d4bc7cba23d9048fc3d562dde8b8f50bb3f68fa7651ea51d5b2f2ae39089a348",
+    "data/history/research/phase853_v3_20261122/laliga_composite.sqlite3": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+    "data/laliga_processed_normalized.csv": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca",
+    "independent_completed.json": "5c14eaaea7e3c70b963e45875a4744e1c72d00c39383ed55adb032fada02546d",
+    "raw/archive_2019_fixtures.csv": "6ef3bf46c2ab9d527ab02fe08318a8ddbfe6c2656518080e9e52d22476fbd1f0",
+    "raw/archive_2020_fixtures.csv": "e5ae1fec41b48f9a64d1725f9fe5b43ffee7a517fc82a3059f9e8d80227d8085",
+    "raw/archive_2021_fixtures.csv": "a57069a0de5be9d82f1f89cd82749af0033fe6f61add5f9bbdaf6f9ba3b4dfb4",
+    "raw/archive_2022_fixtures.csv": "1516a78b741dac329565007e9da179a5813b747861f722d374831cbe0a9e8024",
+    "raw/archive_2023_fixtures.csv": "4e299928cf1da4995a1a2cdd718caf362fbc61bd356f394b21678b0df82dc1ed",
+    "raw/archive_2024_fixtures.csv": "15399ae278437025e7c176f9541cee4e6bee0b02f8fdb8b735a6caf2b4e298ac",
+    "raw/archive_2025_fixtures.csv": "cf00d4a4298c756303d3f916fd16fa9eded16bd2dd49e24577a8c1141f4805e8",
+    "raw/archive_2025_shots.csv": "84ffc98f9400191f6ae313d8f7cdeb975aa1ab2477a5e952f50aaf71d1be3192",
+    "raw/current_2026_fixtures.csv": "dbbd9d99526717a03af3548375340aaa7364c4699a0689bf9e0d1a6421cd3c0e"
+  },
+  "full_suite": {
+    "command": ".venv/Scripts/python.exe -m scripts.multisource.phase856_reporting --run-id phase856-3355580 --full-suite",
+    "errors": 0,
+    "executed": 340,
+    "exit_code": 0,
+    "failed": 0,
+    "passed": 340,
+    "runtime_seconds": 136.655,
+    "skipped": 0
+  },
+  "implementation_verdict": "PASS",
+  "model_metadata_sha256": "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c",
+  "model_version": "1.0.0",
+  "overlap": {
+    "identity_matched_fixtures": 2350,
+    "reference_fixtures": 2350,
+    "shots": {
+      "scope": "Descriptive paired counts in the reviewed 2025 shot-event overlap",
+      "sh": {
+        "absolute_difference": {
+          "mean": 0.02857142857142857,
+          "n": 140,
+          "quantiles": {
+            "0.05": 0.0,
+            "0.25": 0.0,
+            "0.5": 0.0,
+            "0.75": 0.0,
+            "0.95": 0.0
+          },
+          "std": 0.16719682722442947
+        },
+        "direction": "external_sh - fbref_sh",
+        "excluded": 4560,
+        "exclusions": {
+          "NO_REVIEWED_SHOT_EVENT_COVERAGE": 4560
+        },
+        "external": {
+          "mean": 12.142857142857142,
+          "n": 140,
+          "quantiles": {
+            "0.05": 4.0,
+            "0.25": 8.0,
+            "0.5": 11.5,
+            "0.75": 16.0,
+            "0.95": 23.049999999999983
+          },
+          "std": 5.710738878691276
+        },
+        "fbref": {
+          "mean": 12.142857142857142,
+          "n": 140,
+          "quantiles": {
+            "0.05": 4.0,
+            "0.25": 8.0,
+            "0.5": 11.5,
+            "0.75": 16.0,
+            "0.95": 23.049999999999983
+          },
+          "std": 5.722065618592101
+        },
+        "missing_observations": 4560,
+        "paired": 140,
+        "pearson_r": 0.99956164139566,
+        "reference_observations": 4700,
+        "signed_difference": {
+          "mean": 0.0,
+          "n": 140,
+          "quantiles": {
+            "0.05": 0.0,
+            "0.25": 0.0,
+            "0.5": 0.0,
+            "0.75": 0.0,
+            "0.95": 0.0
+          },
+          "std": 0.16963778593599418
+        }
+      },
+      "sot": {
+        "absolute_difference": {
+          "mean": 0.0,
+          "n": 140,
+          "quantiles": {
+            "0.05": 0.0,
+            "0.25": 0.0,
+            "0.5": 0.0,
+            "0.75": 0.0,
+            "0.95": 0.0
+          },
+          "std": 0.0
+        },
+        "direction": "external_sot - fbref_sot",
+        "excluded": 4560,
+        "exclusions": {
+          "NO_REVIEWED_SHOT_EVENT_COVERAGE": 4560
+        },
+        "external": {
+          "mean": 4.05,
+          "n": 140,
+          "quantiles": {
+            "0.05": 1.0,
+            "0.25": 2.0,
+            "0.5": 4.0,
+            "0.75": 6.0,
+            "0.95": 9.0
+          },
+          "std": 2.363770308626125
+        },
+        "fbref": {
+          "mean": 4.05,
+          "n": 140,
+          "quantiles": {
+            "0.05": 1.0,
+            "0.25": 2.0,
+            "0.5": 4.0,
+            "0.75": 6.0,
+            "0.95": 9.0
+          },
+          "std": 2.363770308626125
+        },
+        "missing_observations": 4560,
+        "paired": 140,
+        "pearson_r": 0.9999999999999998,
+        "reference_observations": 4700,
+        "signed_difference": {
+          "mean": 0.0,
+          "n": 140,
+          "quantiles": {
+            "0.05": 0.0,
+            "0.25": 0.0,
+            "0.5": 0.0,
+            "0.75": 0.0,
+            "0.95": 0.0
+          },
+          "std": 0.0
+        }
+      },
+      "verified_same_definition": false
+    },
+    "xg_all": {
+      "absolute_difference": {
+        "mean": 0.21367323537675606,
+        "n": 4698,
+        "quantiles": {
+          "0.05": 0.011938099999999946,
+          "0.25": 0.061439749999999974,
+          "0.5": 0.1500289999999999,
+          "0.75": 0.29746249999999985,
+          "0.95": 0.6355204999999985
+        },
+        "std": 0.21287655889527116
+      },
+      "direction": "external_xg - fbref_xg",
+      "excluded": 2,
+      "exclusions": {
+        "PROVIDER_FLAGGED_UNRELIABLE": 2
+      },
+      "external": {
+        "mean": 1.3527637262664964,
+        "n": 4698,
+        "quantiles": {
+          "0.05": 0.259906,
+          "0.25": 0.71078625,
+          "0.5": 1.18049,
+          "0.75": 1.8300825,
+          "0.95": 2.9739809999999998
+        },
+        "std": 0.8679257781433781
+      },
+      "fbref": {
+        "mean": 1.264644529587058,
+        "n": 4698,
+        "quantiles": {
+          "0.05": 0.3,
+          "0.25": 0.7,
+          "0.5": 1.1,
+          "0.75": 1.7,
+          "0.95": 2.7
+        },
+        "std": 0.7763972763712792
+      },
+      "missing_observations": 2,
+      "paired": 4698,
+      "pearson_r": 0.9444700527910387,
+      "reference_observations": 4700,
+      "signed_difference": {
+        "mean": 0.08811919667943804,
+        "n": 4698,
+        "quantiles": {
+          "0.05": -0.29983450000000006,
+          "0.25": -0.0841302500000001,
+          "0.5": 0.03791740000000003,
+          "0.75": 0.23226249999999993,
+          "0.95": 0.6144034999999994
+        },
+        "std": 0.28847141130308324
+      }
+    },
+    "xg_by_season_and_side": {
+      "2019": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.14960321503957782,
+            "n": 379,
+            "quantiles": {
+              "0.05": 0.011659500000000022,
+              "0.25": 0.04604350000000004,
+              "0.5": 0.10335000000000005,
+              "0.75": 0.2074455,
+              "0.95": 0.48733309999999974
+            },
+            "std": 0.1497132980700882
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 1,
+          "exclusions": {
+            "PROVIDER_FLAGGED_UNRELIABLE": 1
+          },
+          "external": {
+            "mean": 1.0926812757255937,
+            "n": 379,
+            "quantiles": {
+              "0.05": 0.20581880000000002,
+              "0.25": 0.5780345,
+              "0.5": 0.984092,
+              "0.75": 1.49152,
+              "0.95": 2.4190349999999987
+            },
+            "std": 0.6853327717543933
+          },
+          "fbref": {
+            "mean": 1.0775725593667547,
+            "n": 379,
+            "quantiles": {
+              "0.05": 0.2,
+              "0.25": 0.6,
+              "0.5": 1.0,
+              "0.75": 1.5,
+              "0.95": 2.209999999999997
+            },
+            "std": 0.6301494043777334
+          },
+          "missing_observations": 1,
+          "paired": 379,
+          "pearson_r": 0.9518592536589232,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.015108716358839052,
+            "n": 379,
+            "quantiles": {
+              "0.05": -0.2837044999999999,
+              "0.25": -0.1031669999999999,
+              "0.5": -0.015220000000000011,
+              "0.75": 0.10287499999999994,
+              "0.95": 0.3865874999999994
+            },
+            "std": 0.2112475459712429
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.16690858205804748,
+            "n": 379,
+            "quantiles": {
+              "0.05": 0.011508000000000341,
+              "0.25": 0.05041499999999999,
+              "0.5": 0.11062000000000005,
+              "0.75": 0.23310000000000008,
+              "0.95": 0.47971299999999983
+            },
+            "std": 0.1620780493763849
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 1,
+          "exclusions": {
+            "PROVIDER_FLAGGED_UNRELIABLE": 1
+          },
+          "external": {
+            "mean": 1.4687499456464381,
+            "n": 379,
+            "quantiles": {
+              "0.05": 0.3018097,
+              "0.25": 0.8586655000000001,
+              "0.5": 1.3538,
+              "0.75": 1.951965,
+              "0.95": 2.8864009999999976
+            },
+            "std": 0.8383163637190038
+          },
+          "fbref": {
+            "mean": 1.433509234828496,
+            "n": 379,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.9,
+              "0.5": 1.3,
+              "0.75": 1.9,
+              "0.95": 2.8
+            },
+            "std": 0.7785898811035372
+          },
+          "missing_observations": 1,
+          "paired": 379,
+          "pearson_r": 0.9621658712407578,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.035240710817941945,
+            "n": 379,
+            "quantiles": {
+              "0.05": -0.29460099999999984,
+              "0.25": -0.09379799999999994,
+              "0.5": 0.0055400000000001,
+              "0.75": 0.15867999999999993,
+              "0.95": 0.4268929999999989
+            },
+            "std": 0.2301223052072842
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.15825589854881267,
+            "n": 758,
+            "quantiles": {
+              "0.05": 0.011507000000000333,
+              "0.25": 0.04828162499999998,
+              "0.5": 0.10643000000000002,
+              "0.75": 0.21670999999999996,
+              "0.95": 0.48470500000000005
+            },
+            "std": 0.15615535606852635
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 2,
+          "exclusions": {
+            "PROVIDER_FLAGGED_UNRELIABLE": 2
+          },
+          "external": {
+            "mean": 1.2807156106860158,
+            "n": 758,
+            "quantiles": {
+              "0.05": 0.24486690000000003,
+              "0.25": 0.68391175,
+              "0.5": 1.12914,
+              "0.75": 1.7424374999999999,
+              "0.95": 2.7552079999999997
+            },
+            "std": 0.7879447160381114
+          },
+          "fbref": {
+            "mean": 1.2555408970976254,
+            "n": 758,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.7,
+              "0.5": 1.1,
+              "0.75": 1.7,
+              "0.95": 2.6
+            },
+            "std": 0.7298610354623106
+          },
+          "missing_observations": 2,
+          "paired": 758,
+          "pearson_r": 0.9604808115441097,
+          "reference_observations": 760,
+          "signed_difference": {
+            "mean": 0.025174713588390497,
+            "n": 758,
+            "quantiles": {
+              "0.05": -0.28776424999999994,
+              "0.25": -0.09775750000000016,
+              "0.5": -0.006825999999999943,
+              "0.75": 0.12108,
+              "0.95": 0.41617499999999996
+            },
+            "std": 0.22097037288623064
+          }
+        }
+      },
+      "2020": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.15179684105263155,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.006948680000000006,
+              "0.25": 0.04568824999999999,
+              "0.5": 0.10716549999999991,
+              "0.75": 0.21727000000000002,
+              "0.95": 0.48189270000000023
+            },
+            "std": 0.1503013326694357
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.144811169473684,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.23557954999999997,
+              "0.25": 0.58869725,
+              "0.5": 0.9455245,
+              "0.75": 1.5486925,
+              "0.95": 2.886766000000001
+            },
+            "std": 0.7896600497567945
+          },
+          "fbref": {
+            "mean": 1.128157894736842,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.2,
+              "0.25": 0.6,
+              "0.5": 0.95,
+              "0.75": 1.5,
+              "0.95": 2.7
+            },
+            "std": 0.717935898179839
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9644828409369753,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.0166532747368421,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.27538190000000007,
+              "0.25": -0.10569750000000022,
+              "0.5": -0.008519999999999972,
+              "0.75": 0.11124950000000008,
+              "0.95": 0.3838605000000004
+            },
+            "std": 0.21310914064357123
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.17014901052631579,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.00984495000000019,
+              "0.25": 0.043337000000000014,
+              "0.5": 0.11516999999999994,
+              "0.75": 0.22965999999999998,
+              "0.95": 0.5232420000000001
+            },
+            "std": 0.17941833458258816
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.3588068526315789,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.24417139999999998,
+              "0.25": 0.655393,
+              "0.5": 1.24488,
+              "0.75": 1.87549,
+              "0.95": 2.8383525
+            },
+            "std": 0.8633917352620208
+          },
+          "fbref": {
+            "mean": 1.3186842105263157,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.7,
+              "0.5": 1.2,
+              "0.75": 1.8,
+              "0.95": 2.6
+            },
+            "std": 0.7753071433339512
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9612746309761446,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.040122642105263145,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.30116630000000005,
+              "0.25": -0.082042,
+              "0.5": 0.009571000000000024,
+              "0.75": 0.13670499999999997,
+              "0.95": 0.4527275000000001
+            },
+            "std": 0.2441391767590968
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.1609729257894737,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.008316000000000014,
+              "0.25": 0.04482299999999999,
+              "0.5": 0.109149,
+              "0.75": 0.21989199999999987,
+              "0.95": 0.5058496499999999
+            },
+            "std": 0.16564702913843984
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.2518090110526316,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.2367272,
+              "0.25": 0.61367425,
+              "0.5": 1.09206,
+              "0.75": 1.7255525,
+              "0.95": 2.852492
+            },
+            "std": 0.8337061311860422
+          },
+          "fbref": {
+            "mean": 1.223421052631579,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.29500000000000026,
+              "0.25": 0.6,
+              "0.5": 1.1,
+              "0.75": 1.6,
+              "0.95": 2.6
+            },
+            "std": 0.752740364933493
+          },
+          "missing_observations": 0,
+          "paired": 760,
+          "pearson_r": 0.9633320673255935,
+          "reference_observations": 760,
+          "signed_difference": {
+            "mean": 0.02838795842105262,
+            "n": 760,
+            "quantiles": {
+              "0.05": -0.2905469,
+              "0.25": -0.09816399999999992,
+              "0.5": -0.0018760000000001553,
+              "0.75": 0.12714350000000002,
+              "0.95": 0.4345424999999997
+            },
+            "std": 0.2292998543085786
+          }
+        }
+      },
+      "2021": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.19944178078947367,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.012887099999999966,
+              "0.25": 0.053016249999999994,
+              "0.5": 0.12888649999999996,
+              "0.75": 0.27947049999999996,
+              "0.95": 0.5929110000000001
+            },
+            "std": 0.19487918243667776
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.1530675139473685,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.24133104999999996,
+              "0.25": 0.5730339999999999,
+              "0.5": 0.957875,
+              "0.75": 1.474715,
+              "0.95": 2.7196830000000003
+            },
+            "std": 0.8182235338910625
+          },
+          "fbref": {
+            "mean": 1.0547368421052632,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.2,
+              "0.25": 0.5,
+              "0.5": 0.9,
+              "0.75": 1.4,
+              "0.95": 2.4
+            },
+            "std": 0.7361410357374446
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9490079232267601,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.09833067184210527,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.2789435,
+              "0.25": -0.05250449999999999,
+              "0.5": 0.05327499999999996,
+              "0.75": 0.22083999999999995,
+              "0.95": 0.5673784999999999
+            },
+            "std": 0.261085119360512
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.2410696594736842,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.021030999999999966,
+              "0.25": 0.084841,
+              "0.5": 0.18036650000000004,
+              "0.75": 0.3384325000000001,
+              "0.95": 0.6263604999999999
+            },
+            "std": 0.20767349755254866
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.4775841563157894,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.38868484999999997,
+              "0.25": 0.84910425,
+              "0.5": 1.327865,
+              "0.75": 1.9635925,
+              "0.95": 3.0497540000000005
+            },
+            "std": 0.8748192157844126
+          },
+          "fbref": {
+            "mean": 1.3721052631578947,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.4,
+              "0.25": 0.8,
+              "0.5": 1.2,
+              "0.75": 1.8,
+              "0.95": 2.9
+            },
+            "std": 0.7969008502591335
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9396324480160202,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.10547889315789476,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.34884440000000017,
+              "0.25": -0.08079249999999993,
+              "0.5": 0.08842649999999991,
+              "0.75": 0.27957750000000003,
+              "0.95": 0.6157785
+            },
+            "std": 0.3004014753002906
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.22025572013157893,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.014495099999999997,
+              "0.25": 0.07037774999999988,
+              "0.5": 0.15761249999999996,
+              "0.75": 0.3146927499999999,
+              "0.95": 0.6157589999999997
+            },
+            "std": 0.20232016677899545
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.315325835131579,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.2964001,
+              "0.25": 0.6591,
+              "0.5": 1.13984,
+              "0.75": 1.73434,
+              "0.95": 2.9574909999999996
+            },
+            "std": 0.8618680096702168
+          },
+          "fbref": {
+            "mean": 1.213421052631579,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.6,
+              "0.5": 1.1,
+              "0.75": 1.6,
+              "0.95": 2.7049999999999956
+            },
+            "std": 0.7828894029242008
+          },
+          "missing_observations": 0,
+          "paired": 760,
+          "pearson_r": 0.9459989997506287,
+          "reference_observations": 760,
+          "signed_difference": {
+            "mean": 0.1019047825,
+            "n": 760,
+            "quantiles": {
+              "0.05": -0.31153584999999995,
+              "0.25": -0.065563,
+              "0.5": 0.07322449999999997,
+              "0.75": 0.24847950000000002,
+              "0.95": 0.5901889999999997
+            },
+            "std": 0.28126798956808163
+          }
+        }
+      },
+      "2022": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.21313544631578948,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.01410234999999999,
+              "0.25": 0.059882500000000005,
+              "0.5": 0.15550950000000002,
+              "0.75": 0.29317925000000006,
+              "0.95": 0.6324465
+            },
+            "std": 0.20775497940692755
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.1402224263157894,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.21315130000000002,
+              "0.25": 0.55629375,
+              "0.5": 0.9972894999999999,
+              "0.75": 1.4984275,
+              "0.95": 2.6551460000000002
+            },
+            "std": 0.7856248380038396
+          },
+          "fbref": {
+            "mean": 1.1034210526315789,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.2,
+              "0.25": 0.6,
+              "0.5": 1.0,
+              "0.75": 1.5,
+              "0.95": 2.4
+            },
+            "std": 0.7039383230200663
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9270582976437243,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.036801373684210534,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.3708244,
+              "0.25": -0.14220699999999997,
+              "0.5": -0.0014505000000001461,
+              "0.75": 0.18497100000000005,
+              "0.95": 0.5814560000000002
+            },
+            "std": 0.2955516787224922
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.25987117368421053,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.016417499999999953,
+              "0.25": 0.08515299999999998,
+              "0.5": 0.16795500000000008,
+              "0.75": 0.3552,
+              "0.95": 0.8070775000000001
+            },
+            "std": 0.2582928993858558
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.633699763157895,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.42855905,
+              "0.25": 0.92117125,
+              "0.5": 1.514665,
+              "0.75": 2.1739825,
+              "0.95": 3.2054074999999997
+            },
+            "std": 0.9119677958347837
+          },
+          "fbref": {
+            "mean": 1.5,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.5,
+              "0.25": 0.9,
+              "0.5": 1.4,
+              "0.75": 2.0,
+              "0.95": 3.0
+            },
+            "std": 0.7903441019406012
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9294424354648618,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.13369976315789475,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.29024049999999996,
+              "0.25": -0.09456925000000001,
+              "0.5": 0.07537349999999993,
+              "0.75": 0.31413625,
+              "0.95": 0.8030775
+            },
+            "std": 0.3413263017713618
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.23650331,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.015648449999999925,
+              "0.25": 0.0723875,
+              "0.5": 0.1639100000000001,
+              "0.75": 0.3218524999999999,
+              "0.95": 0.6942490000000001
+            },
+            "std": 0.23539980924688156
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.386961094736842,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.24671790000000002,
+              "0.25": 0.7170227499999999,
+              "0.5": 1.224675,
+              "0.75": 1.96461,
+              "0.95": 3.0418449999999995
+            },
+            "std": 0.8856926840318748
+          },
+          "fbref": {
+            "mean": 1.3017105263157893,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.7,
+              "0.5": 1.2,
+              "0.75": 1.7,
+              "0.95": 2.7
+            },
+            "std": 0.7737693925710865
+          },
+          "missing_observations": 0,
+          "paired": 760,
+          "pearson_r": 0.9331580361363556,
+          "reference_observations": 760,
+          "signed_difference": {
+            "mean": 0.08525056842105265,
+            "n": 760,
+            "quantiles": {
+              "0.05": -0.3309884,
+              "0.25": -0.11213149999999997,
+              "0.5": 0.026086849999999995,
+              "0.75": 0.24160499999999996,
+              "0.95": 0.689138
+            },
+            "std": 0.3227124807025856
+          }
+        }
+      },
+      "2023": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.20282976710526315,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.011292914999999997,
+              "0.25": 0.055937499999999946,
+              "0.5": 0.15493400000000002,
+              "0.75": 0.281015,
+              "0.95": 0.6147505000000001
+            },
+            "std": 0.1904277681947944
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.198977455,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.238257,
+              "0.25": 0.62090075,
+              "0.5": 1.0662099999999999,
+              "0.75": 1.6761599999999999,
+              "0.95": 2.6757080000000006
+            },
+            "std": 0.7448983236397437
+          },
+          "fbref": {
+            "mean": 1.1205263157894738,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.2,
+              "0.25": 0.6,
+              "0.5": 1.0,
+              "0.75": 1.6,
+              "0.95": 2.4
+            },
+            "std": 0.6939997162577304
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9335056750363924,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.07845113921052632,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.27185394999999996,
+              "0.25": -0.08440325000000004,
+              "0.5": 0.03491549999999999,
+              "0.75": 0.2404455,
+              "0.95": 0.579435
+            },
+            "std": 0.2670961955296717
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.2983009194736842,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.01879799999999967,
+              "0.25": 0.11916399999999999,
+              "0.5": 0.22231599999999996,
+              "0.75": 0.4136875,
+              "0.95": 0.8034010000000006
+            },
+            "std": 0.25457469843806635
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.6761275805263158,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.44119505,
+              "0.25": 0.9198040000000001,
+              "0.5": 1.60938,
+              "0.75": 2.2183824999999997,
+              "0.95": 3.239017000000001
+            },
+            "std": 0.9146333718116147
+          },
+          "fbref": {
+            "mean": 1.4844736842105262,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.4,
+              "0.25": 0.9,
+              "0.5": 1.4,
+              "0.75": 1.9,
+              "0.95": 3.0050000000000012
+            },
+            "std": 0.8110034742154666
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9282398238085048,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.1916538963157895,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.26751014999999984,
+              "0.25": -0.042778249999999976,
+              "0.5": 0.15611999999999981,
+              "0.75": 0.39962999999999993,
+              "0.95": 0.8034010000000006
+            },
+            "std": 0.3423424722873731
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.25056534328947366,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.013015899999999987,
+              "0.25": 0.07763250000000005,
+              "0.5": 0.17983249999999995,
+              "0.75": 0.35969324999999996,
+              "0.95": 0.7056278499999997
+            },
+            "std": 0.22967501333817247
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.4375525177631578,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.2767057,
+              "0.25": 0.775829,
+              "0.5": 1.31426,
+              "0.75": 1.9600325,
+              "0.95": 2.9599424999999986
+            },
+            "std": 0.8670584127244917
+          },
+          "fbref": {
+            "mean": 1.3025,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.7,
+              "0.5": 1.2,
+              "0.75": 1.7,
+              "0.95": 2.7049999999999956
+            },
+            "std": 0.7759436857308396
+          },
+          "missing_observations": 0,
+          "paired": 760,
+          "pearson_r": 0.9338193099262145,
+          "reference_observations": 760,
+          "signed_difference": {
+            "mean": 0.1350525177631579,
+            "n": 760,
+            "quantiles": {
+              "0.05": -0.2718539499999999,
+              "0.25": -0.07111750000000003,
+              "0.5": 0.08522449999999993,
+              "0.75": 0.32579600000000003,
+              "0.95": 0.6984884999999998
+            },
+            "std": 0.3120145957331028
+          }
+        }
+      },
+      "2024": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.2286289142105263,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.012122775000000186,
+              "0.25": 0.06337250000000016,
+              "0.5": 0.16999350000000005,
+              "0.75": 0.317545,
+              "0.95": 0.654951
+            },
+            "std": 0.22016692763830123
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.2397983700000001,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.21348565,
+              "0.25": 0.6204919999999999,
+              "0.5": 1.05157,
+              "0.75": 1.6394425,
+              "0.95": 2.7653240000000006
+            },
+            "std": 0.8269531292514284
+          },
+          "fbref": {
+            "mean": 1.1136842105263156,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.2,
+              "0.25": 0.6,
+              "0.5": 0.9,
+              "0.75": 1.5,
+              "0.95": 2.5
+            },
+            "std": 0.7357957337164382
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9370335955119028,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.1261141594736842,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.27153724999999995,
+              "0.25": -0.05932149999999997,
+              "0.5": 0.08240649999999998,
+              "0.75": 0.29004250000000004,
+              "0.95": 0.6455555000000002
+            },
+            "std": 0.2914375212269281
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.26036034184210527,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.011528899999999889,
+              "0.25": 0.0800200000000002,
+              "0.5": 0.2005850000000001,
+              "0.75": 0.35142499999999993,
+              "0.95": 0.7331715000000002
+            },
+            "std": 0.2502745038844918
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.6102305049999999,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.37338885,
+              "0.25": 0.891419,
+              "0.5": 1.4310800000000001,
+              "0.75": 2.0673,
+              "0.95": 3.59479
+            },
+            "std": 1.003359081801698
+          },
+          "fbref": {
+            "mean": 1.459473684210526,
+            "n": 380,
+            "quantiles": {
+              "0.05": 0.4,
+              "0.25": 0.8,
+              "0.5": 1.3,
+              "0.75": 1.9,
+              "0.95": 3.2050000000000014
+            },
+            "std": 0.8873724141624362
+          },
+          "missing_observations": 0,
+          "paired": 380,
+          "pearson_r": 0.9470079944413351,
+          "reference_observations": 380,
+          "signed_difference": {
+            "mean": 0.15075682078947367,
+            "n": 380,
+            "quantiles": {
+              "0.05": -0.3351312,
+              "0.25": -0.047915,
+              "0.5": 0.11541000000000001,
+              "0.75": 0.3058099999999999,
+              "0.95": 0.7331715000000002
+            },
+            "std": 0.32835363163948494
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.24449462802631577,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.011979924999999999,
+              "0.25": 0.07520049999999999,
+              "0.5": 0.185579,
+              "0.75": 0.3367922499999999,
+              "0.95": 0.6937574999999998
+            },
+            "std": 0.23608104256905268
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.4250144375,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.31861385,
+              "0.25": 0.7629392500000001,
+              "0.5": 1.243635,
+              "0.75": 1.874025,
+              "0.95": 3.2587669999999993
+            },
+            "std": 0.9372976912966615
+          },
+          "fbref": {
+            "mean": 1.286578947368421,
+            "n": 760,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.7,
+              "0.5": 1.1,
+              "0.75": 1.7,
+              "0.95": 2.7
+            },
+            "std": 0.8327479672114524
+          },
+          "missing_observations": 0,
+          "paired": 760,
+          "pearson_r": 0.945248702725586,
+          "reference_observations": 760,
+          "signed_difference": {
+            "mean": 0.13843549013157894,
+            "n": 760,
+            "quantiles": {
+              "0.05": -0.29987625000000007,
+              "0.25": -0.05228049999999999,
+              "0.5": 0.09996999999999995,
+              "0.75": 0.2991855,
+              "0.95": 0.6926214999999999
+            },
+            "std": 0.31048511356261244
+          }
+        }
+      },
+      "2025": {
+        "away": {
+          "absolute_difference": {
+            "mean": 0.21840977142857143,
+            "n": 70,
+            "quantiles": {
+              "0.05": 0.013452549999999952,
+              "0.25": 0.061600249999999995,
+              "0.5": 0.153437,
+              "0.75": 0.2679647500000001,
+              "0.95": 0.6214839999999999
+            },
+            "std": 0.25319655461613855
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.2383636285714286,
+            "n": 70,
+            "quantiles": {
+              "0.05": 0.20775125,
+              "0.25": 0.7213510000000001,
+              "0.5": 0.988146,
+              "0.75": 1.5874325,
+              "0.95": 2.5145165
+            },
+            "std": 0.839427164855152
+          },
+          "fbref": {
+            "mean": 1.1428571428571426,
+            "n": 70,
+            "quantiles": {
+              "0.05": 0.24500000000000002,
+              "0.25": 0.7,
+              "0.5": 1.0,
+              "0.75": 1.4,
+              "0.95": 2.564999999999999
+            },
+            "std": 0.7649138302461679
+          },
+          "missing_observations": 0,
+          "paired": 70,
+          "pearson_r": 0.923922790005222,
+          "reference_observations": 70,
+          "signed_difference": {
+            "mean": 0.09550648571428572,
+            "n": 70,
+            "quantiles": {
+              "0.05": -0.26281585,
+              "0.25": -0.07726749999999999,
+              "0.5": 0.04844249999999997,
+              "0.75": 0.21502225000000003,
+              "0.95": 0.5980439999999999
+            },
+            "std": 0.32132380017430445
+          }
+        },
+        "home": {
+          "absolute_difference": {
+            "mean": 0.32669057142857144,
+            "n": 70,
+            "quantiles": {
+              "0.05": 0.041960999999999915,
+              "0.25": 0.11535649999999989,
+              "0.5": 0.22760850000000005,
+              "0.75": 0.44246499999999994,
+              "0.95": 0.9208999999999998
+            },
+            "std": 0.2986884313179956
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.673604257142857,
+            "n": 70,
+            "quantiles": {
+              "0.05": 0.48953065000000007,
+              "0.25": 0.9064650000000001,
+              "0.5": 1.48037,
+              "0.75": 2.0525925000000003,
+              "0.95": 3.3940295
+            },
+            "std": 0.9651087762269949
+          },
+          "fbref": {
+            "mean": 1.4371428571428573,
+            "n": 70,
+            "quantiles": {
+              "0.05": 0.5,
+              "0.25": 0.8,
+              "0.5": 1.2,
+              "0.75": 1.975,
+              "0.95": 2.755
+            },
+            "std": 0.8138602644316185
+          },
+          "missing_observations": 0,
+          "paired": 70,
+          "pearson_r": 0.9249565439234849,
+          "reference_observations": 70,
+          "signed_difference": {
+            "mean": 0.23646140000000004,
+            "n": 70,
+            "quantiles": {
+              "0.05": -0.21779590000000007,
+              "0.25": -0.011537500000000034,
+              "0.5": 0.20872999999999997,
+              "0.75": 0.38753600000000005,
+              "0.95": 0.9208999999999998
+            },
+            "std": 0.37518519591531274
+          }
+        },
+        "overall": {
+          "absolute_difference": {
+            "mean": 0.27255017142857146,
+            "n": 140,
+            "quantiles": {
+              "0.05": 0.018406000000000033,
+              "0.25": 0.07749500000000004,
+              "0.5": 0.19345700000000002,
+              "0.75": 0.33945249999999993,
+              "0.95": 0.8622559999999998
+            },
+            "std": 0.28118034270913744
+          },
+          "direction": "external_xg - fbref_xg",
+          "excluded": 0,
+          "exclusions": {},
+          "external": {
+            "mean": 1.4559839428571428,
+            "n": 140,
+            "quantiles": {
+              "0.05": 0.34595165,
+              "0.25": 0.83539625,
+              "0.5": 1.245045,
+              "0.75": 1.8769874999999998,
+              "0.95": 3.256528999999999
+            },
+            "std": 0.9272813023585567
+          },
+          "fbref": {
+            "mean": 1.2900000000000003,
+            "n": 140,
+            "quantiles": {
+              "0.05": 0.3,
+              "0.25": 0.7,
+              "0.5": 1.05,
+              "0.75": 1.8,
+              "0.95": 2.7049999999999983
+            },
+            "std": 0.8006562056914504
+          },
+          "missing_observations": 0,
+          "paired": 140,
+          "pearson_r": 0.9258535609846579,
+          "reference_observations": 140,
+          "signed_difference": {
+            "mean": 0.16598394285714285,
+            "n": 140,
+            "quantiles": {
+              "0.05": -0.23624235000000002,
+              "0.25": -0.04439150000000003,
+              "0.5": 0.1032555,
+              "0.75": 0.3282817500000001,
+              "0.95": 0.8155414999999993
+            },
+            "std": 0.35514999632666655
+          }
+        }
+      }
+    }
+  },
+  "pending_fixtures_unchanged": 4,
+  "phase": "8.5.6",
+  "phase7_reference_only": [
+    {
+      "mae": 0.5665239063025542,
+      "n_matches": 380,
+      "n_observations": 760,
+      "rmse": 0.7496762531826113,
+      "test_split": "main_final_test"
+    },
+    {
+      "mae": 0.5513450295520531,
+      "n_matches": 70,
+      "n_observations": 140,
+      "rmse": 0.7202947533446511,
+      "test_split": "supplemental_test"
+    }
+  ],
+  "previous_snapshot_files_unchanged": 8,
+  "production_approved": false,
+  "production_history_sha256": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+  "protected_manifest_entries": {
+    "outputs/inference/protected_files.json": 77,
+    "outputs/provider_poc/reports/protected_files.json": 107
+  },
+  "research_snapshot_hash_check": {
+    "phase854_final_gate_baseline_files_matched": 8
+  },
+  "research_snapshot_version": "phase853_v3_20261122",
+  "scientific_assessment": {
+    "deployment_approval": false,
+    "limitations": [
+      "The frozen snapshot cannot establish historical as-of-vintage availability or independently verified prospective performance.",
+      "Provider-labelled errors depend on verified completion, observed target coverage and representable history.",
+      "Source, calendar period, team roster and selection are confounded in between-cohort feature comparisons.",
+      "The fixture bootstrap preserves home and away pairing but does not model shared-team or temporal dependence."
+    ],
+    "predictive_evidence": "Retrospective date-cutoff replay. On each scored provider-labelled subset, LR MAE is below the same-row rolling baseline and mean residual is negative.",
+    "statistical_equivalence": "INCONCLUSIVE",
+    "statistical_evidence": "Matched FBref and Understat xG differ by provider, season and perspective. Reviewed SH/SOT overlap is limited to 70 fixtures and does not cover Sportmonks.",
+    "structural_compatibility": "Frozen 13-feature input accepted on the eligible B1 and B2 fixtures. The existing builder enforced coverage and actual last-five."
+  },
+  "scientific_conclusion": "SUPPORTED_WITH_LIMITATIONS",
+  "sportmonks_shots": {
+    "cross_provider_pairs": 0,
+    "export_full_time_fixtures": 120,
+    "missing_or_invalid_within_full_time": 0,
+    "non_full_time_export_rows": 260,
+    "paired_comparison_status": "NO_ATTESTED_SAME_FIXTURE_FBREF_OVERLAP",
+    "penalty_metadata_nonnull": 0,
+    "penalty_semantics": "UNVERIFIED",
+    "structurally_valid_team_observations": 240,
+    "verified_completed_registry_fixtures": 123
+  },
+  "targeted_suite": {
+    "command": ".venv/Scripts/python.exe -m unittest tests.test_phase856_validation -q",
+    "errors": 0,
+    "executed": 14,
+    "exit_code": 0,
+    "failed": 0,
+    "passed": 14,
+    "skipped": 0
+  },
+  "training_reference_end": "2025-09-30",
+  "v3_sqlite_integrity": true,
+  "verified_source_versions": {
+    "archive_2019_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:23.980644+00:00",
+      "sha256": "6ef3bf46c2ab9d527ab02fe08318a8ddbfe6c2656518080e9e52d22476fbd1f0",
+      "url": "https://www.xgtables.io/history/la-liga/2019/fixtures.csv"
+    },
+    "archive_2020_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:24.729629+00:00",
+      "sha256": "e5ae1fec41b48f9a64d1725f9fe5b43ffee7a517fc82a3059f9e8d80227d8085",
+      "url": "https://www.xgtables.io/history/la-liga/2020/fixtures.csv"
+    },
+    "archive_2021_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:25.448471+00:00",
+      "sha256": "a57069a0de5be9d82f1f89cd82749af0033fe6f61add5f9bbdaf6f9ba3b4dfb4",
+      "url": "https://www.xgtables.io/history/la-liga/2021/fixtures.csv"
+    },
+    "archive_2022_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:26.201350+00:00",
+      "sha256": "1516a78b741dac329565007e9da179a5813b747861f722d374831cbe0a9e8024",
+      "url": "https://www.xgtables.io/history/la-liga/2022/fixtures.csv"
+    },
+    "archive_2023_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:26.958717+00:00",
+      "sha256": "4e299928cf1da4995a1a2cdd718caf362fbc61bd356f394b21678b0df82dc1ed",
+      "url": "https://www.xgtables.io/history/la-liga/2023/fixtures.csv"
+    },
+    "archive_2024_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:27.819908+00:00",
+      "sha256": "15399ae278437025e7c176f9541cee4e6bee0b02f8fdb8b735a6caf2b4e298ac",
+      "url": "https://www.xgtables.io/history/la-liga/2024/fixtures.csv"
+    },
+    "archive_2025_fixtures.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:28.587725+00:00",
+      "sha256": "cf00d4a4298c756303d3f916fd16fa9eded16bd2dd49e24577a8c1141f4805e8",
+      "url": "https://www.xgtables.io/history/la-liga/2025/fixtures.csv"
+    },
+    "archive_2025_shots.csv": {
+      "provider": "Understat",
+      "retrieved_at": "2026-11-21T20:20:29.622177+00:00",
+      "sha256": "84ffc98f9400191f6ae313d8f7cdeb975aa1ab2477a5e952f50aaf71d1be3192",
+      "url": "https://www.xgtables.io/history/la-liga/2025/shots.csv"
+    },
+    "current_2026_fixtures.csv": {
+      "provider": "Sportmonks",
+      "retrieved_at": "2026-11-21T20:20:23.160077+00:00",
+      "sha256": "dbbd9d99526717a03af3548375340aaa7364c4699a0689bf9e0d1a6421cd3c0e",
+      "url": "https://www.xgtables.io/data/v1/la-liga/2026/fixtures.csv"
+    }
+  }
+}
