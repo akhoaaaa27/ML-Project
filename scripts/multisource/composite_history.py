@@ -54,7 +54,8 @@ def guarded_root(root):
 
 
 def publish_version(registry, statistics, catalogues, *, version_id, input_hashes,
-                    root=RESEARCH_ROOT, parent=None, identity_review=None, validator=None):
+                    root=RESEARCH_ROOT, parent=None, identity_review=None, validator=None,
+                    refresh_metadata=None):
     """Build and validate a temporary snapshot, publish only a new version dir.
 
     Sources change by building a successor; there is no in-place update method.
@@ -119,6 +120,9 @@ def publish_version(registry, statistics, catalogues, *, version_id, input_hashe
                 revision_counts={kind:sum(r[1] == kind for r in revisions) for kind in ("added", "modified", "removed")},
                 research_validation_status="validated_export_catalogue_scope", production_approved=False,
                 identity_review=identity_review or {}, history_origin_season=min(seasons))
+    if refresh_metadata is not None:
+        core["refresh"] = {k:refresh_metadata[k] for k in ("candidate_content_sha256", "effect_sha256", "dataset_kind")}
+        core["refresh"]["metadata_sha256"] = semantic_hash(refresh_metadata)
     lock_path = root / ".publish.lock"
     lock = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     temp = None
@@ -145,6 +149,8 @@ def publish_version(registry, statistics, catalogues, *, version_id, input_hashe
             connection.executemany("INSERT INTO revisions VALUES (?,?,?,?)", revisions)
             connection.execute("INSERT INTO metadata VALUES (?,?)", ("manifest",dumps(core)))
             connection.execute("INSERT INTO metadata VALUES (?,?)", ("fingerprints",dumps(current_fingerprints)))
+            if refresh_metadata is not None:
+                connection.execute("INSERT INTO metadata VALUES (?,?)", ("refresh",dumps(refresh_metadata)))
             require(connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
                     and not connection.execute("PRAGMA foreign_key_check").fetchall(), "DATABASE_INVALID", "SQLite validation failed")
         sidecar = dict(core_manifest=core, database_sha256=sha256(database))
