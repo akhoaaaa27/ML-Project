@@ -15,7 +15,7 @@ TARGET = "research:laliga:2026:Valencia:Real Madrid"
 
 
 def synthetic_snapshot(root, version, *, completed=range(6), pending=(), now=FIRST, parent=None,
-                       status_changes=None, kickoff_changes=None, shifted=False):
+                       status_changes=None, kickoff_changes=None, history_shift_days=0):
     """All pairings use generated scores, statistics and verification timestamps."""
     root = root.resolve()
     require(not root.is_relative_to(RESEARCH_ROOT.resolve())
@@ -28,17 +28,23 @@ def synthetic_snapshot(root, version, *, completed=range(6), pending=(), now=FIR
     for season in (2025, 2026):
         for index, (home, away) in enumerate(permutations(CLUBS, 2)):
             start = date(2026, 5, 1) if season == 2025 else date(2026, 11, 13)
-            day = (start + timedelta(days=index - int(shifted) * 50)).isoformat()
             is_complete = season == 2025 or index in completed
+            shift = history_shift_days if season == 2026 and is_complete else 0
+            day = (start + timedelta(days=index-shift)).isoformat()
             status = "completed" if is_complete else "scheduled"
             if season == 2026:
                 status = (status_changes or {}).get(index, status)
+            conflict = status == "conflict"
+            if conflict:
+                status = "scheduled"
             key = registry.observe(season=season, match_date=day, home_team=home, away_team=away,
                                    observed_status=status, evidence_verified=status == "completed",
                                    verification_source="synthetic://forecast-fixtures", source_version=version,
                                    verified_at=now, provider_fixture_id=f"{season}{index:02d}", home_goals=2, away_goals=1)
             kickoff = (kickoff_changes or {}).get(index, day + "T19:30:00Z") if season == 2026 else day + "T19:30:00Z"
             schedule[key] = dict(kickoff_utc=kickoff, source_provider="synthetic://forecast-fixtures", source_version=version)
+            if conflict:
+                registry.conflicting_statistics(key,{"reason":"synthetic conflict"})
             if status == "completed":
                 xg = None if (season,index) in pending else 0.7 + index / 10
                 for team, opponent, is_home in [(home,away,1), (away,home,0)]:

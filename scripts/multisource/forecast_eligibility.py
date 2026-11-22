@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 import json
+from pathlib import Path
 import re
 
 from scripts.inference.common import InferenceError, sha256
@@ -40,7 +41,7 @@ class ForecastEligibility:
 
     def __init__(self, *, synthetic_root=None, simulated_clock=None):
         self.dataset_kind = "real" if synthetic_root is None else "synthetic"
-        self.root = RESEARCH_ROOT.resolve() if synthetic_root is None else synthetic_root.resolve()
+        self.root = RESEARCH_ROOT.resolve() if synthetic_root is None else Path(synthetic_root).resolve()
         require((synthetic_root is None) == (simulated_clock is None),
                 "INVALID_SCOPE", "Only isolated synthetic forecasts support a simulated clock")
         if synthetic_root is not None:
@@ -156,7 +157,7 @@ class ForecastEligibility:
                 if (row["season"] != target["season"] or row["canonical_fixture_key"] == key
                         or not teams.intersection((row["home_team"], row["away_team"]))
                         or not as_of <= row["match_date"] <= day
-                        or row["match_status"] == VERIFIED_COMPLETED or row["observed_status"] == "cancelled"):
+                        or row["observed_status"] == "cancelled"):
                     continue
                 when = checked_kickoff(row["kickoff_utc"], row["match_date"])
                 if row["match_date"] == day and when and utc(when) >= kickoff:
@@ -177,9 +178,10 @@ class ForecastEligibility:
         store = self.open(snapshot_version)
         return self._evaluate(canonical_fixture_key, store, fixture_catalogue(store), self.now())
 
-    def list_eligible_fixtures(self, snapshot_version, *, season=None):
+    def list_eligible_fixtures(self, snapshot_version, *, season=None, include_unavailable=False):
         store = self.open(snapshot_version)
         rows = fixture_catalogue(store)
         now = self.now()
-        return [self._evaluate(row["canonical_fixture_key"], store, rows, now) for row in rows
-                if season is None or row["season"] == season]
+        evaluated = [self._evaluate(row["canonical_fixture_key"],store,rows,now) for row in rows
+                     if season is None or row["season"] == season]
+        return evaluated if include_unavailable else [r for r in evaluated if r["eligibility_status"] in READY]

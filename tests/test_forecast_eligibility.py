@@ -60,6 +60,9 @@ class EligibilityTests(unittest.TestCase):
         self.time = "2026-11-22T09:00:00Z"
         self.assertEqual(self.evaluate()["reason"],"FIXTURE_FRESHNESS_UNVERIFIED")
 
+    def test_recent_fixture_observation_cannot_mask_stale_team_history(self):
+        self.assertEqual(self.evaluate(history_shift_days=50)["reason"],"HISTORY_STALE")
+
     def test_real_clock_cannot_be_overridden(self):
         with self.assertRaises(InferenceError):
             ForecastEligibility(simulated_clock=lambda:FIRST)
@@ -71,7 +74,7 @@ class EligibilityTests(unittest.TestCase):
             self.engine.open("../sample")
 
     def test_cancelled_and_live_and_completed_targets_are_unavailable(self):
-        for state in ("cancelled","live","completed"):
+        for state in ("cancelled","live","completed","conflict"):
             with self.subTest(state=state):
                 synthetic_snapshot(self.root,state,status_changes={10:state})
                 result = self.engine.evaluate_forecast_eligibility(TARGET,state)
