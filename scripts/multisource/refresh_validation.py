@@ -369,8 +369,10 @@ def build_candidate(parent, source_directory, candidate_version, as_of, *, datas
         if decision == "NO_CHANGE":
             continue
         change = dict(canonical_fixture_key=key, change_type=kinds, decision=decision,
-                      old_values=before[key],new_values=after,source_provenance=dict(source_version=extra["source_version"],
-                      verification_source=row["verification_source"], statistics=[{k:r[k] for k in GROUPS} for r in pair]))
+                      old_values=before[key],new_values=after,source_provenance=dict(source_version=row["source_version"],
+                      verification_source=row["verification_source"],verified_at=row["verified_at"],
+                      fixture_provenance=copy.deepcopy(row.get("fixture_provenance")),
+                      statistics=[{k:r[k] for k in GROUPS} for r in pair]))
         change["change_id"] = semantic_hash(change)
         changes.append(change)
         registry.fixtures[key] = row

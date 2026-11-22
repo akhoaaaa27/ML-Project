@@ -171,6 +171,11 @@ class RefreshSecurityTests(unittest.TestCase):
         self.assertEqual(provenance["source_dataset_version"],"sha256:"+sha256(csv_path))
         self.assertEqual(provenance["provider_fixture_id"],str(raw["fixture_id"]))
         self.assertEqual(provenance["fetched_at"],"2026-11-22T00:00:00Z")
+        review_provenance=self.bundle()["changes"][0]["source_provenance"]
+        self.assertEqual((review_provenance["verification_source"],review_provenance["source_version"],
+                          review_provenance["verified_at"]),
+                         (row["verification_source"],row["source_version"],row["verified_at"]))
+        self.assertEqual(review_provenance["fixture_provenance"],provenance)
         stats=self.bundle()["statistics"][key]
         self.assertTrue(all(r["source_dataset_version"]=="sha256:"+sha256(csv_path) for r in stats))
         self.assertTrue(all(r["fetched_at"]==provenance["fetched_at"] for r in stats))
