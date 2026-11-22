@@ -52,13 +52,16 @@ def fixture_catalogue(store, *, legacy_directory=LOCAL):
     for item in store.query("SELECT payload FROM registry ORDER BY season,match_date,canonical_fixture_key"):
         row = json.loads(item["payload"])
         extra = schedule.get(row["canonical_fixture_key"], {})
+        # New rows keep CSV identity provenance separately. Export one coherent
+        # verification tuple instead of mixing evidence URL/time with CSV hash.
+        verification = "fixture_provenance" in row
         result.append(dict(fixture_id=extra.get("fixture_id", row.get("provider_fixture_id")),
                            canonical_fixture_key=row["canonical_fixture_key"], season=row["season"],
                            home_team=row["home_team"], away_team=row["away_team"], match_date=row["match_date"],
                            kickoff_utc=extra.get("kickoff_utc"), observed_status=row["observed_status"],
                            match_status=row["match_status"], statistics_status=row["statistics_status"],
-                           source_provider=extra.get("source_provider", row["verification_source"]),
-                           source_version=extra.get("source_version", row["source_version"]),
+                           source_provider=row["verification_source"] if verification else extra.get("source_provider", row["verification_source"]),
+                           source_version=row["source_version"] if verification else extra.get("source_version", row["source_version"]),
                            snapshot_version=store.manifest["version_id"], verified_at=row["verified_at"]))
     return result
 

@@ -2,8 +2,10 @@
 
 import copy
 from datetime import date, datetime, timezone
+from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
+import re
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -22,6 +24,62 @@ CURRENT = "current_2026_fixtures.csv"
 STATUS = {"full_time":"completed", "unplayed":"scheduled", "live":"live",
           "postponed":"postponed", "cancelled":"cancelled"}
 NUMERIC = ("gf", "ga", "xg", "xga", "sh", "sot")
+ARCHIVE_FIELDS = frozenset("provider competition season fixture_id understat_id date home away score home_xg away_xg "
+    "home_published_xg away_published_xg home_win_probability draw_probability away_win_probability "
+    "totals_unreliable xg_note result_note".split())
+SHOT_FIELDS = frozenset("provider competition season fixture_id understat_id shot_id side minute player_id player "
+    "result x y understat_xg situation shot_type assisted_by last_action".split())
+
+
+def archive_score(value):
+    """Reviewed export format: exactly two unsigned integer goals, no suffix."""
+    match = re.fullmatch(r"([0-9]+)-([0-9]+)", value) if isinstance(value, str) else None
+    require(match is not None, "INVALID_SCORE", "Archive score must be two nonnegative integers separated by one hyphen")
+    return tuple(int(part) for part in match.groups())
+
+
+def provider_id(value):
+    try:
+        numeric = Decimal(str(value))
+    except InvalidOperation:
+        raise InferenceError("IDENTITY_CONFLICT", "Provider identity must be a positive integer") from None
+    require(numeric.is_finite() and numeric > 0 and numeric == numeric.to_integral_value(),
+            "IDENTITY_CONFLICT", "Provider identity must be a positive integer")
+    return int(numeric)
+
+
+def archive_identities(frame):
+    """Validate the full fixture export, including frozen FBref selections."""
+    require(ARCHIVE_FIELDS <= set(frame), "INVALID_SCHEMA", "Incomplete reviewed archive fixture schema")
+    require(not frame.empty and frame.provider.eq("Understat").all() and frame.competition.eq("la-liga").all()
+            and frame.season.eq(2025).all(), "SOURCE_CONFLICT", "Archive provider/competition/season changed")
+    identities = {}; fixture_ids = set(); understat_ids = set()
+    for row in frame.to_dict("records"):
+        _,_,home,away = fixture_identity(2025,row["date"],row["home"],row["away"])
+        key = canonical_key(2025,home,away)
+        fixture_id, understat_id = provider_id(row["fixture_id"]), provider_id(row["understat_id"])
+        require(key not in identities and fixture_id not in fixture_ids and understat_id not in understat_ids,
+                "IDENTITY_CONFLICT", "Duplicate canonical fixture or provider identity in archive")
+        identities[key] = (fixture_id,understat_id)
+        fixture_ids.add(fixture_id); understat_ids.add(understat_id)
+        archive_score(row["score"])
+    return identities
+
+
+def checked_archive_shots(shots, identities):
+    """Reject source/identity conflicts before the generic SH/SOT mapper."""
+    require(SHOT_FIELDS <= set(shots), "INVALID_SCHEMA", "Incomplete reviewed archive shot schema")
+    require(not shots.empty and shots.provider.eq("Understat").all() and shots.competition.eq("la-liga").all()
+            and shots.season.eq(2025).all(), "SOURCE_CONFLICT", "Shot provider/competition/season changed")
+    shots = shots.copy()
+    for field in ("fixture_id","understat_id","shot_id"):
+        shots[field] = shots[field].map(provider_id)
+    require(shots.shot_id.is_unique, "IDENTITY_CONFLICT", "Duplicate shot ID within Understat export")
+    mapping = dict(identities.values())  # fixture_id and understat_id are separate namespaces.
+    require(set(shots.fixture_id) == set(mapping), "IDENTITY_CONFLICT", "Shot fixtures differ from attested archive scope")
+    require(shots.understat_id.eq(shots.fixture_id.map(mapping)).all(),
+            "IDENTITY_CONFLICT", "Shot Understat identity differs from its fixture")
+    return shots
 
 
 def read_json(path):
@@ -178,11 +236,21 @@ def current_updates(directory, entries, parent_registry, schedule, evidence, *, 
             goals = (old["home_goals"], old["away_goals"])
         else:
             goals = (None, None)
+        if independent is not None:
+            proof = (independent["source"],independent["version"],independent["verified_at"])
+        elif completed and old["match_status"] == VERIFIED_COMPLETED:
+            proof = (old["verification_source"],old["source_version"],old["verified_at"])
+        else:
+            proof = (entry["url"],entry["sha256"],entry["retrieved_at"])
         single = MatchRegistry()
         single.observe(season=season,match_date=day,home_team=home,away_team=away,observed_status=status,
-                       verification_source=entry["url"] if independent is None else independent["source"],
-                       source_version=entry["sha256"],verified_at=entry["retrieved_at"],evidence_verified=completed,
+                       verification_source=proof[0],source_version=proof[1],verified_at=proof[2],evidence_verified=completed,
                        home_goals=goals[0],away_goals=goals[1],provider_fixture_id=fixture_id)
+        fixture_provenance = dict(fixture_source=raw["source"],source_url=entry["url"],
+                                  source_dataset_version="sha256:"+entry["sha256"],fetched_at=entry["retrieved_at"],
+                                  provider_fixture_id=fixture_id)
+        single.fixtures[key]["fixture_provenance"] = fixture_provenance
+        single.evidence[-1]["fixture_provenance"] = copy.deepcopy(fixture_provenance)
         pair = []
         if completed:
             # Never resurrect previously missing numbers from an unplayed row.
@@ -190,7 +258,12 @@ def current_updates(directory, entries, parent_registry, schedule, evidence, *, 
             metadata = dict(fixture_source="Sportmonks" if not synthetic else "synthetic",
                             xg_source="Sportmonks",shots_source="Sportmonks",source_dataset_version="sha256:"+entry["sha256"],
                             fetched_at=entry["retrieved_at"],statistical_semantics="research_mixed_provider_total_xg_shots_not_fbref_equivalent")
-            pair = numeric_pair(single.fixtures[key], values, metadata)
+            same_verified_result = (old["match_status"] == VERIFIED_COMPLETED and old["match_date"] == day
+                                    and goals == (old["home_goals"],old["away_goals"]))
+            if raw["status"] != "full_time" and same_verified_result and key in parent_registry.statistics:
+                pair = copy.deepcopy(parent_registry.statistics[key])
+            else:
+                pair = numeric_pair(single.fixtures[key], values, metadata)
             single.attach_statistics(pd.DataFrame(pair))
             pair = single.statistics[key]
         extra = dict(fixture_id=fixture_id, kickoff_utc=checked_kickoff(raw.get("kickoff_utc"), day),
@@ -206,14 +279,10 @@ def archive_updates(directory, entries, parent, registry, schedule):
     updates = []
     changed = {name for name in entries if name.startswith("archive_") and
                parent.manifest["input_hashes"].get("raw/"+name) != entries[name]["sha256"]}
-    if not changed:
-        return updates
     require(changed <= {"archive_2025_fixtures.csv", "archive_2025_shots.csv"}, "FROZEN_SOURCE_SCOPE",
             "Earlier historical source revisions require a separate controlled adapter audit")
-    frames = pd.read_csv(directory / "raw/archive_2025_fixtures.csv")
-    require(frames.season.eq(2025).all() and frames.competition.eq("la-liga").all()
-            and frames.provider.eq("Understat").all(), "SOURCE_CONFLICT", "Archive provider/season changed")
-    shot_stats = understat_shots(pd.read_csv(directory / "raw/archive_2025_shots.csv")).set_index("fixture_id")
+    id_types = {"fixture_id":str,"understat_id":str}
+    frames = pd.read_csv(directory / "raw/archive_2025_fixtures.csv",dtype=id_types)
     source = entries["archive_2025_fixtures.csv"]
     seen = set()
     baseline = LOCAL / "raw/archive_2025_fixtures.csv"
@@ -221,7 +290,18 @@ def archive_updates(directory, entries, parent, registry, schedule):
                     parent.manifest["input_hashes"].get("raw/archive_2025_fixtures.csv"))
     require(baseline.is_file() and sha256(baseline) == baseline_sha,
             "BASELINE_SOURCE_REQUIRED", "Legacy frozen source comparison requires original attested archive")
-    old_rows = pd.read_csv(baseline).set_index("fixture_id")
+    original = pd.read_csv(baseline,dtype=id_types)
+    original_identities = archive_identities(original)
+    identities = archive_identities(frames)
+    require(set(identities) == {k for k,r in registry.fixtures.items() if r["season"] == 2025}
+            and identities == original_identities, "IDENTITY_CONFLICT", "Archive provider identities differ from attested baseline")
+    checked_shots = checked_archive_shots(pd.read_csv(directory / "raw/archive_2025_shots.csv",
+                                                    dtype=dict(id_types,shot_id=str)),identities)
+    # Scope and referential integrity must pass even for unchanged business data.
+    shot_stats = understat_shots(checked_shots).set_index("fixture_id")
+    if not changed:
+        return updates
+    old_rows = original.assign(fixture_id=original.fixture_id.map(provider_id)).set_index("fixture_id")
     for raw in frames.astype(object).where(frames.notna(), None).to_dict("records"):
         key = canonical_key(2025, raw["home"], raw["away"])
         require(key in registry.fixtures and key not in seen, "IDENTITY_CONFLICT", "Archive duplicate or unknown identity")
@@ -229,17 +309,17 @@ def archive_updates(directory, entries, parent, registry, schedule):
         old = registry.fixtures[key]
         old_pair = registry.statistics.get(key, [])
         if any(r["fixture_source"] == "FBref_frozen_snapshot" for r in old_pair):
-            original = old_rows.loc[raw["fixture_id"]]
+            original = old_rows.loc[identities[key][0]]
             require(all(str(raw[f]) == str(original[f]) for f in ("date","score","home_xg","away_xg","totals_unreliable")),
                     "FROZEN_SOURCE_SCOPE", "Revision overlaps frozen FBref-selected inputs")
             continue
         require(raw["totals_unreliable"] in (True, False), "INVALID_SCHEMA", "Unreliable flag must be boolean")
-        goals = [number(v,"score",integer=True) for v in raw["score"].split("-")]
+        goals = archive_score(raw["score"])
         single = MatchRegistry()
         single.observe(season=2025,match_date=raw["date"],home_team=raw["home"],away_team=raw["away"],observed_status="completed",
                        verification_source=source["url"],source_version=source["sha256"],verified_at=source["retrieved_at"],
                        evidence_verified=True,home_goals=goals[0],away_goals=goals[1],provider_fixture_id=old.get("provider_fixture_id"))
-        shots = shot_stats.loc[raw["fixture_id"]]
+        shots = shot_stats.loc[identities[key][0]]
         values = {s+"_"+f:(raw[s+"_xg"] if f == "xg" and not raw["totals_unreliable"] else
                            None if f == "xg" else shots[s+"_"+f]) for s in ("home","away") for f in ("xg","sh","sot")}
         metadata = dict(fixture_source="Understat",xg_source="Understat_flagged_unreliable" if raw["totals_unreliable"] else "Understat",

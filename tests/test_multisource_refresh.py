@@ -375,12 +375,17 @@ class ProviderFormatTests(unittest.TestCase):
         for season in range(2019,2026):
             fixtures=[];shots=[]
             for i,(home,away) in enumerate(permutations(clubs,2)):
-                fixtures.append(dict(provider="Understat",competition="la-liga",season=season,fixture_id=1000+i,understat_id=1000+i,
+                fixtures.append(dict(provider="Understat",competition="la-liga",season=season,fixture_id=1000+i,understat_id=20000+i,
                     date=(date(season,7,1)+timedelta(days=i)).isoformat(),home=home,away=away,score="2-1",
-                    home_xg=float(i+1),away_xg=float(i+1),totals_unreliable=False))
+                    home_xg=float(i+1),away_xg=float(i+1),totals_unreliable=False,
+                    home_published_xg=float(i+1),away_published_xg=float(i+1),home_win_probability=0.5,
+                    draw_probability=0.25,away_win_probability=0.25,xg_note=None,result_note=None))
                 for side in ("h","a"):
-                    for j in range(10):shots.append(dict(fixture_id=1000+i,shot_id=f"{i}-{side}-{j}",side=side,
-                        result="SavedShot" if j<4 else "MissedShots",situation="OpenPlay"))
+                    for j in range(10):shots.append(dict(provider="Understat",competition="la-liga",season=season,
+                        fixture_id=1000+i,understat_id=20000+i,shot_id=1+20*i+10*int(side=="a")+j,side=side,
+                        result="SavedShot" if j<4 else "MissedShots",situation="OpenPlay",minute=j,player_id=123,
+                        player="Synthetic player",x=0.8,y=0.5,understat_xg=0.1,shot_type="RightFoot",
+                        assisted_by=None,last_action=None))
             pd.DataFrame(fixtures).to_csv(self.original/f"raw/archive_{season}_fixtures.csv",index=False)
             if season==2025:pd.DataFrame(shots).to_csv(self.original/"raw/archive_2025_shots.csv",index=False)
         save_source(self.base/"evidence",records)
@@ -389,6 +394,10 @@ class ProviderFormatTests(unittest.TestCase):
         (self.original/"independent_completed.json").write_text(json.dumps(independent))
         self.update_manifest(self.original)
         registry,stats,catalogues,_=state(seed)
+        # These are distinct provider namespaces, as in the reviewed real export.
+        for row in list(registry.fixtures.values())+registry.evidence:
+            if row.get("season")==2025:
+                row["provider_fixture_id"]=str(20000+int(row["provider_fixture_id"])-1000)
         hashes={"raw/"+e["file"]:e["sha256"] for e in read_json(self.original/"acquisition_manifest.json")}
         self.parent=publish_version(registry,stats,catalogues,version_id="generated_csv_parent",input_hashes=hashes,root=self.root)
         shutil.copytree(self.original,self.directory)
