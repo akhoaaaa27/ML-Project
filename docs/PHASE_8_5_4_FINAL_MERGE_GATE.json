@@ -1,0 +1,805 @@
+{
+  "phase": "8.5.4",
+  "assignment": "Bounded final merge gate and phase closure",
+  "client_date": "2026-11-22",
+  "timezone": "Asia/Saigon",
+  "started_at_utc": "2026-11-22T07:04:12.205519+00:00",
+  "completed_at_utc": "2026-11-22T07:10:52.823309+00:00",
+  "verdict": "PASS — Phase 8.5.4 Final Merge Gate Passed",
+  "merge_recommendation": "Create a Pull Request from phase8.5.4-controlled-data-refresh to main, merge the research integration and close Phase 8.5.4. This gate does not approve production.",
+  "git": {
+    "repository": "akhoaaaa27/ML-Project",
+    "branch": "phase8.5.4-controlled-data-refresh",
+    "tested_implementation_sha": "dcbca8403359684aa4761eedd1791d009e66d600",
+    "base_branch": "main",
+    "base_sha": "11e46aa61b7aaf6bf381c14dba0e5e83e1700e39",
+    "merge_base": "11e46aa61b7aaf6bf381c14dba0e5e83e1700e39",
+    "ahead_before_report": 6,
+    "behind_before_report": 0,
+    "initial_worktree_clean": true,
+    "merge_compatible": true,
+    "fast_forward_possible": true,
+    "ancestry": {
+      "f31162d35f41bf2b09cfa58be2652f40d15b612c": true,
+      "514ca623b7c03d3013937a1a62dfde67135f036c": true,
+      "b556d285acaa4a5191cc0d65129cddc4cf210d22": true,
+      "7b43bed97e3face8c888311d9dd3b6d1dbfe011c": true,
+      "2ae0f8920ca0435b8c32c1b4763bc30ec370ba5b": true,
+      "68234d5c481009d077bf607fe579a0d54845cb2e": true
+    },
+    "unexpected_changes_after_remediation": false,
+    "changed_file_count_before_report": 18,
+    "changed_files": [
+      "Phases/Phase 8.5.4 - Controlled Data Refresh and Hybrid Review.md",
+      "docs/CONTROLLED_DATA_REFRESH.md",
+      "docs/FIXTURE_DATA_CONTRACT.md",
+      "docs/PHASE_8_5_4_PREMERGE_VERIFICATION.json",
+      "docs/PHASE_8_5_4_PREMERGE_VERIFICATION.md",
+      "docs/PHASE_8_5_4_REMEDIATION.json",
+      "docs/PHASE_8_5_4_REMEDIATION.md",
+      "docs/PHASE_8_5_4_VALIDATION.json",
+      "docs/PHASE_8_5_4_VALIDATION.md",
+      "scripts/multisource/composite_history.py",
+      "scripts/multisource/fixture_catalogue.py",
+      "scripts/multisource/refresh_composite.py",
+      "scripts/multisource/refresh_demo.py",
+      "scripts/multisource/refresh_validation.py",
+      "scripts/multisource/revision_review.py",
+      "scripts/multisource/validate_refresh.py",
+      "tests/test_multisource_refresh.py",
+      "tests/test_multisource_refresh_security.py"
+    ],
+    "expected_report_only_increment": {
+      "files": 2,
+      "ahead": 7,
+      "behind": 0,
+      "total_changed_files_vs_main": 20
+    },
+    "pull_request_created": false,
+    "merged": false,
+    "report_commit_resolution": "git log -1 --format=%H -- docs/PHASE_8_5_4_FINAL_MERGE_GATE.md"
+  },
+  "source_revision": {
+    "source_sha256": {
+      "scripts/multisource/composite_history.py": "7d959b86abcd74febcb982776b463a13ba5ec1404ba3dc5d15122207c223d492",
+      "scripts/multisource/fixture_catalogue.py": "83ab5b082997bb12d6cd20d101e0b5d16fb1bac31ebe9fe7f22c20c0612f09bb",
+      "scripts/multisource/refresh_composite.py": "cf9979ae794cecdb28e5211bd32e2c4dc5bd0764cf23018423231b40f92e6ccb",
+      "scripts/multisource/refresh_demo.py": "ca05e83cd18e9c7ee1c4128609b8e4b77e1cea906c067ab707dc12e995d24bc9",
+      "scripts/multisource/refresh_validation.py": "2f1184d2b0e84e1d6ba03c5affeed45b65cfb397e26a65ccf3f57724cd60f6ed",
+      "scripts/multisource/revision_review.py": "c16dedf03766aba86848be81ae1e092f621f0769ac4968edefe55664b25748d5",
+      "scripts/multisource/validate_refresh.py": "5964be8ea4887b3c5292835dc8f0ddafbb17e7fc986bc14355c275ea4425a55f",
+      "tests/test_multisource_refresh.py": "22818c112257845ee3b6bc5f252a37b835bd9b77206337a7d71a4ce00577a56a",
+      "tests/test_multisource_refresh_security.py": "db1b77fd0b9729ce3a019f3b5672e55b455195e41e2473933c2bbf6d63adfd5b"
+    },
+    "source_files_unchanged_during_gate": true,
+    "all_original_tracked_files": 169,
+    "all_original_tracked_files_unchanged": true,
+    "implementation_tests_dependencies_and_data_modified": false
+  },
+  "gates": {
+    "A": {
+      "status": "PASS",
+      "method": "Latest remote refs, authoritative baseline hashes, trusted fitted artifact and actual SQLite files",
+      "evidence": {
+        "protected": {
+          "outputs/inference/protected_files.json": {
+            "entries": 77,
+            "all_match": true
+          },
+          "outputs/provider_poc/reports/protected_files.json": {
+            "entries": 107,
+            "all_match": true
+          }
+        },
+        "hashes": {
+          "models/laliga_lr_pipeline.joblib": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+          "data/history/laliga_history.sqlite3": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+          "data/history/research/phase853_v3_20261122/laliga_composite.sqlite3": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+          "models/model_metadata.json": "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c",
+          "data/laliga_processed_normalized.csv": "90000ce22f42abe5eb5b5bfa38ad1ed5ef7b1c1c75cd4d39e749e7b324e0e5ca"
+        },
+        "model": {
+          "type": "LinearRegression",
+          "version": "1.0.0",
+          "features": [
+            "is_home",
+            "matches_seen",
+            "short_history",
+            "xg_avg5",
+            "xga_avg5",
+            "gf_avg5",
+            "ga_avg5",
+            "shot_avg5",
+            "sot_avg5",
+            "opponent_xg_avg5",
+            "opponent_xga_avg5",
+            "opponent_matches_seen",
+            "opponent_short_history"
+          ],
+          "feature_order_exact": true,
+          "fitted_imputer_type": "HistoryMedianImputer",
+          "fitted_samples": 3800,
+          "coefficients_intercept_medians_equal_metadata": true
+        },
+        "v3_registry": {
+          "registry_fixtures": 3040,
+          "verified_completed": 2783,
+          "complete_statistics": 2779,
+          "pending_statistics": 4,
+          "unverified": 257,
+          "conflicts": 0
+        },
+        "sqlite_integrity": true,
+        "attested_inputs": 17,
+        "all_input_hashes_match": true,
+        "existing_snapshot_files": 8,
+        "all_old_versions_unchanged": true,
+        "old_snapshot_sidecars_verified": 4,
+        "catalogue": {
+          "season": 2026,
+          "fixtures": 380,
+          "teams": 20,
+          "directed_pairings": 380,
+          "duplicate_identities": 0,
+          "provider_ids_unique": true,
+          "known_kickoff": 380
+        },
+        "export": {
+          "exit_code": 0,
+          "contract_fields": 14,
+          "counts_match_sqlite": true,
+          "sqlite_unchanged": true
+        },
+        "production_approved": false
+      }
+    },
+    "B": {
+      "status": "PASS",
+      "full_suite_invocations": 1,
+      "command": ".venv/Scripts/python.exe -m scripts.multisource.validate_refresh --workspace data/external/multisource/final_gate_854_20261122_dcbca84/run --output data/external/multisource/final_gate_854_20261122_dcbca84/runner-report.json",
+      "exit_code": 0,
+      "tests": {
+        "executed": 299,
+        "passed": 299,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "network_blocked": true,
+        "credentials_required": false
+      },
+      "runtime_seconds": 144.928,
+      "environment": {
+        "python": "3.14.0",
+        "platform": "Windows-11-10.0.26200-SP0",
+        "packages": {
+          "numpy": "2.5.4",
+          "pandas": "3.1.0",
+          "scikit-learn": "1.9.1",
+          "scipy": "1.18.1",
+          "joblib": "1.6.0",
+          "threadpoolctl": "3.8.0",
+          "requests": "2.34.2"
+        }
+      },
+      "test_count_change_from_remediation": 0,
+      "unexpected_network_blocked": true,
+      "api_credentials_required": false
+    },
+    "C": {
+      "status": "PASS",
+      "findings": {
+        "PM854-F01": {
+          "status": "PASS",
+          "executed": 9,
+          "passed": 9,
+          "tests": [
+            {
+              "method": "test_f01_duplicate_archive_fixture_id_blocked",
+              "source_line": 69,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_duplicate_understat_id_blocked",
+              "source_line": 72,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_fixture_id_reassigned_with_unique_ids_blocked",
+              "source_line": 75,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_understat_reassignment_cannot_be_no_change",
+              "source_line": 80,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_wrong_fixture_shot_join_counterexample_blocked",
+              "source_line": 83,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_invalid_id_on_frozen_fbref_selection_blocked",
+              "source_line": 88,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_missing_zero_fractional_and_negative_ids_blocked",
+              "source_line": 92,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_attested_baseline_mismatch_blocked",
+              "source_line": 102,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f01_fractional_identity_cannot_round_to_attested_integer",
+              "source_line": 107,
+              "observed": "ok"
+            }
+          ],
+          "source_file": "tests/test_multisource_refresh_security.py"
+        },
+        "PM854-F02": {
+          "status": "PASS",
+          "executed": 13,
+          "passed": 13,
+          "tests": [
+            {
+              "method": "test_f02_wrong_provider_blocked",
+              "source_line": 111,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_wrong_competition_blocked",
+              "source_line": 114,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_wrong_season_blocked",
+              "source_line": 117,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_unknown_fixture_reference_blocked",
+              "source_line": 120,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_cross_file_understat_id_mismatch_blocked",
+              "source_line": 123,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_duplicate_shot_id_blocked",
+              "source_line": 126,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_invalid_shot_id_blocked",
+              "source_line": 129,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_missing_required_metadata_column_blocked",
+              "source_line": 132,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_complete_reviewed_schema_required",
+              "source_line": 136,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_missing_identity_value_blocked",
+              "source_line": 140,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_invalid_scope_with_valid_correction_still_blocked",
+              "source_line": 143,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_frozen_selection_shots_also_validated",
+              "source_line": 147,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f02_approval_cannot_override_changed_source_scope",
+              "source_line": 151,
+              "observed": "ok"
+            }
+          ],
+          "source_file": "tests/test_multisource_refresh_security.py"
+        },
+        "PM854-F03": {
+          "status": "PASS",
+          "executed": 5,
+          "passed": 5,
+          "tests": [
+            {
+              "method": "test_f03_new_completion_exact_evidence_tuple_and_separate_csv_provenance",
+              "source_line": 162,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f03_pending_completion_keeps_evidence_tuple",
+              "source_line": 189,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f03_stale_csv_preserves_previously_verified_completion_and_statistics",
+              "source_line": 198,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f03_new_completion_missing_evidence_blocked",
+              "source_line": 207,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f03_independent_score_conflict_blocked",
+              "source_line": 212,
+              "observed": "ok"
+            }
+          ],
+          "source_file": "tests/test_multisource_refresh_security.py"
+        },
+        "PM854-F04": {
+          "status": "PASS",
+          "executed": 3,
+          "passed": 3,
+          "tests": [
+            {
+              "method": "test_f04_three_component_score_blocked",
+              "source_line": 216,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f04_malformed_variants_blocked",
+              "source_line": 219,
+              "observed": "ok"
+            },
+            {
+              "method": "test_f04_frozen_selected_malformed_score_blocked",
+              "source_line": 227,
+              "observed": "ok"
+            }
+          ],
+          "source_file": "tests/test_multisource_refresh_security.py"
+        }
+      },
+      "regression_test_count": 35,
+      "positive_controls": [
+        "test_control_unchanged_and_distinct_provider_id_namespaces",
+        "test_control_valid_xg_correction_preserves_frozen_selection_and_publishes",
+        "test_control_integral_id_serialization_keeps_frozen_identity",
+        "test_control_valid_shot_correction_requires_review_and_publishes",
+        "test_control_zero_and_valid_score_corrections"
+      ],
+      "new_test_suites_added": false,
+      "evidence": "Existing test_multisource_refresh_security assertions inspected and observed ok in this full-suite log"
+    },
+    "D": {
+      "status": "PASS",
+      "actual_v3_registry": {
+        "registry_fixtures": 3040,
+        "verified_completed": 2783,
+        "complete_statistics": 2779,
+        "pending_statistics": 4,
+        "unverified": 257,
+        "conflicts": 0
+      },
+      "v3_reproduction": {
+        "fingerprints_equal": true,
+        "version_id": "phase853_v3_20261122",
+        "registry_fixtures": 3040,
+        "verified_completed": 2783,
+        "complete_statistics": 2779,
+        "pending_statistics": 4,
+        "unverified": 257,
+        "unresolved_conflicts": 0,
+        "targets": 123,
+        "successful_fixtures": 123,
+        "predictions": 246,
+        "previously_blocked": 12,
+        "unlocked": 12,
+        "parity_fixtures": 111,
+        "parity_passed": 111,
+        "max_feature_delta": 0.0,
+        "max_prediction_delta": 0.0,
+        "artifact_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+        "production_approved": false,
+        "strikerapi_credits": 0
+      },
+      "catalogue": {
+        "season": 2026,
+        "fixtures": 380,
+        "teams": 20,
+        "directed_pairings": 380,
+        "duplicate_identities": 0,
+        "provider_ids_unique": true,
+        "known_kickoff": 380
+      },
+      "read_only_export": {
+        "exit_code": 0,
+        "contract_fields": 14,
+        "counts_match_sqlite": true,
+        "sqlite_unchanged": true
+      },
+      "local_refresh": {
+        "prepare": {
+          "CURRENT_VERSION": "phase853_v3_20261122",
+          "CANDIDATE_VERSION": "phase854_local_20261122",
+          "CHANGES_FOUND": 0,
+          "AUTO_ACCEPTED": 0,
+          "MANUAL_REVIEW_REQUIRED": 0,
+          "PENDING_STATISTICS": 4,
+          "CONFLICTS": 0,
+          "BLOCKED_ITEMS": 0,
+          "PUBLISH_STATUS": "NO_CHANGE",
+          "candidate_content_sha256": "5bfa202cf2bb306367c4f57a6c19821fe7740cc0d8294990c022003de91d1599",
+          "effect_sha256": "e2be06b6c1043e0adc6a6084b0786c708bb60d0d41e976544ec182a09630ab0e",
+          "production_approved": false
+        },
+        "publish": {
+          "CURRENT_VERSION": "phase853_v3_20261122",
+          "CANDIDATE_VERSION": "phase854_local_20261122",
+          "CHANGES_FOUND": 0,
+          "AUTO_ACCEPTED": 0,
+          "MANUAL_REVIEW_REQUIRED": 0,
+          "PENDING_STATISTICS": 4,
+          "CONFLICTS": 0,
+          "BLOCKED_ITEMS": 0,
+          "PUBLISH_STATUS": "NO_CHANGE",
+          "candidate_content_sha256": "5bfa202cf2bb306367c4f57a6c19821fe7740cc0d8294990c022003de91d1599",
+          "effect_sha256": "e2be06b6c1043e0adc6a6084b0786c708bb60d0d41e976544ec182a09630ab0e",
+          "production_approved": false
+        },
+        "status": {
+          "AUTO_ACCEPTED": 0,
+          "BLOCKED_ITEMS": 0,
+          "CANDIDATE_VERSION": "phase854_local_20261122",
+          "CHANGES_FOUND": 0,
+          "CONFLICTS": 0,
+          "CURRENT_VERSION": "phase853_v3_20261122",
+          "MANUAL_REVIEW_REQUIRED": 0,
+          "PENDING_STATISTICS": 4,
+          "PUBLISH_STATUS": "NO_CHANGE",
+          "candidate_content_sha256": "5bfa202cf2bb306367c4f57a6c19821fe7740cc0d8294990c022003de91d1599",
+          "effect_sha256": "e2be06b6c1043e0adc6a6084b0786c708bb60d0d41e976544ec182a09630ab0e",
+          "production_approved": false,
+          "REVIEW_STATUS": "SATISFIED"
+        },
+        "new_real_data_available": false,
+        "downloads": 0,
+        "strikerapi_calls": 0,
+        "manual_approvals": 0,
+        "published_new_database": false
+      },
+      "production_approved": false
+    },
+    "E": {
+      "status": "PASS",
+      "A": {
+        "CURRENT_VERSION": "synthetic_parent",
+        "CANDIDATE_VERSION": "demo_a",
+        "CHANGES_FOUND": 1,
+        "AUTO_ACCEPTED": 1,
+        "MANUAL_REVIEW_REQUIRED": 0,
+        "PENDING_STATISTICS": 0,
+        "CONFLICTS": 0,
+        "BLOCKED_ITEMS": 0,
+        "PUBLISH_STATUS": "PUBLISHED",
+        "candidate_content_sha256": "85a5d450fd96b8c3123c21ec9552990b76cdf4394de2e5c03d1eac3b1e48dc27",
+        "effect_sha256": "4f35815fb5c73b9d2abebbe8059d7d3ec0f9e9f32f4487048798fc0971eeae40",
+        "production_approved": false,
+        "published_version": "demo_a",
+        "database_sha256": "6ac322312f7d7508c1fe730a6de5d41028f96924766a55f2e9ad74f3601de7f4",
+        "inference_validation": {
+          "changed_features": 1,
+          "expected_blocked": 7,
+          "max_clipped_parity_delta": 0.0,
+          "max_raw_parity_delta": 0.0,
+          "production_approved": false,
+          "success": 5,
+          "targets": 12,
+          "unchanged_features": 4
+        }
+      },
+      "B": {
+        "before_review": {
+          "CURRENT_VERSION": "demo_a",
+          "CANDIDATE_VERSION": "demo_b",
+          "CHANGES_FOUND": 1,
+          "AUTO_ACCEPTED": 0,
+          "MANUAL_REVIEW_REQUIRED": 1,
+          "PENDING_STATISTICS": 0,
+          "CONFLICTS": 0,
+          "BLOCKED_ITEMS": 0,
+          "PUBLISH_STATUS": "PREPARED",
+          "candidate_content_sha256": "42863f96d65ee0182d8bd4366f83e84b039e4275c56579fad885357054e0fc6d",
+          "effect_sha256": "d42e6c4cfeb5fb03f516f6e6fbf51ea5332e046490cf81ce3998ba978de94b2a",
+          "production_approved": false
+        },
+        "after_review": {
+          "CURRENT_VERSION": "demo_a",
+          "CANDIDATE_VERSION": "demo_b",
+          "CHANGES_FOUND": 1,
+          "AUTO_ACCEPTED": 0,
+          "MANUAL_REVIEW_REQUIRED": 1,
+          "PENDING_STATISTICS": 0,
+          "CONFLICTS": 0,
+          "BLOCKED_ITEMS": 0,
+          "PUBLISH_STATUS": "PUBLISHED",
+          "candidate_content_sha256": "42863f96d65ee0182d8bd4366f83e84b039e4275c56579fad885357054e0fc6d",
+          "effect_sha256": "d42e6c4cfeb5fb03f516f6e6fbf51ea5332e046490cf81ce3998ba978de94b2a",
+          "production_approved": false,
+          "published_version": "demo_b",
+          "database_sha256": "9a256ac8a6f96407bd799fdfd9c2cf4afe42f0b7200412a3bf70a51401bd9430",
+          "inference_validation": {
+            "changed_features": 4,
+            "expected_blocked": 7,
+            "max_clipped_parity_delta": 0.0,
+            "max_raw_parity_delta": 0.0,
+            "production_approved": false,
+            "success": 5,
+            "targets": 12,
+            "unchanged_features": 1
+          }
+        }
+      },
+      "C": {
+        "CURRENT_VERSION": "synthetic_parent",
+        "CANDIDATE_VERSION": "demo_c",
+        "CHANGES_FOUND": 0,
+        "AUTO_ACCEPTED": 0,
+        "MANUAL_REVIEW_REQUIRED": 0,
+        "PENDING_STATISTICS": null,
+        "CONFLICTS": 0,
+        "BLOCKED_ITEMS": 1,
+        "PUBLISH_STATUS": "BLOCKED",
+        "error": "SOURCE_VERSION_MISMATCH",
+        "message": "Source does not match its own acquisition manifest",
+        "production_approved": false
+      },
+      "D": {
+        "status": "PASS",
+        "observed": "BLOCKED; no successor; parent preserved; existing approval cannot override invalid source",
+        "evidence_kind": "Existing regression assertions executed in the full suite, no new standalone demo",
+        "tests": [
+          "test_f02_wrong_provider_blocked",
+          "test_f02_approval_cannot_override_changed_source_scope",
+          "test_f01_wrong_fixture_shot_join_counterexample_blocked"
+        ]
+      },
+      "all_demonstration_data_synthetic": true
+    }
+  },
+  "findings_final_status": {
+    "PM854-F01": "PASS",
+    "PM854-F02": "PASS",
+    "PM854-F03": "PASS",
+    "PM854-F04": "PASS"
+  },
+  "acceptance_criteria": {
+    "AC-01": {
+      "status": "PASS",
+      "criterion": "Refresh local without API key",
+      "observed_evidence": "Fresh local prepare/publish/status NO_CHANGE, no new real database"
+    },
+    "AC-02": {
+      "status": "PASS",
+      "criterion": "Download requires explicit opt-in",
+      "observed_evidence": "Existing opt-in/default offline tests executed; live download is not required"
+    },
+    "AC-03": {
+      "status": "PASS",
+      "criterion": "Detect changes, pending and conflicts",
+      "observed_evidence": "Known identity/scope/score violations BLOCKED and valid completed change accepted"
+    },
+    "AC-04": {
+      "status": "PASS",
+      "criterion": "Deterministic Hybrid Review",
+      "observed_evidence": "Structural conflict cannot be approved; legitimate correction requires review"
+    },
+    "AC-05": {
+      "status": "PASS",
+      "criterion": "Validated immutable successor",
+      "observed_evidence": "Valid synthetic paths publish, invalid source paths have no successor"
+    },
+    "AC-06": {
+      "status": "PASS",
+      "criterion": "Completion and source provenance",
+      "observed_evidence": "Correct fixture/shot references and exact evidence tuple in registry, review and export"
+    },
+    "AC-07": {
+      "status": "PASS",
+      "criterion": "No raw imputation or actual-last-five skipping",
+      "observed_evidence": "Existing Option B and date-only cutoff regression tests pass"
+    },
+    "AC-08": {
+      "status": "PASS",
+      "criterion": "Frozen LR, imputer, features and Phase 7",
+      "observed_evidence": "Authoritative 107/77 manifest entries, fitted state and exact feature order match"
+    },
+    "AC-09": {
+      "status": "PASS",
+      "criterion": "Prediction parity unchanged inputs",
+      "observed_evidence": "V3 111/111 zero deltas and dynamic unchanged-feature parity pass"
+    },
+    "AC-10": {
+      "status": "PASS",
+      "criterion": "Failed refresh preserves parent",
+      "observed_evidence": "Rollback assertion and all prior version hashes preserved"
+    },
+    "AC-11": {
+      "status": "PASS",
+      "criterion": "Full suite execution",
+      "observed_evidence": "One full suite invocation on tested HEAD, zero failure/error/skip"
+    },
+    "AC-12": {
+      "status": "PASS",
+      "criterion": "Safe reports and reproducibility",
+      "observed_evidence": "Bounded publication review; raw data/receipts/DB/logs remain ignored"
+    },
+    "AC-13": {
+      "status": "PASS",
+      "criterion": "380 fixture catalogue and schedule",
+      "observed_evidence": "Actual current catalogue exact directed universe, unique IDs and source-backed kickoff"
+    },
+    "AC-14": {
+      "status": "PASS",
+      "criterion": "Idempotent refresh and NO_CHANGE",
+      "observed_evidence": "Repeated publication and metadata-only tests pass, no real successor created"
+    },
+    "AC-15": {
+      "status": "PASS",
+      "criterion": "Stable read-only data contract",
+      "observed_evidence": "14 fixture fields, actual SQL counts, coherent completion export and unchanged DB"
+    }
+  },
+  "publication_safety": {
+    "changed_file_count": 18,
+    "files": [
+      {
+        "path": "Phases/Phase 8.5.4 - Controlled Data Refresh and Hybrid Review.md",
+        "sha256": "922df4b56dd953c734f1f00eef62c10f381a4f82835b20ff9a6db2a8efd0a98e",
+        "bytes": 6543
+      },
+      {
+        "path": "docs/CONTROLLED_DATA_REFRESH.md",
+        "sha256": "5916f87e1db4ab9bd1c71d06fe7879509c4ef2a2ea70dfab64ef6e5a43a7f3f0",
+        "bytes": 11779
+      },
+      {
+        "path": "docs/FIXTURE_DATA_CONTRACT.md",
+        "sha256": "de114ebe529d32b5e8b164dc3e39d6705f4d11f27aa64fdb55d67f70e0882f85",
+        "bytes": 4929
+      },
+      {
+        "path": "docs/PHASE_8_5_4_PREMERGE_VERIFICATION.json",
+        "sha256": "747b20f398eceb249ea0237504cb3f598444369c2dd9e64f46440604a49617c2",
+        "bytes": 38999
+      },
+      {
+        "path": "docs/PHASE_8_5_4_PREMERGE_VERIFICATION.md",
+        "sha256": "bf46d6875823601c70ea59750329a09f1b5780c85de2247a566d87351aa8db62",
+        "bytes": 28824
+      },
+      {
+        "path": "docs/PHASE_8_5_4_REMEDIATION.json",
+        "sha256": "3bedb7357e5740cecf8ce2ff3cfe1f08b274945f4b929a5d4d82fb364d7de54e",
+        "bytes": 32866
+      },
+      {
+        "path": "docs/PHASE_8_5_4_REMEDIATION.md",
+        "sha256": "40e4fc133a1daf09926d045ac845956bd685d426dba321eed797aee0ec4a9a5c",
+        "bytes": 18187
+      },
+      {
+        "path": "docs/PHASE_8_5_4_VALIDATION.json",
+        "sha256": "9083f21eeef1c59acecd26db51c2a01f9c75d5630cea24140a0169d27f37be9f",
+        "bytes": 13249
+      },
+      {
+        "path": "docs/PHASE_8_5_4_VALIDATION.md",
+        "sha256": "4777d74924c0f27b3e36160c33d46f4f34562acfe14778c7a9350633521b4531",
+        "bytes": 7347
+      },
+      {
+        "path": "scripts/multisource/composite_history.py",
+        "sha256": "7d959b86abcd74febcb982776b463a13ba5ec1404ba3dc5d15122207c223d492",
+        "bytes": 16668
+      },
+      {
+        "path": "scripts/multisource/fixture_catalogue.py",
+        "sha256": "83ab5b082997bb12d6cd20d101e0b5d16fb1bac31ebe9fe7f22c20c0612f09bb",
+        "bytes": 4767
+      },
+      {
+        "path": "scripts/multisource/refresh_composite.py",
+        "sha256": "cf9979ae794cecdb28e5211bd32e2c4dc5bd0764cf23018423231b40f92e6ccb",
+        "bytes": 14610
+      },
+      {
+        "path": "scripts/multisource/refresh_demo.py",
+        "sha256": "ca05e83cd18e9c7ee1c4128609b8e4b77e1cea906c067ab707dc12e995d24bc9",
+        "bytes": 7134
+      },
+      {
+        "path": "scripts/multisource/refresh_validation.py",
+        "sha256": "2f1184d2b0e84e1d6ba03c5affeed45b65cfb397e26a65ccf3f57724cd60f6ed",
+        "bytes": 27644
+      },
+      {
+        "path": "scripts/multisource/revision_review.py",
+        "sha256": "c16dedf03766aba86848be81ae1e092f621f0769ac4968edefe55664b25748d5",
+        "bytes": 3514
+      },
+      {
+        "path": "scripts/multisource/validate_refresh.py",
+        "sha256": "5964be8ea4887b3c5292835dc8f0ddafbb17e7fc986bc14355c275ea4425a55f",
+        "bytes": 10720
+      },
+      {
+        "path": "tests/test_multisource_refresh.py",
+        "sha256": "22818c112257845ee3b6bc5f252a37b835bd9b77206337a7d71a4ce00577a56a",
+        "bytes": 28805
+      },
+      {
+        "path": "tests/test_multisource_refresh_security.py",
+        "sha256": "db1b77fd0b9729ce3a019f3b5672e55b455195e41e2473933c2bbf6d63adfd5b",
+        "bytes": 15075
+      }
+    ],
+    "secret_pattern_alerts": [],
+    "unexpected_binary_or_data_files": 0,
+    "protected_namespace_changes": [],
+    "private_paths_ignored": true,
+    "implementation_and_tests_modified": false
+  },
+  "historical_evidence": {
+    "reports_unchanged": {
+      "docs/PHASE_8_5_4_VALIDATION.md": true,
+      "docs/PHASE_8_5_4_VALIDATION.json": true,
+      "docs/PHASE_8_5_4_PREMERGE_VERIFICATION.md": true,
+      "docs/PHASE_8_5_4_PREMERGE_VERIFICATION.json": true,
+      "docs/PHASE_8_5_4_REMEDIATION.md": true,
+      "docs/PHASE_8_5_4_REMEDIATION.json": true
+    },
+    "original_failed_verification_preserved": true,
+    "remediation_reports_preserved": true
+  },
+  "limitations": [
+    "No fresh real snapshot: existing local NO_CHANGE is acceptable and no actual new real incremental publication is claimed.",
+    "Date-only temporal policy does not establish intraday or historical as-of-vintage availability.",
+    "No proof of equivalent FBref/Understat/Sportmonks definitions or new predictive MAE/RMSE on alternative labels.",
+    "No scheduler, real-time provider feed, FastAPI/frontend, enterprise crash recovery or reviewer authentication was required or implemented.",
+    "Raw redistribution rights remain separate; restricted source data and review receipts stay private.",
+    "Research merge readiness only; production_approved remains false."
+  ],
+  "confirmed_merge_blocking_findings": [],
+  "mandatory_checks_unexecuted": [],
+  "scope_lock": {
+    "new_acceptance_criteria_added": false,
+    "new_implementation_or_tests_added": false,
+    "new_adversarial_scenarios_added": false,
+    "full_suite_rerun_count": 1,
+    "automatic_followup_development": false
+  },
+  "evidence_workspace": "data/external/multisource/final_gate_854_20261122_dcbca84",
+  "publication": {
+    "new_reports_only": [
+      "docs/PHASE_8_5_4_FINAL_MERGE_GATE.md",
+      "docs/PHASE_8_5_4_FINAL_MERGE_GATE.json"
+    ],
+    "commit_message": "Verify Phase 8.5.4 Final Merge Gate",
+    "implementation_suite_repeat_for_report_commit_required": false,
+    "final_reports_secret_alerts": 0,
+    "private_match_or_review_payloads": 0,
+    "original_tracked_files_unchanged": 169
+  }
+}
