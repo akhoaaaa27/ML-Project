@@ -1,0 +1,233 @@
+{
+  "phase": "8.5.7",
+  "gate_date": "2026-11-23",
+  "timezone": "Asia/Saigon",
+  "branch": "phase8.5.7-fastapi-frontend-bridge",
+  "base_commit": "ea555a05168f773399e154f12d1a2be2a593fca7",
+  "starting_implementation_commit": "b3f99460fbab43fed8fad6c04f6f5c4ffe0d39ed",
+  "tested_remediation_commit": "9e9be901a57b591f1908c7f11932de17321167d7",
+  "starting_tree_clean": true,
+  "starting_remote_refs_verified": true,
+  "merge_readiness_verdict": "PASS",
+  "merge_scope": "local research and thesis demo",
+  "production_approved": false,
+  "phase856_scientific_conclusion": "SUPPORTED_WITH_LIMITATIONS",
+  "remediation": {
+    "root_cause": "Registry and catalogue support live, while the shared API ObservedStatus enum omitted it.",
+    "confirmed_before_fix": {
+      "fixture_list_http": 500,
+      "live_filter_http": 422,
+      "eligibility_http": 500
+    },
+    "supported_values": [
+      "scheduled",
+      "completed",
+      "live",
+      "postponed",
+      "cancelled",
+      "unverified"
+    ],
+    "live_filter_http_after_fix": 200,
+    "live_upcoming_included": false,
+    "live_eligibility_http_after_fix": 200,
+    "live_preview_http_after_fix": 200,
+    "live_authorized_publish_http_after_fix": 200,
+    "live_forecast_status": "UNAVAILABLE",
+    "live_forecast_reason": "TARGET_NOT_UPCOMING",
+    "live_forecast_fields": null,
+    "live_ledger_records": 0,
+    "source_changes": {
+      "scripts/xpecta_api/schemas.py": "Added live to the shared enum.",
+      "web/xpecta/view.js": "Display LIVE in the existing prediction subtitle when a live fixture is selected via Custom Matchup.",
+      "tests/test_phase857_api.py": "Five regressions for schema, payload, filter and OpenAPI, forecast policy and backward compatibility.",
+      "tests/browser_phase857.py": "Live status and unavailable behavior through actual HTTP; new live and API failure captures."
+    },
+    "documentation_changes": [
+      "docs/PHASE_8_5_7_API_CONTRACT.md",
+      "docs/PHASE_8_5_7_FRONTEND_MAPPING.md",
+      "docs/PHASE_8_5_7_FINAL_MERGE_GATE.md",
+      "docs/PHASE_8_5_7_FINAL_MERGE_GATE.json"
+    ],
+    "original_integration_reports_preserved": true
+  },
+  "tests": {
+    "historical_evidence_only": {
+      "targeted_passed": 16,
+      "full_passed": 356,
+      "commit": "b3f99460fbab43fed8fad6c04f6f5c4ffe0d39ed"
+    },
+    "pre_fix_reproduction": {
+      "executed": 5,
+      "passed": 1,
+      "failed": 3,
+      "errors": 1,
+      "exit_code": 1
+    },
+    "targeted_new_run": {
+      "command": ".venv/Scripts/python.exe -X utf8 -m unittest tests.test_phase857_api -v",
+      "executed": 21,
+      "passed": 21,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "duration_seconds": 9.374
+    },
+    "full_new_run": {
+      "command": ".venv/Scripts/python.exe -X utf8 -m unittest discover -s tests -v",
+      "executed": 361,
+      "passed": 361,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "duration_seconds": 187.276,
+      "original_test_ids_confirmed": 356,
+      "new_test_ids": 5
+    },
+    "new_regressions": [
+      "test_fixture_supports_all_registry_observed_statuses",
+      "test_live_fixture_serializes_with_identical_public_fields",
+      "test_live_filter_excludes_upcoming_and_is_documented_in_openapi",
+      "test_live_target_cannot_preview_or_publish_even_with_future_kickoff",
+      "test_previous_observed_statuses_serialize_and_filter_over_http"
+    ],
+    "staged_executable_blobs_match_tested_content": true,
+    "forecast_parity_rerun": true,
+    "immutable_publication_and_no_change_rerun": true,
+    "security_tests_rerun": [
+      "operator-only publication",
+      "Host",
+      "Origin and CORS",
+      "body and query limits",
+      "filesystem failure",
+      "concurrent publication"
+    ]
+  },
+  "browser": {
+    "status": "PASS",
+    "browser": "msedge",
+    "browser_version": "158.0.4370.33",
+    "screenshot_count": 43,
+    "console_errors": 0,
+    "uncaught_rejections": 0,
+    "external_requests_allowed": false,
+    "live_fixture_display_verified": true,
+    "live_fixture_forecast_status": "UNAVAILABLE",
+    "command": ".venv/Scripts/python.exe -X utf8 -m tests.browser_phase857 --run-id remediation-gate-20261123",
+    "exit_code": 0,
+    "pages": [
+      "Overview",
+      "Prediction",
+      "Match Analysis",
+      "Team Statistics",
+      "Prediction History",
+      "AI Model"
+    ],
+    "viewports": {
+      "desktop": [
+        1440,
+        900
+      ],
+      "tablet": [
+        820,
+        1180
+      ],
+      "mobile": [
+        390,
+        844
+      ]
+    },
+    "reference_pairs": 18,
+    "interactive_captures": 7,
+    "integrated_screens_pixel_identical_to_starting_run": 17,
+    "remaining_integrated_comparison": "Mobile History matching geometry and no visible layout change on manual side-by-side review.",
+    "intentional_visual_change": "LIVE label in the unavailable Custom Matchup subtitle."
+  },
+  "artifact_integrity": {
+    "manifests": {
+      "outputs/inference/protected_files.json": 77,
+      "outputs/provider_poc/reports/protected_files.json": 107
+    },
+    "protected_files": 107,
+    "attested_inputs": 13,
+    "research_snapshot_files": 8,
+    "model_sha256": "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69",
+    "model_metadata_sha256": "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c",
+    "production_history_sha256": "d76706a0c8ba26b8a29b6964b22553b6fe1195f28d2885fa6dc0032576457982",
+    "composite_v3_sha256": "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e",
+    "reference_sha256": "f5aada295d659b8856cc5b4c465f1a20ba912056aa431d1565e67426f57728e4",
+    "integrated_sha256": "ffbff2be5620c920e10efb99a47a1f16e29640cef3a44fd7cfde319ac74f82fb"
+  },
+  "mode_verification": {
+    "real_pending_statistics": 4,
+    "real_fixture_identities": 3040,
+    "historical_status": "INCOMPLETE_STATISTICS",
+    "synthetic_forecast_invisible_from_real_namespace": true,
+    "historical_preview": "UNAVAILABLE/HISTORICAL_ONLY",
+    "real_forecast_writes": 0,
+    "production_approved": false
+  },
+  "acceptance_criteria": {
+    "AC-01": {
+      "status": "PASS",
+      "evidence": "Shared observed status schema validated through Pydantic, responses, query filter and OpenAPI."
+    },
+    "AC-02": {
+      "status": "PASS",
+      "evidence": "Canonical fixture identity, directional teams and remaining public fields preserved."
+    },
+    "AC-03": {
+      "status": "PASS",
+      "evidence": "Frozen preview parity rerun; live target returned no preview or published forecast."
+    },
+    "AC-04": {
+      "status": "PASS",
+      "evidence": "Six observed statuses, freshness, missing data and blocked live forecasting verified."
+    },
+    "AC-05": {
+      "status": "PASS",
+      "evidence": "INITIAL, UPDATED, NO_CHANGE and comparison all passed."
+    },
+    "AC-06": {
+      "status": "PASS",
+      "evidence": "Real, synthetic and historical reference namespace boundaries verified over local HTTP."
+    },
+    "AC-07": {
+      "status": "PASS",
+      "evidence": "Historical observed statistics and completeness, source attribution and frozen model metadata verified."
+    },
+    "AC-08": {
+      "status": "PASS",
+      "evidence": "Local operator authentication, origin and Host restrictions, request limits, filesystem failure and concurrency verified."
+    },
+    "AC-09": {
+      "status": "PASS",
+      "evidence": "Six pages at three viewports reviewed against the checksum-pinned V9.12 reference."
+    },
+    "AC-10": {
+      "status": "PASS",
+      "evidence": "Browser and HTTP success, missing data, live/unavailable and API failure workflows verified."
+    },
+    "AC-11": {
+      "status": "PASS",
+      "evidence": "All 361 Python tests passed and the protected artifacts match verified hashes."
+    },
+    "AC-12": {
+      "status": "PASS",
+      "evidence": "Updated API contract and frontend mapping and both reproducible gate reports delivered."
+    }
+  },
+  "remaining_merge_blockers": [],
+  "limitations": [
+    "Real forecasts depend on attested schedule evidence and snapshot freshness.",
+    "Retrospective date cutoffs lack historical as-of-vintage guarantees.",
+    "Prospective accuracy and cross-provider statistical equivalence remain unproven.",
+    "Reference HTML, integrated HTML, browser captures and provider evidence stay in Git-ignored local storage."
+  ],
+  "next_action": {
+    "action": "Open a manual pull request for research-only review",
+    "base": "main",
+    "head": "phase8.5.7-fastapi-frontend-bridge"
+  }
+}
