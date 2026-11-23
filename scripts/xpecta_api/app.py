@@ -44,6 +44,8 @@ ERRORS = {
     "LEDGER_BUSY": (409, "A local operator is already writing the ledger"),
     "STALE_FORECAST_WRITE": (409, "The latest forecast changed. Reload before retrying"),
     "STALE_FORECAST_SNAPSHOT": (409, "Use the published snapshot or its verified successor"),
+    "PREVIEW_BINDING_CHANGED": (409, "The forecast inputs changed. Review a new preview before publishing"),
+    "SNAPSHOT_BINDING_MISMATCH": (409, "The forecast snapshot lineage could not be verified"),
     "STORAGE_UNAVAILABLE": (503, "Local forecast storage is unavailable"),
     "SERVICE_NOT_READY": (503, "Trusted model or history is unavailable"),
     "FRONTEND_UNAVAILABLE": (503, "Prepare the supplied V9.12 HTML before opening the demo"),
@@ -201,8 +203,8 @@ def preview(body: s.ForecastRequest, service: Service) -> s.ForecastAction:
 @router.post("/forecasts/publish", dependencies=[Depends(require_operator)], responses={
     401: {"model": s.ErrorEnvelope}, 403: {"model": s.ErrorEnvelope}, 409: {"model": s.ErrorEnvelope},
 })
-def publish(body: s.ForecastRequest, service: Service) -> s.ForecastAction:
-    return service.publish(body.fixture_key)
+def publish(body: s.PublishRequest, service: Service) -> s.ForecastAction:
+    return service.publish(body.fixture_key, body.expected)
 
 
 @router.get("/forecasts")
@@ -243,7 +245,7 @@ def create_app(settings=None):
         app.state.service = None
         try:
             app.state.service = ResearchService(settings)
-        except (InferenceError, OSError, ValueError, RuntimeError):
+        except (InferenceError, OSError, ValueError, RuntimeError, KeyError, TypeError):
             log.exception("Trusted XPECTA inputs could not be opened")
         yield
         app.state.service = None
@@ -286,6 +288,8 @@ def create_app(settings=None):
         "api.js": (FRONTEND / "api.js", "text/javascript"),
         "app.js": (FRONTEND / "app.js", "text/javascript"),
         "view.js": (FRONTEND / "view.js", "text/javascript"),
+        "phase9.css": (FRONTEND / "phase9.css", "text/css"),
+        "fixtures.js": (FRONTEND / "fixtures.js", "application/javascript"),
         "montserrat.ttf": (FRONTEND / "montserrat.ttf", "font/ttf"),
     }
 

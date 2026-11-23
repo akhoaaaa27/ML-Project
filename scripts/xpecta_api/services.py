@@ -15,7 +15,9 @@ from scripts.multisource.forecast_service import ForecastService
 from scripts.multisource.match_registry import VERIFIED_COMPLETED, require
 from scripts.multisource.phase856_reporting import protected_integrity
 
-from .settings import APP_VERSION, DEMO_CLOCKS, MODEL_METADATA_SHA256, MODEL_SHA256, REAL_SHA256, Mode
+from .research_binding import verify_pins, verify_real_snapshot
+from .schedule_status import schedule_status
+from .settings import APP_VERSION, DEMO_CLOCKS, MODEL_METADATA_SHA256, MODEL_SHA256, Mode
 
 
 def page(items, query):
@@ -64,7 +66,7 @@ class ResearchService:
         _, self.metadata = load_trusted_pipeline()
         self.store = self.forecast.eligibility.open(self.version)
         self.digest = sha256(self.store.path)
-        require(synthetic or self.digest == REAL_SHA256, "HISTORY_CORRUPT", "Snapshot binding mismatch")
+        self.pins = None if synthetic else verify_real_snapshot(self.forecast.eligibility, self.store, settings)
         self.fixtures = {row["canonical_fixture_key"]: row for row in fixture_catalogue(self.store)}
         roster = {}
         for row in self.fixtures.values():
@@ -83,7 +85,10 @@ class ResearchService:
 
     def _verify_bound_snapshot(self):
         self.store.verify_integrity()
-        require(sha256(self.store.path) == self.digest, "HISTORY_CORRUPT", "Bound history changed")
+        if self.pins:
+            verify_pins(self.store, *self.pins)
+        else:
+            require(sha256(self.store.path) == self.digest, "HISTORY_CORRUPT", "Bound history changed")
 
     def _require_fixture(self, key):
         row = self.fixtures.get(key)
@@ -114,22 +119,17 @@ class ResearchService:
                 and (not query.upcoming or self._upcoming(row, now))]
         return page(rows, query)
 
-    def data_status(self):
+    def data_status(self, *, now=None):
         self._verify_bound_snapshot()
         result = self.forecast.get_forecast_data_status(self.version)
         engine = self.forecast.eligibility
-        now = engine.now()
+        now = now or engine.now()
         upcoming = [row for row in self.fixtures.values() if self._upcoming(row, now)]
-        catalogues = {row["season"]: json.loads(row["payload"]) for row in
-                      self.store.query("SELECT season, payload FROM catalogues")}
-        recent = 0
-        if self.mode != Mode.HISTORICAL_REFERENCE and (engine.dataset_kind == "synthetic"
-                or utc(self.store.manifest["build_timestamp"]) <= now):
-            for row in upcoming:
-                catalogue = catalogues.get(row["season"])
-                review = engine._schedule_evidence(self.store, row, catalogue) if catalogue and row["kickoff_utc"] else None
-                if review is not None and review <= now and now - review <= FIXTURE_MAX_AGE:
-                    recent += 1
+        evidence = schedule_status(engine, self.store, upcoming, now)
+        if self.mode == Mode.HISTORICAL_REFERENCE or (engine.dataset_kind == "real"
+                and utc(self.store.manifest["build_timestamp"]) > now):
+            evidence["recent_review_upcoming_fixtures"] = 0
+        recent = evidence["recent_review_upcoming_fixtures"]
         if self.mode == Mode.HISTORICAL_REFERENCE:
             freshness = "HISTORICAL_ONLY"
         elif not upcoming:
@@ -141,7 +141,9 @@ class ResearchService:
         return dict(result, mode=self.mode, evaluated_at_utc=utc_text(now),
                     schedule_max_age_hours=int(FIXTURE_MAX_AGE.total_seconds() / 3600),
                     upcoming_fixtures=len(upcoming), recent_review_upcoming_fixtures=recent,
-                    schedule_freshness=freshness)
+                    schedule_freshness=freshness, schedule_evidence=evidence["schedule_evidence"],
+                    expired_review_upcoming_fixtures=evidence["expired_review_upcoming_fixtures"],
+                    missing_review_upcoming_fixtures=evidence["missing_review_upcoming_fixtures"])
 
     def eligibility(self, key):
         self._verify_bound_snapshot()
@@ -177,13 +179,18 @@ class ResearchService:
             return dict(result, forecast=self._published(result["forecast"]))
         return result
 
-    def publish(self, key):
+    def publish(self, key, expected=None):
         self._requires_forecasting()
         self._verify_bound_snapshot()
         require(sha256(MODEL_DIR / "laliga_lr_pipeline.joblib") == MODEL_SHA256
                 and sha256(MODEL_DIR / "model_metadata.json") == MODEL_METADATA_SHA256,
                 "ARTIFACT_CORRUPT", "Forecast artifact no longer matches the startup binding")
-        return self._action(self.forecast.generate_forecast(key, self.version))
+        binding = dict(history_database_sha256=self.digest)
+        if expected is not None:
+            require(expected.history_database_sha256 == self.digest, "PREVIEW_BINDING_CHANGED",
+                    "Preview uses a different history binding")
+            binding["features_sha256"] = expected.features_sha256
+        return self._action(self.forecast.generate_forecast(key, self.version, expected=binding))
 
     def published(self, query):
         if self.mode == Mode.HISTORICAL_REFERENCE:
@@ -276,11 +283,14 @@ class ResearchService:
 
     def _model_summary(self):
         metric_path = ROOT / "outputs/final_test/final_test_metrics.csv"
+        protocol = json.loads(metric_path.with_name("evaluation_protocol.json").read_text(encoding="utf-8"))
         phase7 = []
         with metric_path.open(encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
                 if row["model"] == "Linear Regression":
+                    partition = protocol["partitions"][row["test_split"]]
                     phase7.append(dict(label=row["test_split"], source="FBref", fixtures=int(row["n_matches"]),
+                                       period=f"{partition['start']} to {partition['end']}",
                                        observations=int(row["n_observations"]), mae=float(row["mae"]), rmse=float(row["rmse"])))
         validation = json.loads((ROOT / "docs/PHASE_8_5_6_VALIDATION.json").read_text(encoding="utf-8"))
         require(validation["artifact_sha256"] == MODEL_SHA256 and validation["production_approved"] is False,
@@ -288,7 +298,12 @@ class ResearchService:
         retrospective = []
         for name, row in validation["cohorts"].items():
             overall = row["metrics"]["overall"]
+            season = row["season"]
+            period = f"{season}/{(season + 1) % 100:02d}"
+            if row["before_or_at_boundary"]:
+                period += f" after {validation['training_reference_end']}"
             retrospective.append(dict(label=name, source=row["label_source"], fixtures=row["scored_fixtures"],
+                                      period=period,
                                       observations=row["scored_team_observations"], mae=overall["lr"]["mae"],
                                       rmse=overall["lr"]["rmse"], baseline_mae=overall["baseline"]["mae"]))
         return dict(self.metadata, phase7=phase7, retrospective=retrospective,

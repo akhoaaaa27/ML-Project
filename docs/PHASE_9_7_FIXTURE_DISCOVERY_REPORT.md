@@ -1,0 +1,10 @@
+# Phase 9.7 — Fixture discovery
+
+Prediction loads the current season through the existing `/api/v1/fixtures` pagination, in batches of up to 100. The website displays at most 12 cards per page and defaults to the upcoming view. Using the full fixed season catalogue keeps page offsets stable across a kickoff. Search and page navigation run locally. Preview is requested when the user selects a fixture.
+
+- Search matches either team using normalized letter case, accents and whitespace. Exact team selection, inclusive UTC kickoff date boundaries and observed catalogue status further narrow the result. A reversed date range prompts correction. Fixtures without a verified kickoff stay at the end of the list and do not match a UTC date filter.
+- Chronological sorting uses UTC kickoff and canonical fixture identity for ties. Counts show the visible range, filtered matches and total season inventory. Filter changes restart at page 1. Clearing restores the default upcoming view.
+- Overview keeps its six-card preview of the catalogue. All cards display existing fixture identities and optional published xG for the exact canonical key, dataset kind, snapshot checksum/version and model. A past revision is still visible in Prediction History.
+- Search and filter inputs have visible labels. The live count announces results, page changes move focus to the count, and returning from a fixture restores focus to its card if it is still listed. The V9.12 card grid remains full-width and centers an incomplete final desktop row.
+
+The browser check uses the real catalogue at 1440 × 900, 820 × 1180 and 390 × 844. It covers page 1 and 2, separate page keys, zero results, clearing, team/date/status filters, keyboard selection, the actual canonical preview request and focus/filter restoration. The isolated browser suite covers 0, 1, 4, 12 and 20 rows, equal kickoffs, missing kickoff, accent normalization and clamped pages. See the [final revalidation](PHASE_9_9_FINAL_REVALIDATION.md) for the recorded runs.

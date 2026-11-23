@@ -1,0 +1,111 @@
+"""Offline freshness and trusted server binding checks."""
+
+from datetime import timedelta
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+import unittest
+from unittest.mock import Mock, patch
+
+from scripts.inference.common import InferenceError, sha256
+from scripts.multisource.forecast_eligibility import FIXTURE_MAX_AGE, utc, utc_text
+from scripts.multisource.forecast_service import ForecastService
+from scripts.multisource.refresh_validation import CURRENT
+from scripts.multisource.revision_review import POLICY_VERSION
+from scripts.xpecta_api.research_binding import verify_real_snapshot
+from scripts.xpecta_api.research_preflight import source_readiness
+from scripts.xpecta_api.schedule_status import schedule_status
+from scripts.xpecta_api.settings import Mode, REAL_VERSION, Settings
+
+
+class ResearchReadinessTests(unittest.TestCase):
+    def test_schedule_distinguishes_expiry_and_missing_evidence(self):
+        acquired = utc("2026-11-21T20:20:23Z")
+        engine = SimpleNamespace(_schedule_evidence=lambda store, fixture, catalogue: acquired)
+        store = SimpleNamespace(query=lambda sql: [dict(season=2026, payload='{"season":2026}')])
+        complete = dict(season=2026, kickoff_utc="2026-11-23T20:25:00Z")
+        rows = [complete, dict(complete, kickoff_utc=None)]
+        deadline = acquired + FIXTURE_MAX_AGE
+        verified = schedule_status(engine, store, rows, deadline)
+        self.assertEqual(verified["recent_review_upcoming_fixtures"], 1)
+        self.assertEqual(verified["missing_review_upcoming_fixtures"], 1)
+        self.assertEqual(verified["schedule_evidence"][0]["expires_at_utc"], utc_text(deadline))
+        stale = schedule_status(engine, store, rows, deadline + timedelta(microseconds=1))
+        self.assertEqual(stale["recent_review_upcoming_fixtures"], 0)
+        self.assertEqual(stale["expired_review_upcoming_fixtures"], 1)
+
+    def test_new_download_time_with_same_bytes_does_not_prepare(self):
+        now = utc("2026-11-23T06:00:00Z")
+        evidence = [dict(acquired_at_utc="2026-11-21T20:20:23Z")]
+        header = dict(input_hashes={"raw/" + CURRENT: "old-sha"})
+        entry = dict(retrieved_at="2026-11-23T05:00:00Z", sha256="old-sha", url="public-source")
+        with patch("scripts.xpecta_api.research_preflight.manifest", return_value=({CURRENT: entry}, {})):
+            self.assertEqual(source_readiness(Path("unused"), header, evidence, now)["status"], "SAME_SOURCE_BYTES")
+            entry["sha256"] = "new-sha"
+            self.assertEqual(source_readiness(Path("unused"), header, evidence, now)["status"], "NEWER_BYTES_REVIEW_REQUIRED")
+            entry["retrieved_at"] = "2026-11-21T20:20:23Z"
+            self.assertEqual(source_readiness(Path("unused"), header, evidence, now)["status"], "SOURCE_ACQUISITION_NOT_CURRENT")
+
+    def test_successor_requires_explicit_pins_and_rejects_other_namespaces(self):
+        both = dict(snapshot_sha256="a" * 64, snapshot_manifest_sha256="b" * 64)
+        self.assertEqual(Settings(snapshot_version="reviewed-v4", **both).snapshot_version, "reviewed-v4")
+        for options in (dict(snapshot_version="reviewed-v4"), dict(snapshot_version="../reviewed", **both),
+                        dict(mode=Mode.SYNTHETIC_DEMO, snapshot_version="initial", **both)):
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                Settings(**options)
+
+    def test_successor_binding_checks_receipts_parent_digest_and_both_pins(self):
+        with TemporaryDirectory() as tmp:
+            def snapshot(name, parent=None):
+                path = Path(tmp) / name / "laliga_composite.sqlite3"
+                path.parent.mkdir()
+                path.write_text(name, encoding="utf-8")
+                path.with_name("manifest.json").write_text(name + "-manifest", encoding="utf-8")
+                return SimpleNamespace(path=path, manifest=dict(version_id=name, parent_version=parent))
+
+            v3 = snapshot(REAL_VERSION)
+            successor = snapshot("reviewed-v4", REAL_VERSION)
+            successor.manifest.update(
+                research_validation_status="validated_registry_rolling_features_and_frozen_inference_parity",
+                inference_validation=dict(production_approved=False, targets=1, success=1, expected_blocked=0,
+                                          max_raw_parity_delta=0, max_clipped_parity_delta=0))
+            change = dict(change_id="schedule", decision="MANUAL_REVIEW")
+            receipt = dict(change, review_decision="APPROVE", candidate_content_sha256="bound",
+                           candidate_version="reviewed-v4", parent_version=REAL_VERSION, review_reason="Verified",
+                           evidence_reference="record")
+            refresh = dict(dataset_kind="real", policy_version=POLICY_VERSION, parent_sha256=sha256(v3.path),
+                           candidate_content_sha256="bound", changes=[change], reviews={"schedule": receipt})
+            engine = SimpleNamespace(open={REAL_VERSION: v3}.get)
+            pins = dict(snapshot_sha256=sha256(successor.path),
+                        snapshot_manifest_sha256=sha256(successor.path.with_name("manifest.json")))
+            settings = Settings(snapshot_version="reviewed-v4", **pins)
+            with (patch("scripts.xpecta_api.research_binding.refresh_metadata", return_value=refresh),
+                  patch("scripts.xpecta_api.research_binding.REAL_SHA256", sha256(v3.path)),
+                  patch("scripts.xpecta_api.research_binding.REAL_MANIFEST_SHA256", sha256(v3.path.with_name("manifest.json")))):
+                self.assertEqual(verify_real_snapshot(engine, successor, settings), tuple(pins.values()))
+                wrong = Settings(snapshot_version="reviewed-v4", **dict(pins, snapshot_manifest_sha256="0" * 64))
+                with self.assertRaisesRegex(InferenceError, "server pins"):
+                    verify_real_snapshot(engine, successor, wrong)
+                receipt["review_decision"] = "REJECT"
+                with self.assertRaisesRegex(InferenceError, "review receipts"):
+                    verify_real_snapshot(engine, successor, settings)
+                receipt["review_decision"] = "APPROVE"
+                refresh["parent_sha256"] = "0" * 64
+                with self.assertRaisesRegex(InferenceError, "parent hash"):
+                    verify_real_snapshot(engine, successor, settings)
+
+    def test_real_changed_inputs_require_a_successor_before_append(self):
+        service = object.__new__(ForecastService)
+        service.eligibility = SimpleNamespace(dataset_kind="real")
+        service.ledger = Mock()
+        service._check_successor = Mock()
+        earlier = dict(forecast_id="earlier", history_snapshot_version=REAL_VERSION, canonical_fixture_key="fixture",
+                       target_match_date="2026-11-23", target_kickoff_utc="2026-11-23T20:00:00Z",
+                       target_semantics={}, model_artifact_sha256="frozen", features=[1, 2])
+        service.ledger.list_fixture_forecasts.return_value = [earlier]
+        candidate = dict(earlier, features=[1, 3])
+        with patch("scripts.multisource.forecast_service.generate_forecast",
+                   return_value=dict(status="GENERATED", forecast=candidate)):
+            with self.assertRaisesRegex(InferenceError, "verified successor"):
+                service.generate_forecast("fixture", REAL_VERSION)
+        service.ledger.append.assert_not_called()

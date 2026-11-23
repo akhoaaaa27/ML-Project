@@ -14,6 +14,7 @@ FRONTEND = ROOT / "web" / "xpecta"
 PREPARED = PRIVATE / "frontend"
 REAL_VERSION = "phase853_v3_20261122"
 REAL_SHA256 = "110f336daf40a6957cad6f5dc6c56298619ee96a52224b0fc4aa47a6b311b40e"
+REAL_MANIFEST_SHA256 = "22f32a8bd31a7b27f2183ec4b594b79a36f9421bc0727a01d297123155735e12"
 MODEL_SHA256 = "0258a05256e4b96fa71e229fdd98dead58cf914cb79811eaa829aa6afc4ebf69"
 MODEL_METADATA_SHA256 = "6044687950628d0310a8a7f3bde2692ed03c746e71b9679bde5a11e2c563a04c"
 DEMO_CLOCKS = {"initial": FIRST, "updated": UPDATE, "same-features": UPDATE, "incomplete": UPDATE}
@@ -33,13 +34,21 @@ class Settings:
     demo_name: str = "defense"
     operator_token: str = field(default="", repr=False)
     origins: tuple[str, ...] = ()
+    snapshot_sha256: str = ""
+    snapshot_manifest_sha256: str = ""
 
     def __post_init__(self):
         if not isinstance(self.mode, Mode):
             raise ValueError("Choose a supported XPECTA mode")
         allowed = DEMO_CLOCKS if self.mode == Mode.SYNTHETIC_DEMO else (REAL_VERSION,)
         if self.snapshot_version not in allowed:
-            raise ValueError("Snapshot ID is outside the server allowlist")
+            if (self.mode != Mode.REAL_RESEARCH
+                    or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", self.snapshot_version)
+                    or not all(re.fullmatch(r"[0-9a-f]{64}", digest)
+                               for digest in (self.snapshot_sha256, self.snapshot_manifest_sha256))):
+                raise ValueError("Snapshot ID is outside the server allowlist")
+        elif self.snapshot_sha256 or self.snapshot_manifest_sha256:
+            raise ValueError("Snapshot pins apply only to an explicitly selected real successor")
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", self.demo_name):
             raise ValueError("Invalid local demo name")
         if self.operator_token and (len(self.operator_token) < 24 or self.mode == Mode.HISTORICAL_REFERENCE):
@@ -65,4 +74,6 @@ class Settings:
             demo_name=os.getenv("XPECTA_DEMO_NAME", "defense"),
             operator_token=os.getenv("XPECTA_OPERATOR_TOKEN", ""),
             origins=tuple(s.strip() for s in os.getenv("XPECTA_DEV_ORIGINS", "").split(",") if s.strip()),
+            snapshot_sha256=os.getenv("XPECTA_SNAPSHOT_SHA256", ""),
+            snapshot_manifest_sha256=os.getenv("XPECTA_SNAPSHOT_MANIFEST_SHA256", ""),
         )

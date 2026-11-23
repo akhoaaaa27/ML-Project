@@ -1,6 +1,7 @@
 import {api} from "./api.js";
+import {fixturePage} from "./fixtures.js";
 import {$, comparison, csvText, fixtureCard, historyDetails, historyTable, leaderboard, matchAnalysis,
-  message, prediction, presetFixtures, renderModel, seasonName, statusName, teamStats} from "./view.js";
+  message, prediction, presetFixtures, renderModel, seasonName, teamStats} from "./view.js";
 
 const pages = {
   home: "Overview", predict: "Prediction", analysis: "Match Analysis",
@@ -8,9 +9,11 @@ const pages = {
 };
 const state = {
   page: "home", tab: "fixture", fixture: null, config: null, teams: [], fixtures: [],
-  history: [], hasHistory: false,
+  history: [], hasHistory: false, analysisOrigin: null, discoveryPage: 1, catalogueReady: false, data: null,
 };
 const pending = new Map();
+let scheduleTimer;
+let statusReceivedAt;
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
 const selectors = {
   customHome: "Valencia", customAway: "Real Madrid",
@@ -31,15 +34,27 @@ function loading(id) {
   notice(id, "Loading…");
 }
 
-async function display(id, work, apply) {
+async function display(id, work, apply, forecastContext) {
   const request = Symbol();
   pending.set(id, request);
-  loading(id);
+  if (forecastContext) {
+    $(id).setAttribute("aria-busy", "true");
+    renderHere(id, prediction(forecastContext(), {status: "LOADING"}));
+  } else {
+    loading(id);
+  }
   try {
     const result = await work();
     if (pending.get(id) === request) apply(result);
   } catch (error) {
-    if (pending.get(id) === request) notice(id, error.message || "The request failed.", true);
+    if (pending.get(id) === request) {
+      const text = error.message || "The request failed.";
+      if (forecastContext) {
+        renderHere(id, prediction(forecastContext(), {status: "FORECAST_ERROR", error: {message: text}}));
+      } else {
+        notice(id, text, true);
+      }
+    }
   } finally {
     if (pending.get(id) === request) {
       $(id)?.removeAttribute("aria-busy");
@@ -107,23 +122,152 @@ function openGuide() {
 function publishedByKey() {
   const latest = new Map();
   for (const row of state.history) {
+    if (!state.data || row.history_snapshot_version !== state.config.snapshot_version
+        || row.history_database_sha256 !== state.data.database_sha256 || row.model_version !== state.config.model_version
+        || row.dataset_kind !== (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real")) continue;
     const key = row.canonical_fixture_key;
     if (!latest.has(key) || latest.get(key).forecast_revision < row.forecast_revision) latest.set(key, row);
   }
   return latest;
 }
 
-function renderFixtures() {
+function catalogueTime() {
+  if (!state.data) return new Date().toISOString();
+  if (state.config.mode !== "REAL_RESEARCH") return state.data.evaluated_at_utc;
+  return new Date(Date.parse(state.data.evaluated_at_utc) + performance.now() - statusReceivedAt).toISOString();
+}
+
+function renderFixtures(time = catalogueTime()) {
   const latest = publishedByKey();
-  const fixtures = state.fixtures;
-  if (!fixtures.length) {
-    const text = "No upcoming fixtures are listed in this snapshot.";
-    notice("homeFixtures", text);
-    notice("presetFixtures", text);
-    return;
+  const overview = fixturePage(state.fixtures, {status: "upcoming"}, 1, time);
+  renderHere("homeFixtures", overview.total ?
+    overview.items.slice(0, 6).map(row => fixtureCard(row, latest.get(row.canonical_fixture_key))).join("") :
+    message("No upcoming fixtures are listed in this snapshot."));
+  renderDiscovery(latest, time);
+}
+
+function renderDiscovery(latest = publishedByKey(), time = catalogueTime()) {
+  if (!state.catalogueReady) return;
+  const filters = Object.fromEntries(new FormData($("fixtureFilters")));
+  const found = fixturePage(state.fixtures, filters, state.discoveryPage, time);
+  state.discoveryPage = found.page;
+  $("fixtureResults").textContent = found.total
+    ? `${found.first}–${found.last} of ${found.total} matches · ${state.fixtures.length} in season`
+    : `0 matches · ${state.fixtures.length} in season`;
+  $("fixturePage").textContent = `Page ${found.page} of ${found.pages}`;
+  $("fixturePrevious").disabled = found.page === 1;
+  $("fixtureNext").disabled = found.page === found.pages;
+  if (found.invalidRange) {
+    notice("presetFixtures", "The UTC end date must be on or after the start date.", true);
+  } else {
+    renderHere("presetFixtures", found.total ? presetFixtures(found.items, latest) : message("No fixtures match these filters."));
   }
-  renderHere("homeFixtures", fixtures.slice(0, 6).map(row => fixtureCard(row, latest.get(row.canonical_fixture_key))).join(""));
-  renderHere("presetFixtures", presetFixtures(fixtures, latest));
+}
+
+function installDiscovery() {
+  $("fixturePick").querySelector("h2").textContent = "FIND FIXTURES";
+  $("presetFixtures").insertAdjacentHTML("beforebegin", `
+    <form id="fixtureFilters" class="card fixture-filters mt20" aria-label="Filter fixture catalogue">
+      <div class="field"><label for="fixtureSearch">Search teams</label><input id="fixtureSearch" name="search" type="search"></div>
+      <div class="field"><label for="fixtureTeam">Team</label><select id="fixtureTeam" name="team"></select></div>
+      <div class="field"><label for="fixtureStart">From (UTC)</label><input id="fixtureStart" name="start" type="date"></div>
+      <div class="field"><label for="fixtureEnd">Through (UTC)</label><input id="fixtureEnd" name="end" type="date"></div>
+      <div class="field"><label for="fixtureStatus">Catalogue status</label><select id="fixtureStatus" name="status">
+        <option value="upcoming">Upcoming</option><option value="">All listed</option><option value="scheduled">Scheduled</option>
+        <option value="completed">Completed</option><option value="live">Live in snapshot</option>
+        <option value="postponed">Postponed</option><option value="cancelled">Cancelled</option><option value="unverified">Unverified</option>
+      </select></div>
+      <button class="btn btn-outline" type="reset">Clear filters</button>
+    </form>
+    <p id="fixtureResults" class="subtext mt20" role="status" tabindex="-1"></p>`);
+  $("presetFixtures").insertAdjacentHTML("afterend", `
+    <nav class="fixture-pagination mt20" aria-label="Fixture pages">
+      <button class="btn btn-outline btn-sm" id="fixturePrevious" disabled>Previous</button>
+      <span id="fixturePage" class="chip"></span>
+      <button class="btn btn-outline btn-sm" id="fixtureNext" disabled>Next</button>
+    </nav>`);
+  $("homeFixtures").insertAdjacentHTML("beforebegin", '<p id="homeSchedule" class="indicator"></p>');
+  $("fixtureDataStatus").setAttribute("aria-live", "polite");
+  $("fixtureDataStatus").parentElement.insertAdjacentHTML("afterend", `
+    <details class="fixture-evidence mt20"><summary>Schedule evidence</summary>
+      <p id="fixtureEvidence" class="subtext"></p></details>`);
+  $("fixtureFilters").addEventListener("submit", event => event.preventDefault());
+  const apply = () => {
+    state.discoveryPage = 1;
+    renderDiscovery();
+  };
+  $("fixtureFilters").addEventListener("input", apply);
+  $("fixtureFilters").addEventListener("reset", () => setTimeout(apply, 0));
+  for (const [id, direction] of [["fixturePrevious", -1], ["fixtureNext", 1]]) {
+    $(id).addEventListener("click", () => {
+      state.discoveryPage += direction;
+      renderDiscovery();
+      $("fixtureResults").focus();
+    });
+  }
+}
+
+function renderFreshness(data) {
+  const wording = {
+    VERIFIED: "Recent schedule evidence",
+    PARTIAL: "Some fixtures lack recent schedule evidence",
+    UNVERIFIED: data?.expired_review_upcoming_fixtures ? "Schedule evidence is stale" : "Schedule evidence is unverified",
+    NO_UPCOMING: "No upcoming fixtures in the snapshot",
+    HISTORICAL_ONLY: "Historical reference",
+  };
+  const label = wording[data?.schedule_freshness] ?? "Schedule status unavailable";
+  const snapshotLabel = state.config?.mode === "SYNTHETIC_DEMO" ? "Synthetic test snapshot" : "Research snapshot available";
+  $("homeSchedule").textContent = data ? `${snapshotLabel} · ${label}` : label;
+  $("fixtureDataStatus").textContent = label;
+  $("fixtureEvidence").textContent = data ? `${data.snapshot_version} · checked ${data.evaluated_at_utc}. ` +
+    `${data.recent_review_upcoming_fixtures} of ${data.upcoming_fixtures} upcoming fixtures have recent evidence. ` +
+    data.schedule_evidence.map(group =>
+      `${group.fixtures} acquired ${group.acquired_at_utc}, expiry ${group.expires_at_utc} (${group.status.toLowerCase()}).`).join(" ")
+    : "The service has not provided schedule evidence.";
+}
+
+function showFreshness(data) {
+  clearTimeout(scheduleTimer);
+  state.data = data;
+  statusReceivedAt = performance.now();
+  renderFreshness(data);
+  if (!data || state.config.mode !== "REAL_RESEARCH") return;
+  const serverTime = Date.parse(data.evaluated_at_utc);
+  const start = statusReceivedAt;
+  const expiries = data.schedule_evidence.filter(group => group.status === "VALID")
+    .map(group => Date.parse(group.expires_at_utc)).sort((a, b) => a - b);
+
+  function watch(now) {
+    const next = expiries.find(expiry => expiry >= now);
+    if (next === undefined) return;
+    scheduleTimer = setTimeout(async () => {
+      const effectiveTime = Math.max(next + 1, serverTime + performance.now() - start);
+      let newlyExpired = 0;
+      const evidence = data.schedule_evidence.map(group => {
+        if (group.status !== "VALID" || Date.parse(group.expires_at_utc) >= effectiveTime) return group;
+        newlyExpired += group.fixtures;
+        return {...group, status: "EXPIRED"};
+      });
+      const recent = data.recent_review_upcoming_fixtures - newlyExpired;
+      renderFreshness({...data, schedule_evidence: evidence, recent_review_upcoming_fixtures: recent,
+        expired_review_upcoming_fixtures: data.expired_review_upcoming_fixtures + newlyExpired,
+        schedule_freshness: recent ? "PARTIAL" : "UNVERIFIED"});
+      if (state.catalogueReady) renderFixtures(new Date(effectiveTime).toISOString());
+      watch(effectiveTime);
+      try {
+        const latest = await api.dataStatus();
+        if (state.data === data && latest.snapshot_version === data.snapshot_version &&
+            Date.parse(latest.evaluated_at_utc) > next &&
+            Date.parse(latest.evaluated_at_utc) >= serverTime + performance.now() - start) {
+          showFreshness(latest);
+          if (state.catalogueReady) renderFixtures();
+        }
+      } catch {
+        // The recorded expiry still applies if localhost does not respond.
+      }
+    }, next - now + 1);
+  }
+  watch(serverTime);
 }
 
 function homeBars() {
@@ -140,6 +284,7 @@ function updatePredictTab() {
   cancel("predictionOutput");
   $("predError").style.display = "none";
   $("predictionOutput").hidden = true;
+  $("predictionOutput").replaceChildren();
   $("fixtureBack").hidden = true;
   $("fixturePick").hidden = state.tab !== "fixture";
   $("customPick").hidden = state.tab !== "custom";
@@ -153,7 +298,20 @@ function updatePredictTab() {
 function resetPrediction(tab) {
   state.tab = tab;
   state.fixture = null;
+  state.analysisOrigin = null;
   updatePredictTab();
+}
+
+function showForecast(fixture, result) {
+  const preview = result.preview;
+  if (preview && (preview.canonical_fixture_key !== fixture.canonical_fixture_key ||
+      preview.history_snapshot_version !== state.config.snapshot_version ||
+      preview.model_version !== state.config.model_version ||
+      preview.dataset_kind !== (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real"))) {
+    throw new Error("The forecast context changed. Reload XPECTA before previewing again.");
+  }
+  state.fixture = fixture;
+  renderHere("predictionOutput", prediction(fixture, result));
 }
 
 async function forecastFor(fixture) {
@@ -161,8 +319,10 @@ async function forecastFor(fixture) {
   $("fixturePick").hidden = state.tab === "fixture";
   $("fixtureBack").hidden = state.tab !== "fixture";
   $("predictionOutput").hidden = false;
-  await display("predictionOutput", () => api.preview(fixture.canonical_fixture_key),
-    result => renderHere("predictionOutput", prediction(fixture, result)));
+  const preview = display("predictionOutput", () => api.preview(fixture.canonical_fixture_key),
+    result => showForecast(fixture, result), () => fixture);
+  $("predictionOutput").focus({preventScroll: true});
+  await preview;
 }
 
 function selectFixture(key) {
@@ -178,18 +338,16 @@ async function customPrediction() {
   const button = $("runPrediction");
   const home = $("customHome").value;
   const away = $("customAway").value;
+  let fixture = {home_team: home, away_team: away, season: state.config.current_season};
   button.disabled = true;
   $("predictionOutput").hidden = false;
   try {
     await display("predictionOutput", async () => {
       const matches = await api.fixtures({home, away, season: state.config.current_season});
       if (matches.length !== 1) throw new Error("No canonical fixture was found for this matchup.");
-      const fixture = matches[0];
-      return {fixture, result: await api.preview(fixture.canonical_fixture_key)};
-    }, ({fixture, result}) => {
-      state.fixture = fixture;
-      renderHere("predictionOutput", prediction(fixture, result));
-    });
+      fixture = matches[0];
+      return api.preview(fixture.canonical_fixture_key);
+    }, result => showForecast(fixture, result), () => fixture);
   } finally {
     button.disabled = false;
   }
@@ -227,7 +385,7 @@ function renderHistory() {
   if (!state.hasHistory) return;
   const rows = visibleHistory();
   $("historyCount").textContent = `${rows.length} / ${state.history.length} records`;
-  renderHere("historyTable", historyTable(rows));
+  renderHere("historyTable", historyTable(rows, state.history.length));
 }
 
 function showHistory() {
@@ -275,6 +433,7 @@ function toggleMobile(open) {
 function navigate() {
   const candidate = location.hash.slice(1);
   const page = Object.hasOwn(pages, candidate) ? candidate : "home";
+  const previousPage = state.page;
   state.page = page;
   document.querySelectorAll(".page").forEach(section => section.classList.toggle("active", section.id === `page-${page}`));
   document.querySelectorAll("[data-page]").forEach(button => {
@@ -286,6 +445,14 @@ function navigate() {
   document.title = `${pages[page]} · XPECTA`;
   window.scrollTo(0, 0);
   if (!state.config) return;
+  if (previousPage === "predict" && page !== "predict") {
+    state.fixture = null;
+    updatePredictTab();
+  }
+  if (previousPage === "analysis" && page !== "analysis") {
+    if (page === "predict" && state.analysisOrigin) restorePredictionFromAnalysis();
+    else state.analysisOrigin = null;
+  }
   if (page === "analysis") void showAnalysis();
   if (page === "stats") void showStats();
   if (page === "history") void showHistory();
@@ -297,29 +464,51 @@ function go(page) {
   else location.hash = page;
 }
 
+function restorePredictionFromAnalysis() {
+  const home = $("analysisHome").value;
+  const away = $("analysisAway").value;
+  const origin = state.analysisOrigin;
+  const sameFixture = origin && origin.fixture.home_team === home && origin.fixture.away_team === away &&
+    origin.fixture.season === Number($("analysisSeason").value);
+  resetPrediction(sameFixture ? origin.tab : "custom");
+  if (state.tab === "custom") {
+    $("customHome").value = home;
+    $("customAway").value = away;
+  }
+  // Re-evaluate through the current binding. A cached result could have expired at kickoff or on refresh.
+  if (sameFixture) void forecastFor(origin.fixture);
+}
+
 function bind() {
   document.addEventListener("click", event => {
-    const button = event.target.closest("[data-page],[data-jump],[data-fixture],[data-pred-mode],[data-history],[data-compare],[data-guide],[data-analyze],[data-to-custom]");
+    const button = event.target.closest("[data-page],[data-jump],[data-fixture],[data-pred-mode],[data-history],[data-compare],[data-guide],[data-analyze],[data-to-custom],[data-retry-forecast],[data-back-to-fixtures]");
     if (!button) return;
     const {page, jump, fixture, predMode, history, compare} = button.dataset;
     if (page || jump) {
-      if ((page || jump) === "predict") resetPrediction("fixture");
-      go(page || jump);
+      const destination = page || jump;
+      if (destination === "predict" && !(state.page === "analysis" && state.analysisOrigin)) {
+        resetPrediction("fixture");
+      }
+      go(destination);
     } else if (fixture) selectFixture(fixture);
     else if (predMode) resetPrediction(predMode);
     else if (history) void showDetails(history);
     else if (compare) void showComparison(compare);
     else if (button.hasAttribute("data-guide")) openGuide();
+    else if (button.hasAttribute("data-back-to-fixtures")) resetPrediction("fixture");
+    else if (button.hasAttribute("data-retry-forecast")) {
+      if (state.tab === "fixture" && state.fixture) void forecastFor(state.fixture);
+      else void customPrediction();
+    }
     else if (button.hasAttribute("data-analyze") && state.fixture) {
+      state.analysisOrigin = {fixture: state.fixture, tab: state.tab};
       $("analysisSeason").value = state.fixture.season;
       filterTeams("analysis");
       $("analysisHome").value = state.fixture.home_team;
       $("analysisAway").value = state.fixture.away_team;
       go("analysis");
     } else if (button.hasAttribute("data-to-custom")) {
-      resetPrediction("custom");
-      $("customHome").value = $("analysisHome").value;
-      $("customAway").value = $("analysisAway").value;
+      restorePredictionFromAnalysis();
       go("predict");
     }
   });
@@ -327,8 +516,10 @@ function bind() {
   $("brand").addEventListener("click", () => go("home"));
   $("brand").addEventListener("keydown", event => { if (event.key === "Enter") go("home"); });
   $("backToFixtures").addEventListener("click", () => {
+    const key = state.fixture?.canonical_fixture_key;
     resetPrediction("fixture");
-    window.scrollTo(0, 0);
+    const prior = [...$("presetFixtures").querySelectorAll("[data-fixture]")].find(button => button.dataset.fixture === key);
+    (prior || $("fixtureResults")).focus();
   });
   $("runPrediction").addEventListener("click", customPrediction);
   for (const id of ["customHome", "customAway"]) $(id).addEventListener("change", () => resetPrediction("custom"));
@@ -375,6 +566,14 @@ function bind() {
 }
 
 async function initialize() {
+  const stylesheet = document.createElement("link");
+  stylesheet.rel = "stylesheet";
+  stylesheet.href = "/assets/phase9.css";
+  document.head.append(stylesheet);
+  $("predictionOutput").setAttribute("aria-live", "polite");
+  $("predictionOutput").tabIndex = -1;
+  $("exportHistory").textContent = "↓ Export filtered CSV";
+  installDiscovery();
   bind();
   resetPrediction("fixture");
   navigate();
@@ -384,32 +583,36 @@ async function initialize() {
     [state.config, state.teams] = await Promise.all([api.bootstrap(), api.teams()]);
     $("bridgeModeText").textContent = state.config.label;
     setSelectors();
+    addOptions("fixtureTeam", [["", "All teams"], ...state.teams.filter(team =>
+      team.seasons.includes(state.config.current_season)).map(team => [team.id, team.name])], "");
     navigate();
     const [fixtures, freshness, history] = await Promise.allSettled([
-      api.fixtures({upcoming: true, season: state.config.current_season}), api.dataStatus(), api.history(),
+      api.fixtures({season: state.config.current_season}), api.dataStatus(), api.history(),
     ]);
     if (history.status === "fulfilled") {
       state.history = history.value;
       state.hasHistory = true;
     }
+    if (freshness.status === "fulfilled") {
+      const data = freshness.value;
+      $("cutoffHero").textContent = data.latest_verified_completed_date || "—";
+      $("totalMatches").textContent = data.verified_completed.toLocaleString("en-GB");
+      showFreshness(data);
+    } else {
+      showFreshness(null);
+    }
     if (fixtures.status === "fulfilled") {
       state.fixtures = fixtures.value;
+      state.catalogueReady = true;
       renderFixtures();
     } else {
       notice("homeFixtures", fixtures.reason.message, true);
       notice("presetFixtures", fixtures.reason.message, true);
     }
-    if (freshness.status === "fulfilled") {
-      const data = freshness.value;
-      $("cutoffHero").textContent = data.latest_verified_completed_date || "—";
-      $("totalMatches").textContent = data.verified_completed.toLocaleString("en-GB");
-      $("fixtureDataStatus").textContent = `Schedule review · ${statusName(data.schedule_freshness)} · ${data.snapshot_version}`;
-    } else {
-      $("fixtureDataStatus").textContent = "Schedule review status unavailable.";
-    }
     void homeBars();
   } catch (error) {
     $("bridgeModeText").textContent = "SERVICE UNAVAILABLE";
+    showFreshness(null);
     for (const id of ["homeFixtures", "presetFixtures", "homeTeamBars", "analysisOutput", "statsOutput",
       "historyTable", "featuresList"]) notice(id, error.message, true);
   } finally {

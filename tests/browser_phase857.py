@@ -151,9 +151,30 @@ def workflow(browser, local, output, issues):
     monitor(page, issues)
     page.goto(local)
     await_page(page, "home")
+    cards = page.locator("#homeFixtures .fixture-card")
+    expect(cards).to_have_count(4)
+    first, middle, _, last = [card.bounding_box() for card in cards.all()]
+    assert abs(last["x"] - middle["x"]) <= 1 and abs(last["width"] - first["width"]) <= 1
+    assert page.evaluate("""async () => {
+      const {fixturePage} = await import('/assets/fixtures.js');
+      const now = '2026-11-20T10:00:00Z';
+      const rows = Array.from({length: 20}, (_, index) => ({
+        canonical_fixture_key: String(index).padStart(2, '0'), home_team: 'Atlético Madrid',
+        away_team: 'Test Club', match_date: '2026-11-23', observed_status: 'scheduled',
+        kickoff_utc: index === 0 ? null : '2026-11-23T20:00:00Z',
+      })).reverse();
+      const lengths = [0, 1, 4, 12, 20].map(n => fixturePage(rows.slice(0, n), {}, 1, now).items.length);
+      const second = fixturePage(rows, {search: '  ATLETICO   madrid  '}, 2, now);
+      const date = fixturePage(rows, {start: '2026-11-23', end: '2026-11-23'}, 99, now);
+      return lengths.join() === '0,1,4,12,12' && second.total === 20 &&
+        second.items[0].canonical_fixture_key === '13' && second.items.at(-1).kickoff_utc === null &&
+        date.total === 19 && date.page === 2;
+    }""")
     page.evaluate(LATE_PREVIEW)
     page.locator("#homeFixtures button" + f'[data-fixture="{TARGET}"]').click()
     expect(page.locator("#predictionOutput")).to_have_attribute("aria-busy", "true")
+    expect(page.locator("#predictionOutput .forecast-placeholder")).to_have_count(2)
+    expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
     expect(page.get_by_text("Loading…", exact=True).last).to_be_visible()
     screenshot(page, output / "prediction-loading.png")
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(2)
@@ -171,19 +192,41 @@ def workflow(browser, local, output, issues):
     assert [node.inner_text() for node in page.locator("#predictionOutput [data-xg]").all()] == preset
     page.locator("[data-analyze]").click()
     await_page(page, "analysis")
+    expect(page.locator(".analysis-insights-card")).to_be_visible()
+    with page.expect_request(lambda request: request.url.endswith("/api/v1/forecasts/preview")) as resumed:
+        page.locator(".analysis-insights-card [data-to-custom]").click()
+    assert resumed.value.post_data_json == {"fixture_key": TARGET}
+    expect(page.locator("#predictionOutput [data-readiness]")).to_have_text("EARLY READY")
+    assert [node.inner_text() for node in page.locator("#predictionOutput [data-xg]").all()] == preset
+    page.locator("[data-analyze]").click()
+    await_page(page, "analysis")
+    with page.expect_request(lambda request: request.url.endswith("/api/v1/forecasts/preview")) as nav_resumed:
+        page.locator(".nav-links [data-page=predict]").click()
+    assert nav_resumed.value.post_data_json == {"fixture_key": TARGET}
+    expect(page.locator("#predictionOutput [data-xg]")).to_have_count(2)
+    page.locator("[data-analyze]").click()
+    await_page(page, "analysis")
     page.locator("#analysisWindow").select_option("10")
     page.locator("#analysisRefresh").click()
     expect(page.locator("#analysisOutput").get_by_text("LAST 10", exact=False).first).to_be_visible()
+    page.locator("#analysisAway").select_option("Barcelona")
+    page.locator("#analysisRefresh").click()
+    expect(page.locator(".analysis-insights-card")).to_be_visible()
+    page.locator(".analysis-insights-card [data-to-custom]").click()
+    expect(page.locator("#customAway")).to_have_value("Barcelona")
+    expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
     page.locator(".nav-links [data-page=stats]").click()
     await_page(page, "stats")
     page.locator("#statsSeason").select_option("2026")
     page.locator("#statsTeam").select_option("Valencia")
     page.locator("#statsRefresh").click()
     expect(page.locator("#statsOutput .section-title").first).to_have_text("VALENCIA")
+    expect(page.locator("[data-team-comparison] .crest")).to_have_count(2)
     page.locator(".nav-links [data-page=model]").click()
     await_page(page, "model")
     expect(page.locator("#featuresList code")).to_have_count(13)
     expect(page.locator("#featuresList code").nth(11)).to_have_text("opponent_matches_seen")
+    expect(page.locator("#modelMetricCards")).to_contain_text("2025/26 after 2025-09-30")
     page.locator(".nav-links [data-page=history]").click()
     await_page(page, "history")
     expect(page.locator("#historyTable tbody tr")).to_have_count(2)
@@ -196,6 +239,8 @@ def workflow(browser, local, output, issues):
     page.locator("#historySort").select_option("old")
     expect(page.locator("#historyTable tbody tr").first).to_contain_text("INITIAL")
     page.locator("#historyTable [data-history]").first.click()
+    page.get_by_text("Revision evidence", exact=True).click()
+    expect(page.locator(".history-integrity")).to_contain_text("Feature SHA-256")
     page.locator("[data-compare]").click()
     expect(page.locator("#compareOutput h3")).to_have_text("V1 → V2")
     screenshot(page, output / "comparison.png")
@@ -203,7 +248,7 @@ def workflow(browser, local, output, issues):
     with page.expect_download() as pending:
         page.locator("#exportHistory").click()
     csv = Path(pending.value.path()).read_text(encoding="utf-8-sig")
-    assert '"INITIAL"' in csv and '"UPDATED"' in csv and '"dataset_kind"' in csv
+    assert all(name in csv for name in ('"INITIAL"', '"UPDATED"', '"dataset_kind"', '"record_sha256"', '"features_sha256"'))
     assert page.evaluate(r"""async () => {
       const {csvText} = await import('/assets/view.js');
       const value = csvText([{home_team:' =2+2', away_team:'Tab\t\n"quoted"'}]);
@@ -214,6 +259,13 @@ def workflow(browser, local, output, issues):
     expect(page.locator("#featuresList [role=alert]")).to_have_text("XPECTA returned an unexpected response.")
     screenshot(page, output / "api-failure.png")
     page.unroute("**/api/v1/model/summary")
+    page.locator(".nav-links [data-page=predict]").click()
+    page.route("**/api/v1/forecasts/preview", lambda route: route.fulfill(status=200, json={}))
+    page.locator("#presetFixtures button" + f'[data-fixture="{TARGET}"]').click()
+    expect(page.locator("#predictionOutput [role=alert]")).to_have_text("XPECTA returned an unexpected response.")
+    expect(page.locator("#predictionOutput .forecast-placeholder")).to_have_count(2)
+    expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
+    page.unroute("**/api/v1/forecasts/preview")
     page.locator(".nav-links [data-page=home]").click()
     expect(page.locator("#homeFixtures .fixture-card").first).to_be_visible()
     context.close()
@@ -237,6 +289,7 @@ def mobile_and_blocked(browser, local, output, issues):
     expect(page.locator("#predictionOutput [data-readiness]")).to_have_text("WAITING DATA")
     expect(page.locator("#predictionOutput [role=alert]")).to_have_text("MISSING ROLLING STATISTICS")
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
+    expect(page.locator("#predictionOutput .forecast-placeholder")).to_have_count(2)
     screenshot(page, output / "mobile-missing-data.png")
     context.close()
 
@@ -252,6 +305,8 @@ def live_fixture_workflow(browser, local, output, issues):
     page.locator(".nav-links [data-page=predict]").click()
     await_page(page, "predict")
     expect(page.locator(f'#presetFixtures button[data-fixture="{TARGET}"]')).to_have_count(0)
+    page.get_by_label("Catalogue status").select_option("live")
+    expect(page.locator(f'#presetFixtures button[data-fixture="{TARGET}"]')).to_have_count(1)
     page.get_by_role("button", name="Custom matchup").click()
     page.locator("#customHome").select_option("Valencia")
     page.locator("#customAway").select_option("Real Madrid")
@@ -263,6 +318,7 @@ def live_fixture_workflow(browser, local, output, issues):
     expect(page.locator("#predictionOutput [data-readiness]")).to_have_text("UNAVAILABLE")
     expect(page.locator("#predictionOutput [role=alert]")).to_have_text("TARGET NOT UPCOMING")
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
+    expect(page.locator("#predictionOutput .forecast-placeholder")).to_have_count(2)
     screenshot(page, output / "live-fixture-unavailable.png")
     context.close()
 

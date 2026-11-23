@@ -1,0 +1,60 @@
+/* Keep the V9.12 card and chrome styling, including its original breakpoints. */
+@media (min-width: 961px) {
+  #homeFixtures, #presetFixtures .match-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .match-grid > .fixture-card { grid-column: span 2; }
+  .match-grid > .fixture-card:nth-child(3n + 1):last-child { grid-column: 3 / span 2; }
+  .match-grid > .fixture-card:nth-child(3n + 1):nth-last-child(2) { grid-column: 2 / span 2; }
+  .match-grid > .fixture-card:nth-child(3n + 2):last-child { grid-column: 4 / span 2; }
+}
+#homeFixtures > .empty, #homeFixtures > .error-box { grid-column: 1 / -1; }
+.fixture-top > time { text-align: end; }
+.fixture-xg .fixture-status { font-size: 12px; }
+.fixture-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.fixture-filters .field, .fixture-filters input, .fixture-filters select { min-width: 0; }
+.fixture-filters input, .fixture-filters select { width: 100%; }
+.fixture-filters button { justify-self: start; }
+.fixture-pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+.fixture-pagination button:disabled { opacity: .55; cursor: default; }
+.fixture-evidence summary { cursor: pointer; width: fit-content; }
+.fixture-evidence p { margin: 8px 0 0; }
+#fixtureResults:focus-visible { outline: 2px solid var(--green3); outline-offset: 4px; }
+#homeSchedule { margin: 12px 0; }
+#predictionOutput { scroll-margin-top: 90px; }
+.forecast-panel .forecast-placeholder {
+  display: flex;
+  min-height: clamp(68px, 7.4vw, 107px);
+  align-items: center;
+  font: 800 clamp(21px, 3.3vw, 46px) / 1.1 var(--display);
+}
+.prediction-state .indicator, .prediction-state .error-box { margin-top: 12px; }
+.history-value.home { color: var(--green3); font-weight: 800; }
+.history-value.away { color: #ff8a57; font-weight: 800; }
+.history-table-region:focus-visible { outline: 2px solid var(--green3); outline-offset: 4px; }
+.history-empty { text-align: left; }
+.history-empty .card-title { margin-bottom: 8px; }
+.history-integrity dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+.model-evaluation-plot {
+  display: grid;
+  align-content: center;
+  min-height: clamp(170px, 21vw, 300px);
+}
+.model-evaluation-plot .chart-legend { justify-content: space-between; }
+@media (max-width: 680px) {
+  .fixture-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fixture-filters .field:first-child { grid-column: 1 / -1; }
+  #page-analysis .analysis-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    gap: 10px;
+  }
+  #page-analysis .analysis-controls .analysis-season { min-width: 0; }
+  #page-analysis .analysis-controls .btn { grid-column: 1 / -1; }
+}
+@media (max-width: 360px) {
+  #page-analysis .analysis-controls { grid-template-columns: minmax(0, 1fr); }
+}

@@ -4,7 +4,7 @@ from scripts.inference.common import sha256
 from .fixture_catalogue import data_status, refresh_metadata
 from .forecast_eligibility import POLICY_VERSION, ForecastEligibility
 from .forecast_generation import generate_forecast
-from .forecast_ledger import ForecastLedger
+from .forecast_ledger import ForecastLedger, _equal_inputs
 from .match_registry import require
 
 
@@ -42,18 +42,25 @@ class ForecastService:
                 break
             parent = self.eligibility.open(version)
             expected_hash = (refresh_metadata(store) or {}).get("parent_sha256")
+            if self.eligibility.dataset_kind == "real":
+                require(expected_hash, "SNAPSHOT_BINDING_MISMATCH", "Successor does not attest its parent hash")
             store = parent
         require(False,"STALE_FORECAST_SNAPSHOT","Use the same history or a verified successor")
 
-    def generate_forecast(self, canonical_fixture_key, snapshot_version):
+    def generate_forecast(self, canonical_fixture_key, snapshot_version, *, expected=None):
         chain = self.ledger.list_fixture_forecasts(canonical_fixture_key)
         previous = chain[-1] if chain else None
         result = generate_forecast(canonical_fixture_key,snapshot_version,eligibility=self.eligibility)
         if result["status"] != "GENERATED":
             return result
         forecast = result["forecast"]
+        require(expected is None or all(forecast[key] == value for key, value in expected.items()),
+                "PREVIEW_BINDING_CHANGED", "Preview inputs changed before publication")
         if previous:
             self._check_successor(previous,forecast)
+            if self.eligibility.dataset_kind == "real" and snapshot_version == previous["history_snapshot_version"]:
+                require(_equal_inputs(previous, forecast), "STALE_FORECAST_SNAPSHOT",
+                        "A real revision with changed inputs requires a verified successor")
         result = self.ledger.append(forecast,expected_previous_id=previous["forecast_id"] if previous else None)
         if result["status"] == "NO_CHANGE":
             result.update(evaluated_eligibility_status=forecast["eligibility_status"],
