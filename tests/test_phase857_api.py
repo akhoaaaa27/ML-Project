@@ -1,6 +1,7 @@
 """Local HTTP contracts over the real frozen model and isolated synthetic snapshots."""
 
 from concurrent.futures import ThreadPoolExecutor
+from itertools import permutations
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
@@ -12,21 +13,41 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from scripts.inference.common import InferenceError, sha256
-from scripts.multisource.forecast_examples import TARGET
+from scripts.multisource.forecast_eligibility import utc
+from scripts.multisource.forecast_examples import FIRST, TARGET, synthetic_snapshot
 from scripts.multisource.forecast_generation import generate_forecast
 from scripts.multisource.forecast_ledger import ForecastLedger
+from scripts.multisource.match_registry import canonical_key
+from scripts.multisource.refresh_demo import CLUBS
 from scripts.xpecta_api.app import create_app
 from scripts.xpecta_api.demo import initialize_demo
-from scripts.xpecta_api.schemas import ForecastRequest
+from scripts.xpecta_api.schemas import Fixture, ForecastRequest
 from scripts.xpecta_api.settings import MODEL_SHA256, Mode, REAL_VERSION, Settings
 from scripts.xpecta_api.prepare_frontend import build
 
 BASE = "/api/v1"
 OPERATOR = "deterministic-synthetic-operator-for-tests"
 AUTH = {"Authorization": f"Bearer {OPERATOR}"}
+OBSERVED_STATUSES = ("scheduled", "completed", "live", "postponed", "cancelled", "unverified")
+
+
+def create_live_demo(root):
+    index = next(i for i, teams in enumerate(permutations(CLUBS, 2)) if canonical_key(2026, *teams) == TARGET)
+    return synthetic_snapshot(root / "history", "initial", status_changes={index: "live"})
 
 
 class Phase857SchemaTests(unittest.TestCase):
+    def test_fixture_supports_all_registry_observed_statuses(self):
+        fixture = dict(canonical_fixture_key=TARGET, season=2026, home_team="Valencia", away_team="Real Madrid",
+                       match_date="2026-11-23", kickoff_utc="2026-11-23T19:30:00Z", match_status="UNVERIFIED",
+                       statistics_status="UNVERIFIED", snapshot_version="initial", verified_at=FIRST)
+        for status in OBSERVED_STATUSES:
+            with self.subTest(status=status):
+                validated = Fixture.model_validate(dict(fixture, observed_status=status))
+                self.assertEqual(validated.observed_status, status)
+        with self.assertRaises(ValidationError):
+            Fixture.model_validate(dict(fixture, observed_status="finished"))
+
     def test_rejects_unknown_fields_types_and_paths(self):
         for invalid in (
             {"fixture_key": "/tmp/other.sqlite3"},
@@ -70,8 +91,8 @@ class Phase857HttpTests(unittest.TestCase):
         cls.demo = cls.private / "demos" / "test-run"
         initialize_demo(cls.demo)
 
-    def client(self, profile="initial", *, token="", origins=()):
-        return TestClient(create_app(Settings(Mode.SYNTHETIC_DEMO, profile, "test-run", token, origins)),
+    def client(self, profile="initial", *, token="", origins=(), demo_name="test-run"):
+        return TestClient(create_app(Settings(Mode.SYNTHETIC_DEMO, profile, demo_name, token, origins)),
                           base_url="http://localhost", raise_server_exceptions=False)
 
     def isolated_ledger(self, label):
@@ -115,6 +136,87 @@ class Phase857HttpTests(unittest.TestCase):
                 response = client.get(BASE + "/fixtures?" + query)
                 self.assertEqual(response.status_code, 422)
                 self.assertEqual(response.json()["error"]["code"], "INVALID_REQUEST")
+
+    def test_live_fixture_serializes_with_identical_public_fields(self):
+        with self.client() as client:
+            params = dict(season=2026, home="Valencia", away="Real Madrid")
+            original = client.get(BASE + "/fixtures", params=params).json()["items"][0]
+            self.assertEqual(original["canonical_fixture_key"], TARGET)
+            self.assertEqual(original["observed_status"], "scheduled")
+            rows = client.app.state.service.fixtures
+            with patch.dict(rows, {TARGET: dict(rows[TARGET], observed_status="live")}):
+                response = client.get(BASE + "/fixtures")
+            self.assertEqual(response.status_code, 200)
+            match = next(row for row in response.json()["items"] if row["canonical_fixture_key"] == TARGET)
+            self.assertEqual(match, dict(original, observed_status="live"))
+
+    def test_live_filter_excludes_upcoming_and_is_documented_in_openapi(self):
+        with self.client() as client:
+            rows = client.app.state.service.fixtures
+            with patch.dict(rows, {TARGET: dict(rows[TARGET], observed_status="live")}):
+                result = client.get(BASE + "/fixtures?status=live")
+                self.assertEqual(result.status_code, 200)
+                self.assertEqual([(row["canonical_fixture_key"], row["observed_status"])
+                                  for row in result.json()["items"]], [(TARGET, "live")])
+                result = client.get(BASE + "/fixtures?status=live&upcoming=true")
+                self.assertEqual(result.status_code, 200)
+                self.assertEqual(result.json()["items"], [])
+                result = client.get(BASE + "/fixtures?season=2026&upcoming=true")
+                self.assertEqual(result.status_code, 200)
+                self.assertTrue(result.json()["items"])
+                self.assertNotIn(TARGET, {row["canonical_fixture_key"] for row in result.json()["items"]})
+            schema = client.get("/openapi.json").json()
+            fixtures = schema["paths"][BASE + "/fixtures"]["get"]
+            status_filter = next(param for param in fixtures["parameters"] if param["name"] == "status")
+            alternatives = status_filter["schema"]["anyOf"]
+            self.assertEqual(set(next(item["enum"] for item in alternatives if "enum" in item)),
+                             set(OBSERVED_STATUSES))
+            self.assertEqual(set(schema["components"]["schemas"]["Fixture"]["properties"]["observed_status"]["enum"]),
+                             set(OBSERVED_STATUSES))
+            result = client.get(BASE + "/fixtures?status=finished")
+            self.assertEqual((result.status_code, result.json()["error"]["code"]), (422, "INVALID_REQUEST"))
+
+    def test_live_target_cannot_preview_or_publish_even_with_future_kickoff(self):
+        store = create_live_demo(self.private / "demos" / "live-boundary")
+        before = sha256(store.path)
+        with self.client(token=OPERATOR, demo_name="live-boundary") as client:
+            query = {"fixture_key": TARGET}
+            eligibility = client.get(BASE + "/eligibility", params=query)
+            self.assertEqual(eligibility.status_code, 200)
+            expected = eligibility.json()
+            self.assertEqual(expected["target"]["observed_status"], "live")
+            self.assertEqual(expected["target"]["canonical_fixture_key"], TARGET)
+            self.assertGreater(utc(expected["target"]["kickoff_utc"]), utc(expected["generated_at_utc"]))
+            self.assertEqual((expected["eligibility_status"], expected["reason"]), ("UNAVAILABLE", "TARGET_NOT_UPCOMING"))
+            for route, headers in (("preview", {}), ("publish", AUTH)):
+                with self.subTest(route=route):
+                    response = client.post(BASE + "/forecasts/" + route, headers=headers, json=query)
+                    self.assertEqual(response.status_code, 200)
+                    result = response.json()
+                    self.assertEqual(result["eligibility"], expected)
+                    self.assertEqual(result["status"], "UNAVAILABLE")
+                    self.assertIsNone(result["preview"])
+                    self.assertIsNone(result["forecast"])
+            self.assertEqual(client.get(BASE + "/forecasts", params=query).json()["total"], 0)
+        self.assertEqual(sha256(store.path), before)
+
+    def test_previous_observed_statuses_serialize_and_filter_over_http(self):
+        with self.client() as client:
+            rows = client.app.state.service.fixtures
+            completed = next(row for row in rows.values()
+                             if row["season"] == 2026 and row["observed_status"] == "completed")
+            for status in ("scheduled", "completed", "postponed", "cancelled", "unverified"):
+                with self.subTest(status=status):
+                    expected = completed if status == "completed" else dict(rows[TARGET], observed_status=status)
+                    key = expected["canonical_fixture_key"]
+                    with patch.dict(rows, {key: expected}):
+                        response = client.get(BASE + "/fixtures", params={"season": 2026, "status": status})
+                    self.assertEqual(response.status_code, 200)
+                    items = response.json()["items"]
+                    self.assertEqual({row["observed_status"] for row in items}, {status})
+                    actual = next(row for row in items if row["canonical_fixture_key"] == key)
+                    for field in ("home_team", "away_team", "match_date", "match_status", "statistics_status"):
+                        self.assertEqual(actual[field], expected[field], field)
 
     def test_preview_parity_and_no_ledger_mutation(self):
         with self.client() as client:

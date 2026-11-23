@@ -21,7 +21,7 @@ from scripts.xpecta_api.app import create_app
 from scripts.xpecta_api.demo import initialize_demo
 from scripts.xpecta_api.prepare_frontend import REFERENCE_SHA256
 from scripts.xpecta_api.settings import FRONTEND, PREPARED, PRIVATE, Mode, Settings
-from tests.test_phase857_api import AUTH, OPERATOR
+from tests.test_phase857_api import AUTH, OPERATOR, create_live_demo
 
 PAGES = ["home", "predict", "analysis", "stats", "history", "model"]
 VIEWPORTS = {"desktop": (1440, 900), "tablet": (820, 1180), "mobile": (390, 844)}
@@ -36,8 +36,8 @@ LATE_PREVIEW = """() => {
 
 
 @contextmanager
-def host(profile, token=""):
-    app = create_app(Settings(Mode.SYNTHETIC_DEMO, profile, "browser", token))
+def host(profile, token="", *, demo_name="browser"):
+    app = create_app(Settings(Mode.SYNTHETIC_DEMO, profile, demo_name, token))
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
@@ -212,6 +212,7 @@ def workflow(browser, local, output, issues):
     page.route("**/api/v1/model/summary", lambda route: route.fulfill(status=200, json={}))
     page.locator(".nav-links [data-page=model]").click()
     expect(page.locator("#featuresList [role=alert]")).to_have_text("XPECTA returned an unexpected response.")
+    screenshot(page, output / "api-failure.png")
     page.unroute("**/api/v1/model/summary")
     page.locator(".nav-links [data-page=home]").click()
     expect(page.locator("#homeFixtures .fixture-card").first).to_be_visible()
@@ -240,6 +241,32 @@ def mobile_and_blocked(browser, local, output, issues):
     context.close()
 
 
+def live_fixture_workflow(browser, local, output, issues):
+    context = browser.new_context(viewport={"width": 1440, "height": 900})
+    context.route("**/*", browser_route)
+    page = context.new_page()
+    monitor(page, issues)
+    page.goto(local)
+    await_page(page, "home")
+    expect(page.locator(f'#homeFixtures button[data-fixture="{TARGET}"]')).to_have_count(0)
+    page.locator(".nav-links [data-page=predict]").click()
+    await_page(page, "predict")
+    expect(page.locator(f'#presetFixtures button[data-fixture="{TARGET}"]')).to_have_count(0)
+    page.get_by_role("button", name="Custom matchup").click()
+    page.locator("#customHome").select_option("Valencia")
+    page.locator("#customAway").select_option("Real Madrid")
+    with page.expect_response(lambda response: response.url.endswith("/api/v1/forecasts/preview")) as preview:
+        page.locator("#runPrediction").click()
+    response = preview.value
+    assert response.status == 200 and response.json()["eligibility"]["target"]["observed_status"] == "live"
+    expect(page.locator('#predictionOutput [data-observed-status="live"]')).to_have_text("LIVE")
+    expect(page.locator("#predictionOutput [data-readiness]")).to_have_text("UNAVAILABLE")
+    expect(page.locator("#predictionOutput [role=alert]")).to_have_text("TARGET NOT UPCOMING")
+    expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
+    screenshot(page, output / "live-fixture-unavailable.png")
+    context.close()
+
+
 def run(output, channel):
     if not output.resolve().is_relative_to(PRIVATE.resolve()):
         raise ValueError("Keep visual evidence in the local ignored phase directory")
@@ -248,6 +275,7 @@ def run(output, channel):
     console_issues = []
     with TemporaryDirectory(prefix="phase857-browser-") as temp, patch("scripts.xpecta_api.settings.PRIVATE", Path(temp)):
         initialize_demo(Path(temp) / "demos" / "browser")
+        create_live_demo(Path(temp) / "demos" / "browser-live")
         with host("initial", OPERATOR) as local:
             assert publish(local)["forecast"]["forecast_stage"] == "INITIAL"
         with sync_playwright() as playwright:
@@ -260,12 +288,15 @@ def run(output, channel):
                     comparisons = visual_pairs(browser, local, output, console_issues)
                 with host("incomplete") as local:
                     mobile_and_blocked(browser, local, output, console_issues)
+                with host("initial", demo_name="browser-live") as local:
+                    live_fixture_workflow(browser, local, output, console_issues)
             finally:
                 browser.close()
     assert not console_issues, console_issues
     result = {"status": "PASS", "browser": channel, "browser_version": browser_version,
               "visual_pairs": comparisons, "screenshot_count": len(list(output.glob("*.png"))),
-              "console_errors": 0, "uncaught_rejections": 0, "external_requests_allowed": False}
+              "console_errors": 0, "uncaught_rejections": 0, "external_requests_allowed": False,
+              "live_fixture_display_verified": True, "live_fixture_forecast_status": "UNAVAILABLE"}
     (output / "browser-evidence.json").write_text(json.dumps(result, indent=2)+"\n", encoding="utf-8")
     return {"status": "PASS", "browser": browser_version, "visual_pairs": len(comparisons),
             "screenshot_count": result["screenshot_count"]}

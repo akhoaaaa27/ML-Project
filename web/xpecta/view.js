@@ -77,9 +77,11 @@ function panels(home, away, forecast) {
 }
 
 export function prediction(fixture, result) {
+  const live = fixture.observed_status === "live";
   const title = `<div class="title-row"><div><div class="eyebrow">PREDICTION RESULTS · RESEARCH</div>
     <h2 class="section-title">${esc(fixture.home_team.toUpperCase())} <span class="detail-vs">VS</span> ${esc(fixture.away_team.toUpperCase())}</h2>
-    <p class="subtext">${seasonName(fixture.season)} · ${fixture.kickoff_utc ? time(fixture.kickoff_utc) : day(fixture.match_date)}</p></div>
+    <p class="subtext">${seasonName(fixture.season)} · ${fixture.kickoff_utc ? time(fixture.kickoff_utc) : day(fixture.match_date)}
+    ${live ? ' · <strong data-observed-status="live">LIVE</strong>' : ""}</p></div>
     <span class="chip orange" data-readiness>${esc(statusName(result.status))}</span></div>`;
   const forecast = result.preview;
   if (!forecast) {
