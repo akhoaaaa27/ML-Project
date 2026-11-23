@@ -1,6 +1,7 @@
 import {api} from "./api.js";
+import {fixturePage} from "./fixtures.js";
 import {$, comparison, csvText, fixtureCard, historyDetails, historyTable, leaderboard, matchAnalysis,
-  message, prediction, presetFixtures, renderModel, seasonName, statusName, teamStats} from "./view.js";
+  message, prediction, presetFixtures, renderModel, seasonName, teamStats} from "./view.js";
 
 const pages = {
   home: "Overview", predict: "Prediction", analysis: "Match Analysis",
@@ -8,9 +9,10 @@ const pages = {
 };
 const state = {
   page: "home", tab: "fixture", fixture: null, config: null, teams: [], fixtures: [],
-  history: [], hasHistory: false, analysisOrigin: null,
+  history: [], hasHistory: false, analysisOrigin: null, discoveryPage: 1, catalogueReady: false, data: null,
 };
 const pending = new Map();
+let scheduleTimer;
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
 const selectors = {
   customHome: "Valencia", customAway: "Real Madrid",
@@ -119,6 +121,9 @@ function openGuide() {
 function publishedByKey() {
   const latest = new Map();
   for (const row of state.history) {
+    if (!state.data || row.history_snapshot_version !== state.config.snapshot_version
+        || row.history_database_sha256 !== state.data.database_sha256 || row.model_version !== state.config.model_version
+        || row.dataset_kind !== (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real")) continue;
     const key = row.canonical_fixture_key;
     if (!latest.has(key) || latest.get(key).forecast_revision < row.forecast_revision) latest.set(key, row);
   }
@@ -127,15 +132,101 @@ function publishedByKey() {
 
 function renderFixtures() {
   const latest = publishedByKey();
-  const fixtures = state.fixtures;
-  if (!fixtures.length) {
-    const text = "No upcoming fixtures are listed in this snapshot.";
-    notice("homeFixtures", text);
-    notice("presetFixtures", text);
-    return;
+  const time = state.data?.evaluated_at_utc ?? new Date().toISOString();
+  const overview = fixturePage(state.fixtures, {status: "upcoming"}, 1, time);
+  renderHere("homeFixtures", overview.total ?
+    overview.items.slice(0, 6).map(row => fixtureCard(row, latest.get(row.canonical_fixture_key))).join("") :
+    message("No upcoming fixtures are listed in this snapshot."));
+  renderDiscovery(latest, time);
+}
+
+function renderDiscovery(latest = publishedByKey(), time = state.data?.evaluated_at_utc ?? new Date().toISOString()) {
+  if (!state.catalogueReady) return;
+  const filters = Object.fromEntries(new FormData($("fixtureFilters")));
+  const found = fixturePage(state.fixtures, filters, state.discoveryPage, time);
+  state.discoveryPage = found.page;
+  $("fixtureResults").textContent = found.total
+    ? `${found.first}–${found.last} of ${found.total} matches · ${state.fixtures.length} in season`
+    : `0 matches · ${state.fixtures.length} in season`;
+  $("fixturePage").textContent = `Page ${found.page} of ${found.pages}`;
+  $("fixturePrevious").disabled = found.page === 1;
+  $("fixtureNext").disabled = found.page === found.pages;
+  if (found.invalidRange) {
+    notice("presetFixtures", "The UTC end date must be on or after the start date.", true);
+  } else {
+    renderHere("presetFixtures", found.total ? presetFixtures(found.items, latest) : message("No fixtures match these filters."));
   }
-  renderHere("homeFixtures", fixtures.slice(0, 6).map(row => fixtureCard(row, latest.get(row.canonical_fixture_key))).join(""));
-  renderHere("presetFixtures", presetFixtures(fixtures, latest));
+}
+
+function installDiscovery() {
+  $("fixturePick").querySelector("h2").textContent = "FIND FIXTURES";
+  $("presetFixtures").insertAdjacentHTML("beforebegin", `
+    <form id="fixtureFilters" class="card fixture-filters mt20" aria-label="Filter fixture catalogue">
+      <div class="field"><label for="fixtureSearch">Search teams</label><input id="fixtureSearch" name="search" type="search"></div>
+      <div class="field"><label for="fixtureTeam">Team</label><select id="fixtureTeam" name="team"></select></div>
+      <div class="field"><label for="fixtureStart">From (UTC)</label><input id="fixtureStart" name="start" type="date"></div>
+      <div class="field"><label for="fixtureEnd">Through (UTC)</label><input id="fixtureEnd" name="end" type="date"></div>
+      <div class="field"><label for="fixtureStatus">Catalogue status</label><select id="fixtureStatus" name="status">
+        <option value="upcoming">Upcoming</option><option value="">All listed</option><option value="scheduled">Scheduled</option>
+        <option value="completed">Completed</option><option value="live">Live in snapshot</option>
+        <option value="postponed">Postponed</option><option value="cancelled">Cancelled</option><option value="unverified">Unverified</option>
+      </select></div>
+      <button class="btn btn-outline" type="reset">Clear filters</button>
+    </form>
+    <p id="fixtureResults" class="subtext mt20" role="status" tabindex="-1"></p>`);
+  $("presetFixtures").insertAdjacentHTML("afterend", `
+    <nav class="fixture-pagination mt20" aria-label="Fixture pages">
+      <button class="btn btn-outline btn-sm" id="fixturePrevious" disabled>Previous</button>
+      <span id="fixturePage" class="chip"></span>
+      <button class="btn btn-outline btn-sm" id="fixtureNext" disabled>Next</button>
+    </nav>`);
+  $("homeFixtures").insertAdjacentHTML("beforebegin", '<p id="homeSchedule" class="indicator"></p>');
+  $("fixtureDataStatus").setAttribute("aria-live", "polite");
+  $("fixtureDataStatus").parentElement.insertAdjacentHTML("afterend", `
+    <details class="fixture-evidence mt20"><summary>Schedule evidence</summary>
+      <p id="fixtureEvidence" class="subtext"></p></details>`);
+  $("fixtureFilters").addEventListener("submit", event => event.preventDefault());
+  const apply = () => {
+    state.discoveryPage = 1;
+    renderDiscovery();
+  };
+  $("fixtureFilters").addEventListener("input", apply);
+  $("fixtureFilters").addEventListener("reset", () => setTimeout(apply, 0));
+  for (const [id, direction] of [["fixturePrevious", -1], ["fixtureNext", 1]]) {
+    $(id).addEventListener("click", () => {
+      state.discoveryPage += direction;
+      renderDiscovery();
+      $("fixtureResults").focus();
+    });
+  }
+}
+
+function showFreshness(data) {
+  clearTimeout(scheduleTimer);
+  state.data = data;
+  const wording = {
+    VERIFIED: "Recent schedule evidence",
+    PARTIAL: "Some fixtures lack recent schedule evidence",
+    UNVERIFIED: data?.expired_review_upcoming_fixtures ? "Schedule evidence is stale" : "Schedule evidence is unverified",
+    NO_UPCOMING: "No upcoming fixtures in the snapshot",
+    HISTORICAL_ONLY: "Historical reference",
+  };
+  const label = wording[data?.schedule_freshness] ?? "Schedule status unavailable";
+  const snapshotLabel = state.config?.mode === "SYNTHETIC_DEMO" ? "Synthetic test snapshot" : "Research snapshot available";
+  $("homeSchedule").textContent = data ? `${snapshotLabel} · ${label}` : label;
+  $("fixtureDataStatus").textContent = label;
+  $("fixtureEvidence").textContent = data ? `${data.snapshot_version} · checked ${data.evaluated_at_utc}. ` +
+    `${data.recent_review_upcoming_fixtures} of ${data.upcoming_fixtures} upcoming fixtures have recent evidence. ` +
+    data.schedule_evidence.map(group =>
+      `${group.fixtures} acquired ${group.acquired_at_utc}, expiry ${group.expires_at_utc} (${group.status.toLowerCase()}).`).join(" ")
+    : "The service has not provided schedule evidence.";
+  const expiry = data?.schedule_evidence.filter(group => group.status === "VALID").map(group => Date.parse(group.expires_at_utc));
+  if (expiry?.length && state.config.mode === "REAL_RESEARCH") {
+    scheduleTimer = setTimeout(async () => {
+      try { showFreshness(await api.dataStatus()); } catch { showFreshness(null); }
+      if (state.catalogueReady) renderFixtures();
+    }, Math.max(1000, Math.min(...expiry) - Date.parse(data.evaluated_at_utc) + 1000));
+  }
 }
 
 function homeBars() {
@@ -187,8 +278,10 @@ async function forecastFor(fixture) {
   $("fixturePick").hidden = state.tab === "fixture";
   $("fixtureBack").hidden = state.tab !== "fixture";
   $("predictionOutput").hidden = false;
-  await display("predictionOutput", () => api.preview(fixture.canonical_fixture_key),
+  const preview = display("predictionOutput", () => api.preview(fixture.canonical_fixture_key),
     result => showForecast(fixture, result), () => fixture);
+  $("predictionOutput").focus({preventScroll: true});
+  await preview;
 }
 
 function selectFixture(key) {
@@ -382,8 +475,10 @@ function bind() {
   $("brand").addEventListener("click", () => go("home"));
   $("brand").addEventListener("keydown", event => { if (event.key === "Enter") go("home"); });
   $("backToFixtures").addEventListener("click", () => {
+    const key = state.fixture?.canonical_fixture_key;
     resetPrediction("fixture");
-    window.scrollTo(0, 0);
+    const prior = [...$("presetFixtures").querySelectorAll("[data-fixture]")].find(button => button.dataset.fixture === key);
+    (prior || $("fixtureResults")).focus();
   });
   $("runPrediction").addEventListener("click", customPrediction);
   for (const id of ["customHome", "customAway"]) $(id).addEventListener("change", () => resetPrediction("custom"));
@@ -435,7 +530,9 @@ async function initialize() {
   stylesheet.href = "/assets/phase9.css";
   document.head.append(stylesheet);
   $("predictionOutput").setAttribute("aria-live", "polite");
+  $("predictionOutput").tabIndex = -1;
   $("exportHistory").textContent = "↓ Export filtered CSV";
+  installDiscovery();
   bind();
   resetPrediction("fixture");
   navigate();
@@ -445,32 +542,36 @@ async function initialize() {
     [state.config, state.teams] = await Promise.all([api.bootstrap(), api.teams()]);
     $("bridgeModeText").textContent = state.config.label;
     setSelectors();
+    addOptions("fixtureTeam", [["", "All teams"], ...state.teams.filter(team =>
+      team.seasons.includes(state.config.current_season)).map(team => [team.id, team.name])], "");
     navigate();
     const [fixtures, freshness, history] = await Promise.allSettled([
-      api.fixtures({upcoming: true, season: state.config.current_season}), api.dataStatus(), api.history(),
+      api.fixtures({season: state.config.current_season}), api.dataStatus(), api.history(),
     ]);
     if (history.status === "fulfilled") {
       state.history = history.value;
       state.hasHistory = true;
     }
+    if (freshness.status === "fulfilled") {
+      const data = freshness.value;
+      $("cutoffHero").textContent = data.latest_verified_completed_date || "—";
+      $("totalMatches").textContent = data.verified_completed.toLocaleString("en-GB");
+      showFreshness(data);
+    } else {
+      showFreshness(null);
+    }
     if (fixtures.status === "fulfilled") {
       state.fixtures = fixtures.value;
+      state.catalogueReady = true;
       renderFixtures();
     } else {
       notice("homeFixtures", fixtures.reason.message, true);
       notice("presetFixtures", fixtures.reason.message, true);
     }
-    if (freshness.status === "fulfilled") {
-      const data = freshness.value;
-      $("cutoffHero").textContent = data.latest_verified_completed_date || "—";
-      $("totalMatches").textContent = data.verified_completed.toLocaleString("en-GB");
-      $("fixtureDataStatus").textContent = `Schedule review · ${statusName(data.schedule_freshness)} · ${data.snapshot_version}`;
-    } else {
-      $("fixtureDataStatus").textContent = "Schedule review status unavailable.";
-    }
     void homeBars();
   } catch (error) {
     $("bridgeModeText").textContent = "SERVICE UNAVAILABLE";
+    showFreshness(null);
     for (const id of ["homeFixtures", "presetFixtures", "homeTeamBars", "analysisOutput", "statsOutput",
       "historyTable", "featuresList"]) notice(id, error.message, true);
   } finally {

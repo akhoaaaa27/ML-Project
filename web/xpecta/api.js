@@ -59,7 +59,9 @@ export const api = {
   bootstrap: () => request("/bootstrap", {validate: hasKeys("mode", "seasons", "current_season", "snapshot_version")}),
   teams: () => allPages("/teams"),
   fixtures: query => allPages("/fixtures", query),
-  dataStatus: () => request("/data-status", {validate: hasKeys("schedule_freshness", "verified_completed")}),
+  dataStatus: () => request("/data-status", {validate: value =>
+    hasKeys("schedule_freshness", "verified_completed", "evaluated_at_utc", "database_sha256")(value)
+    && Array.isArray(value.schedule_evidence)}),
   preview: fixture_key => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview}),
   history: () => allPages("/forecasts"),
   forecast: id => request(`/forecasts/${encodeURIComponent(id)}`, {validate: isForecast}),

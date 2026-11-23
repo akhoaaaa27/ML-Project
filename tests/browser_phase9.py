@@ -29,7 +29,7 @@ def real_inputs():
         assert ready["status"] == "READY" and ready["mode"] == "REAL_RESEARCH"
         assert not ready["production_approved"] and not config["operator_writes_enabled"]
         assert data["database_sha256"] == REAL_SHA256
-        for asset in ("app.js", "view.js", "phase9.css"):
+        for asset in ("app.js", "view.js", "phase9.css", "fixtures.js"):
             content = http.get("/assets/" + asset).raise_for_status().content
             assert content_sha256(content).hexdigest() == sha256(FRONTEND / asset)
         season = config["current_season"]
@@ -76,6 +76,63 @@ def predictions(page, sample, completed, output, viewport):
     page.locator("#predictionOutput").screenshot(path=str(output/f"{viewport}-unavailable.png"), animations="disabled")
     checked["UNAVAILABLE"] = completed["canonical_fixture_key"]
     return checked
+
+
+def discovery(page, data, sample, output, viewport):
+    search = page.get_by_role("searchbox", name="Search teams")
+    expect(search).to_be_visible()
+    cards = page.locator("#presetFixtures .fixture-card")
+    buttons = page.locator("#presetFixtures [data-fixture]")
+    count = page.locator("#fixtureResults")
+    total = data["upcoming_fixtures"]
+    expect(cards).to_have_count(min(12, total))
+    expect(page.locator("#fixtureDataStatus")).not_to_contain_text("Checking schedule")
+    if data["schedule_freshness"] == "VERIFIED":
+        expect(page.locator("#fixtureDataStatus")).to_have_text("Recent schedule evidence")
+    if total > 12:
+        first = buttons.evaluate_all("(items) => items.map(item => item.dataset.fixture)")
+        page.get_by_role("button", name="Next").press("Enter")
+        expect(count).to_be_focused()
+        expect(count).to_contain_text(f"13–{min(24, total)} of {total} matches")
+        second = buttons.evaluate_all("(items) => items.map(item => item.dataset.fixture)")
+        assert not set(first) & set(second)
+        page.get_by_role("button", name="Previous").click()
+        expect(page.locator("#fixturePage")).to_contain_text("Page 1 of")
+    search.fill("no match in this catalogue")
+    expect(cards).to_have_count(0)
+    expect(count).to_contain_text("0 matches")
+    page.get_by_role("button", name="Clear filters").click()
+    expect(search).to_have_value("")
+    expect(cards).to_have_count(min(12, total))
+    if sample:
+        row, _ = next(((row, verdict) for row, verdict in sample if row["kickoff_utc"]), sample[0])
+        team = row["home_team"]
+        page.get_by_role("form", name="Filter fixture catalogue").get_by_label("Team", exact=True).select_option(team)
+        search.fill(" " + team.upper().replace(" ", "   ") + " ")
+        candidate = page.locator(f'#presetFixtures [data-fixture="{row["canonical_fixture_key"]}"]')
+        if row["kickoff_utc"]:
+            day = row["kickoff_utc"][:10]
+            page.get_by_label("From (UTC)").fill(day)
+            page.get_by_label("Through (UTC)").fill(day)
+            expect(cards).to_have_count(1)
+        with page.expect_request("**/api/v1/forecasts/preview") as call:
+            candidate.press("Enter")
+        assert call.value.post_data_json == {"fixture_key": row["canonical_fixture_key"]}
+        expect(page.locator("#predictionOutput")).to_be_focused()
+        page.locator("#backToFixtures").click()
+        expect(candidate).to_be_focused()
+        expect(search).to_have_value(" " + team.upper().replace(" ", "   ") + " ")
+        page.get_by_role("button", name="Clear filters").click()
+        expect(cards).to_have_count(min(12, total))
+    page.get_by_label("Catalogue status").select_option("completed")
+    expect(cards.first).to_be_visible()
+    expect(cards.first).to_contain_text("completed")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+    page.get_by_role("button", name="Clear filters").click()
+    expect(cards).to_have_count(min(12, total))
+    expect(count).to_contain_text(f"of {total} matches" if total else "0 matches")
+    page.evaluate("scrollTo(0, 0)")
+    page.screenshot(path=str(output / f"{viewport}-fixture-discovery.png"), animations="disabled")
 
 
 def historical_controls(page, base_url):
@@ -163,6 +220,7 @@ def run(run_id):
                 expect(live.locator("#mobileToggle")).to_have_attribute("aria-expanded", "false")
             else:
                 live.locator('.nav-links [data-page="predict"]').click()
+            discovery(live, data, sample, output, viewport)
             results[viewport] = predictions(live, sample, completed, output, viewport)
             historical_controls(live, LOCAL)
             context.close()
@@ -174,6 +232,7 @@ def run(run_id):
     summary = dict(mode=config["mode"],snapshot=config["snapshot_version"],browser=version,viewports=VIEWPORTS,
                    page_pairs=len(VIEWPORTS)*len(PAGES),states=results,console_errors=issues,ledger_count=ledger_count,
                    historical_controls_checked=list(VIEWPORTS), publish_requests=len(writes),
+                   fixture_discovery_checked=list(VIEWPORTS),
                    schedule_freshness=data["schedule_freshness"],eligible_fixture_in_first_six=any(
                        verdict["eligibility_status"] in ("READY","EARLY_READY") for _,verdict in sample))
     (output/"evidence.json").write_text(json.dumps(summary,indent=2)+"\n",encoding="utf-8")

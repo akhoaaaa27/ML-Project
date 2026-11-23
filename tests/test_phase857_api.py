@@ -289,6 +289,26 @@ class Phase857HttpTests(unittest.TestCase):
             self.assertEqual(preview["status"], "WAITING_DATA")
             self.assertIsNone(preview["preview"])
             self.assertEqual(freshness["schedule_freshness"], "UNVERIFIED")
+            self.assertGreater(freshness["expired_review_upcoming_fixtures"], 0)
+            self.assertTrue(any(row["status"] == "EXPIRED" for row in freshness["schedule_evidence"]))
+
+    def test_publish_rejects_changed_preview_binding_before_write(self):
+        ledger = self.isolated_ledger("preview-binding")
+        with self.client(token=OPERATOR) as client:
+            body = {"fixture_key": TARGET}
+            preview = client.post(BASE + "/forecasts/preview", json=body).json()["preview"]
+            keys = ("history_database_sha256", "features_sha256")
+            binding = {key: preview[key] for key in keys}
+            for key in keys:
+                with self.subTest(key=key):
+                    bad = dict(binding, **{key: "0" * 64})
+                    result = client.post(BASE + "/forecasts/publish", headers=AUTH, json=dict(body, expected=bad))
+                    self.assertEqual(result.status_code, 409)
+                    self.assertEqual(result.json()["error"]["code"], "PREVIEW_BINDING_CHANGED")
+                    self.assertFalse(ledger.root.exists())
+            result = client.post(BASE + "/forecasts/publish", headers=AUTH, json=dict(body, expected=binding))
+            self.assertEqual(result.status_code, 200)
+            self.assertEqual(result.json()["forecast"]["features_sha256"], preview["features_sha256"])
 
     def test_history_distinguishes_incomplete_insufficient_and_zero(self):
         with self.client("incomplete") as client:
@@ -313,7 +333,7 @@ class Phase857HttpTests(unittest.TestCase):
         with self.client() as synthetic:
             digest = synthetic.app.state.service.digest
             self.assertEqual(synthetic.get(BASE + "/forecasts").json()["total"], 0)
-        with patch("scripts.xpecta_api.services.REAL_SHA256", "forbidden-test-digest"):
+        with patch("scripts.xpecta_api.research_binding.REAL_SHA256", "forbidden-test-digest"):
             # A changed binding is rejected before access. This test does not need a real private snapshot.
             with TestClient(create_app(Settings(Mode.HISTORICAL_REFERENCE)), base_url="http://localhost",
                             raise_server_exceptions=False) as real:

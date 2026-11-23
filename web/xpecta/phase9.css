@@ -9,6 +9,21 @@
 #homeFixtures > .empty, #homeFixtures > .error-box { grid-column: 1 / -1; }
 .fixture-top > time { text-align: end; }
 .fixture-xg .fixture-status { font-size: 12px; }
+.fixture-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.fixture-filters .field, .fixture-filters input, .fixture-filters select { min-width: 0; }
+.fixture-filters input, .fixture-filters select { width: 100%; }
+.fixture-filters button { justify-self: start; }
+.fixture-pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+.fixture-pagination button:disabled { opacity: .55; cursor: default; }
+.fixture-evidence summary { cursor: pointer; width: fit-content; }
+.fixture-evidence p { margin: 8px 0 0; }
+#fixtureResults:focus-visible { outline: 2px solid var(--green3); outline-offset: 4px; }
+#homeSchedule { margin: 12px 0; }
 #predictionOutput { scroll-margin-top: 90px; }
 .forecast-panel .forecast-placeholder {
   display: flex;
@@ -22,6 +37,7 @@
 .history-table-region:focus-visible { outline: 2px solid var(--green3); outline-offset: 4px; }
 .history-empty { text-align: left; }
 .history-empty .card-title { margin-bottom: 8px; }
+.history-integrity dd { margin: 0 0 8px; overflow-wrap: anywhere; }
 .model-evaluation-plot {
   display: grid;
   align-content: center;
@@ -29,6 +45,8 @@
 }
 .model-evaluation-plot .chart-legend { justify-content: space-between; }
 @media (max-width: 680px) {
+  .fixture-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fixture-filters .field:first-child { grid-column: 1 / -1; }
   #page-analysis .analysis-controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);

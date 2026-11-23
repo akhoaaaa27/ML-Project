@@ -11,6 +11,7 @@ TeamId = Annotated[str, StringConstraints(min_length=1, max_length=60, pattern=r
 FixtureKey = Annotated[str, StringConstraints(min_length=25, max_length=160,
                      pattern=r"^research:laliga:[0-9]{4}:[\w .'-]+:[\w .'-]+$")]
 ForecastId = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]
+SHA256 = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{64}$")]
 Season = Annotated[int, Field(ge=2019, le=2100)]
 Count = Annotated[int, Field(ge=0)]
 Xg = Annotated[float, Field(ge=0, allow_inf_nan=False)]
@@ -68,6 +69,15 @@ class AnalysisQuery(StrictInput):
 
 class ForecastRequest(KeyQuery):
     model_config = ConfigDict(extra="forbid", strict=True)
+
+
+class PreviewBinding(StrictInput):
+    history_database_sha256: SHA256
+    features_sha256: SHA256
+
+
+class PublishRequest(ForecastRequest):
+    expected: PreviewBinding | None = None
 
 
 class ErrorDetail(BaseModel):
@@ -136,6 +146,13 @@ class Bootstrap(BaseModel):
     production_approved: Literal[False] = False
 
 
+class ScheduleEvidence(BaseModel):
+    acquired_at_utc: datetime
+    expires_at_utc: datetime
+    fixtures: Count
+    status: Literal["VALID", "EXPIRED", "FUTURE"]
+
+
 class DataStatus(BaseModel):
     mode: Mode
     snapshot_version: str
@@ -146,6 +163,9 @@ class DataStatus(BaseModel):
     schedule_max_age_hours: int
     upcoming_fixtures: Count
     recent_review_upcoming_fixtures: Count
+    expired_review_upcoming_fixtures: Count
+    missing_review_upcoming_fixtures: Count
+    schedule_evidence: list[ScheduleEvidence]
     schedule_freshness: Literal["VERIFIED", "PARTIAL", "UNVERIFIED", "NO_UPCOMING", "HISTORICAL_ONLY"]
     registry_fixtures: Count
     verified_completed: Count
@@ -176,6 +196,7 @@ class Candidate(BaseModel):
     history_database_sha256: str
     model_version: str
     model_artifact_sha256: str
+    features_sha256: SHA256
     eligibility_status: Literal["READY", "EARLY_READY"]
     generated_at_utc: datetime
     history_cutoff: date

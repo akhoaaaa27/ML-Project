@@ -44,21 +44,19 @@ export function fixtureCard(fixture, forecast) {
   const kickoff = fixture.kickoff_utc;
   const dateLabel = shortDay.format(new Date(kickoff ?? fixture.match_date));
   return `<article class="fixture-card">
-    <div class="fixture-top"><span class="chip">${esc(seasonName(fixture.season))}</span>
+    <div class="fixture-top"><span class="chip">${esc(seasonName(fixture.season))}${fixture.observed_status === "scheduled"
+      ? "" : ` · ${esc(statusName(fixture.observed_status))}`}</span>
       <time datetime="${esc(kickoff ?? fixture.match_date)}">${esc(dateLabel)} · ${kickoff ? `${esc(kickoff.slice(11, 16))} UTC` : "Kickoff unverified"}</time></div>
     <div class="fixture-teams"><div class="fixture-team">${crest(fixture.home_team)}<strong>${esc(fixture.home_team)}</strong></div>
       <span class="fixture-vs">VS</span><div class="fixture-team">${crest(fixture.away_team)}<strong>${esc(fixture.away_team)}</strong></div></div>
     <div class="fixture-bottom"><div class="fixture-xg">${forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}<small>Published xG</small>`
       : '<span class="fixture-status">Check forecast availability</span>'}</div>
-      <button class="btn btn-green btn-sm" data-fixture="${key}">VIEW PREDICTION ↗</button></div>
+      <button class="btn btn-green btn-sm" data-fixture="${key}" aria-label="View prediction for ${esc(fixture.home_team)} vs ${esc(fixture.away_team)}">VIEW PREDICTION ↗</button></div>
     </article>`;
 }
 
 export function presetFixtures(fixtures, published) {
-  return `<section class="preset-round mt20">
-    <div class="top-small"><h3 class="card-title">Upcoming catalogue</h3><span class="chip">${fixtures.length} fixtures</span></div>
-    <div class="match-grid">${fixtures.map(fixture => fixtureCard(fixture, published.get(fixture.canonical_fixture_key))).join("")}</div>
-    </section>`;
+  return `<div class="match-grid mt20">${fixtures.map(fixture => fixtureCard(fixture, published.get(fixture.canonical_fixture_key))).join("")}</div>`;
 }
 
 export function leaderboard(stats) {
@@ -95,6 +93,8 @@ export function prediction(fixture, result) {
     const retry = result.status === "FORECAST_ERROR" || result.status === "WAITING_DATA";
     return `<div class="prediction-state">${title}${panels(fixture.home_team, fixture.away_team, null, loading)}
       ${loading ? '<div class="indicator" role="status">Loading…</div>' : message(reason, true)}
+      ${result.eligibility?.reason === "FIXTURE_FRESHNESS_UNVERIFIED"
+        ? '<p class="card-desc">This preview needs recent, verified kickoff evidence.</p>' : ""}
       ${loading ? "" : `<div class="mt20 matchup-actions">
         ${retry ? '<button class="btn btn-green" data-retry-forecast>CHECK AGAIN ↗</button>' : ""}
         <button class="btn btn-outline" data-back-to-fixtures>VIEW OTHER FIXTURES ↗</button></div>`}</div>`;
@@ -285,6 +285,10 @@ export function historyDetails(row, revisions) {
       Created ${time(row.generated_at_utc)} · Cutoff ${day(row.history_cutoff)}<br>
       Snapshot ${esc(row.history_snapshot_version)} · LR ${esc(row.model_version)}</p>
     <div class="list-note">${esc(row.source_notice)}</div>
+    <details class="fixture-evidence mt20"><summary>Revision evidence</summary>
+      <dl class="history-integrity"><dt>Record SHA-256</dt><dd><code>${esc(row.record_sha256)}</code></dd>
+      <dt>Snapshot SHA-256</dt><dd><code>${esc(row.history_database_sha256)}</code></dd>
+      <dt>Feature SHA-256</dt><dd><code>${esc(row.features_sha256)}</code></dd></dl></details>
     ${revisions.length > 1 ? `<div class="bridge-compare mt20"><label>Earlier <select id="compareV1">${revisions.slice(0, -1).map(revisionOption).join("")}</select></label>
       <label>Later <select id="compareV2">${revisions.slice(1).map(revisionOption).join("")}</select></label>
       <button class="btn btn-outline" data-compare="${esc(row.canonical_fixture_key)}">COMPARE REVISIONS ↗</button></div><div id="compareOutput" class="mt20"></div>` : ""}`;
@@ -333,6 +337,7 @@ export function csvText(rows) {
     return '"' + text.replaceAll('"', '""') + '"';
   };
   const fields = ["forecast_id", "forecast_stage", "forecast_revision", "home_team", "away_team", "home_xg",
-    "away_xg", "history_cutoff", "generated_at_utc", "model_version", "history_snapshot_version", "dataset_kind"];
+    "away_xg", "history_cutoff", "generated_at_utc", "model_version", "history_snapshot_version", "dataset_kind",
+    "canonical_fixture_key", "previous_forecast_id", "history_database_sha256", "features_sha256", "record_sha256"];
   return "\uFEFF" + [fields, ...rows.map(row => fields.map(name => row[name]))].map(row => row.map(quote).join(",")).join("\r\n");
 }
