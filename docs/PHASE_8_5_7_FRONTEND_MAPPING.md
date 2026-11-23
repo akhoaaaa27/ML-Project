@@ -13,4 +13,6 @@ The reference is the supplied XPECTA V9.12 file with SHA-256 `f5aada295d659b8856
 
 The original `simulate()` and its callers were removed. The replacements use `api.js` for requests and response checks, `app.js` for state and navigation, and `view.js` for escaped templates, chart paths and CSV. The original `FIXTURES` and stored `HISTORY` are replaced by API results. Assets verified only for local use remain out of Git, including the original and generated HTML and screenshots.
 
+Overview and Preset fixtures show upcoming scheduled matches. When Custom matchup resolves a live fixture, the result subtitle shows `LIVE` alongside the existing `UNAVAILABLE` forecast status. The Home and Away xG panels remain absent for this result.
+
 The tab layout, dark green glass colors, charts' card arrangement, crest frames, logo, hero, typography and responsive navigation follow the supplied markup. Visible differences communicate snapshot trust, loading, unavailable/blocked states and schema-correct scientific content. The synthetic mode badge is visible on mobile as well as desktop. Chart gaps represent missing statistics. The historical display uses date labels because the trusted catalogue does not guarantee a reviewable matchweek mapping.

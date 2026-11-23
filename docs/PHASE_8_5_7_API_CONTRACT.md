@@ -24,6 +24,8 @@ Pagination returns `items`, `total`, `offset` and `limit`. Defaults are 0 and 25
 
 ## Forecast and history states
 
+The fixture catalogue, status filter, and eligibility target share the observed status enum `scheduled`, `completed`, `live`, `postponed`, `cancelled`, and `unverified`. Use `GET /api/v1/fixtures?status=live` to list live fixtures. An `upcoming=true` request only lists qualifying scheduled fixtures. In a forecasting mode, eligibility and forecast actions for a live target return HTTP 200 with `UNAVAILABLE / TARGET_NOT_UPCOMING`, even if the recorded kickoff falls after the current forecast clock. Forecast fields in these action responses are null.
+
 Successful preview returns `READY` or `EARLY_READY`, with Home/Away xG, model and snapshot identity, cutoff, dataset kind and source notice. `WAITING_DATA`, `UNAVAILABLE` and `FORECAST_ERROR` have nullable forecast fields and eligibility or an error code. Publication uses `PUBLISHED` with `INITIAL` or `UPDATED`, or `NO_CHANGE` with the prior record. The comparison preserves the ledger's same-fixture and ordered-lineage rules.
 
 History returns `COMPLETE`, `INSUFFICIENT_HISTORY`, `INCOMPLETE_STATISTICS` or `ZERO_HISTORY`. Forms select the actual last N verified completed matches in the selected season. A missing xG remains null inside the requested window. Current schedule freshness summarizes review evidence within the existing 48-hour bound. Fixture-specific eligibility also checks kickoff, intermediate matches and history evidence.
