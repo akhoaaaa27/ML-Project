@@ -1,1 +1,5 @@
-/multisource/
+/multisource/*
+!/multisource/acquisition_manifest.json
+!/multisource/raw/
+/multisource/raw/*
+!/multisource/raw/current_2026_fixtures.csv
