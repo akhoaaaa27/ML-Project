@@ -13,6 +13,7 @@ const state = {
 };
 const pending = new Map();
 let scheduleTimer;
+let statusReceivedAt;
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
 const selectors = {
   customHome: "Valencia", customAway: "Real Madrid",
@@ -130,9 +131,14 @@ function publishedByKey() {
   return latest;
 }
 
-function renderFixtures() {
+function catalogueTime() {
+  if (!state.data) return new Date().toISOString();
+  if (state.config.mode !== "REAL_RESEARCH") return state.data.evaluated_at_utc;
+  return new Date(Date.parse(state.data.evaluated_at_utc) + performance.now() - statusReceivedAt).toISOString();
+}
+
+function renderFixtures(time = catalogueTime()) {
   const latest = publishedByKey();
-  const time = state.data?.evaluated_at_utc ?? new Date().toISOString();
   const overview = fixturePage(state.fixtures, {status: "upcoming"}, 1, time);
   renderHere("homeFixtures", overview.total ?
     overview.items.slice(0, 6).map(row => fixtureCard(row, latest.get(row.canonical_fixture_key))).join("") :
@@ -140,7 +146,7 @@ function renderFixtures() {
   renderDiscovery(latest, time);
 }
 
-function renderDiscovery(latest = publishedByKey(), time = state.data?.evaluated_at_utc ?? new Date().toISOString()) {
+function renderDiscovery(latest = publishedByKey(), time = catalogueTime()) {
   if (!state.catalogueReady) return;
   const filters = Object.fromEntries(new FormData($("fixtureFilters")));
   const found = fixturePage(state.fixtures, filters, state.discoveryPage, time);
@@ -201,9 +207,7 @@ function installDiscovery() {
   }
 }
 
-function showFreshness(data) {
-  clearTimeout(scheduleTimer);
-  state.data = data;
+function renderFreshness(data) {
   const wording = {
     VERIFIED: "Recent schedule evidence",
     PARTIAL: "Some fixtures lack recent schedule evidence",
@@ -220,13 +224,50 @@ function showFreshness(data) {
     data.schedule_evidence.map(group =>
       `${group.fixtures} acquired ${group.acquired_at_utc}, expiry ${group.expires_at_utc} (${group.status.toLowerCase()}).`).join(" ")
     : "The service has not provided schedule evidence.";
-  const expiry = data?.schedule_evidence.filter(group => group.status === "VALID").map(group => Date.parse(group.expires_at_utc));
-  if (expiry?.length && state.config.mode === "REAL_RESEARCH") {
+}
+
+function showFreshness(data) {
+  clearTimeout(scheduleTimer);
+  state.data = data;
+  statusReceivedAt = performance.now();
+  renderFreshness(data);
+  if (!data || state.config.mode !== "REAL_RESEARCH") return;
+  const serverTime = Date.parse(data.evaluated_at_utc);
+  const start = statusReceivedAt;
+  const expiries = data.schedule_evidence.filter(group => group.status === "VALID")
+    .map(group => Date.parse(group.expires_at_utc)).sort((a, b) => a - b);
+
+  function watch(now) {
+    const next = expiries.find(expiry => expiry >= now);
+    if (next === undefined) return;
     scheduleTimer = setTimeout(async () => {
-      try { showFreshness(await api.dataStatus()); } catch { showFreshness(null); }
-      if (state.catalogueReady) renderFixtures();
-    }, Math.max(1000, Math.min(...expiry) - Date.parse(data.evaluated_at_utc) + 1000));
+      const effectiveTime = Math.max(next + 1, serverTime + performance.now() - start);
+      let newlyExpired = 0;
+      const evidence = data.schedule_evidence.map(group => {
+        if (group.status !== "VALID" || Date.parse(group.expires_at_utc) >= effectiveTime) return group;
+        newlyExpired += group.fixtures;
+        return {...group, status: "EXPIRED"};
+      });
+      const recent = data.recent_review_upcoming_fixtures - newlyExpired;
+      renderFreshness({...data, schedule_evidence: evidence, recent_review_upcoming_fixtures: recent,
+        expired_review_upcoming_fixtures: data.expired_review_upcoming_fixtures + newlyExpired,
+        schedule_freshness: recent ? "PARTIAL" : "UNVERIFIED"});
+      if (state.catalogueReady) renderFixtures(new Date(effectiveTime).toISOString());
+      watch(effectiveTime);
+      try {
+        const latest = await api.dataStatus();
+        if (state.data === data && latest.snapshot_version === data.snapshot_version &&
+            Date.parse(latest.evaluated_at_utc) > next &&
+            Date.parse(latest.evaluated_at_utc) >= serverTime + performance.now() - start) {
+          showFreshness(latest);
+          if (state.catalogueReady) renderFixtures();
+        }
+      } catch {
+        // The recorded expiry still applies if localhost does not respond.
+      }
+    }, next - now + 1);
   }
+  watch(serverTime);
 }
 
 function homeBars() {

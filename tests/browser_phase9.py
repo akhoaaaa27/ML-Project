@@ -1,6 +1,7 @@
 """Read-only browser integration check against the running REAL_RESEARCH localhost."""
 
 import argparse
+from datetime import datetime
 from hashlib import sha256 as content_sha256
 import json
 from pathlib import Path
@@ -67,6 +68,16 @@ def predictions(page, sample, completed, output, viewport):
         else:
             expect(values).to_have_count(2)
             expect(page.locator("#predictionOutput")).to_contain_text("PREDICTED xG COMPARISON")
+            before = values.all_text_contents()
+            page.locator("#predictionOutput [data-analyze]").click()
+            await_page(page, "analysis")
+            expect(page.locator(".analysis-overview-card")).to_contain_text(row["home_team"])
+            expect(page.locator(".analysis-overview-card")).to_contain_text(row["away_team"])
+            with page.expect_request("**/api/v1/forecasts/preview") as repeat:
+                page.locator(".analysis-insights-card [data-to-custom]").click()
+            assert repeat.value.post_data_json == {"fixture_key": row["canonical_fixture_key"]}
+            expect(status).to_have_text(expected.replace("_", " "))
+            assert values.all_text_contents() == before
         page.locator("#predictionOutput").screenshot(path=str(output/f"{viewport}-{expected.lower()}.png"), animations="disabled")
         checked[expected] = row["canonical_fixture_key"]
     open_custom(page, completed)
@@ -163,6 +174,49 @@ def historical_controls(page, base_url):
     expect(page.locator("#statsOutput .metric-grid").first).to_be_visible()
 
 
+def schedule_expiry(browser, output, issues, writes):
+    with browser.new_context(viewport={"width": 1440, "height": 900}, timezone_id="UTC") as context:
+        context.route("**/*", browser_route)
+        page = context.new_page()
+        monitor(page, issues)
+        page.on("request", lambda request: writes.append(request.url)
+                if request.url.endswith("/api/v1/forecasts/publish") else None)
+        page.clock.install()
+        with page.expect_response("**/api/v1/data-status") as status:
+            page.goto(LOCAL + "/#predict")
+        data = status.value.json()
+        label = page.locator("#fixtureDataStatus")
+        gaps = [
+            (datetime.fromisoformat(group["expires_at_utc"]) - datetime.fromisoformat(data["evaluated_at_utc"])).total_seconds()
+            for group in data["schedule_evidence"] if group["status"] == "VALID"
+        ]
+        if not gaps:
+            if data["expired_review_upcoming_fixtures"]:
+                expect(label).to_have_text("Schedule evidence is stale")
+            return "NO_VALID_GROUP_AT_ACTUAL_CHECK"
+        expect(label).to_have_text("Recent schedule evidence" if data["schedule_freshness"] == "VERIFIED"
+                                  else "Some fixtures lack recent schedule evidence")
+        first_fixture = page.locator("#presetFixtures .fixture-card").first
+        expect(first_fixture).to_be_visible()
+        first_key = first_fixture.locator("[data-fixture]").get_attribute("data-fixture")
+        first_kickoff = first_fixture.locator("time").get_attribute("datetime")
+        boundary = max(datetime.fromisoformat(group["expires_at_utc"])
+                       for group in data["schedule_evidence"] if group["status"] == "VALID")
+        # Only this isolated browser view advances time. Replay the genuine initial HTTP result
+        # to prove a delayed pre-expiry response cannot turn the clock-projected label fresh again.
+        page.route("**/api/v1/data-status", lambda route: route.fulfill(json=data))
+        with page.expect_response("**/api/v1/data-status") as replay:
+            page.clock.fast_forward(round(max(gaps) * 1000) + 100)
+        assert replay.value.json()["evaluated_at_utc"] == data["evaluated_at_utc"]
+        expect(label).to_have_text("Schedule evidence is stale")
+        if "T" in first_kickoff and datetime.fromisoformat(first_kickoff) <= boundary:
+            expect(page.locator(f'#presetFixtures [data-fixture="{first_key}"]')).to_have_count(0)
+        expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
+        expect(page.locator("#homeSchedule")).to_contain_text("Schedule evidence is stale")
+        page.screenshot(path=str(output / "simulated-browser-expiry.png"), animations="disabled")
+        return "STALE_AFTER_BOUNDARY_AND_DELAYED_RESPONSE"
+
+
 def run(run_id):
     if not re.fullmatch(r"[a-zA-Z0-9_-]{1,60}", run_id):
         raise ValueError("Use a short local run ID")
@@ -224,6 +278,7 @@ def run(run_id):
             results[viewport] = predictions(live, sample, completed, output, viewport)
             historical_controls(live, LOCAL)
             context.close()
+        expiry_check = schedule_expiry(browser, output, issues, writes)
         browser.close()
     assert not issues, issues
     assert not writes, writes
@@ -233,6 +288,7 @@ def run(run_id):
                    page_pairs=len(VIEWPORTS)*len(PAGES),states=results,console_errors=issues,ledger_count=ledger_count,
                    historical_controls_checked=list(VIEWPORTS), publish_requests=len(writes),
                    fixture_discovery_checked=list(VIEWPORTS),
+                   expiry_check=expiry_check,
                    schedule_freshness=data["schedule_freshness"],eligible_fixture_in_first_six=any(
                        verdict["eligibility_status"] in ("READY","EARLY_READY") for _,verdict in sample))
     (output/"evidence.json").write_text(json.dumps(summary,indent=2)+"\n",encoding="utf-8")
