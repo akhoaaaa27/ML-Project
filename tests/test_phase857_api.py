@@ -116,6 +116,7 @@ class Phase857HttpTests(unittest.TestCase):
             protected = client.get("/data/history/laliga_history.sqlite3")
             self.assertEqual(protected.status_code, 404)
             self.assertEqual(client.get("/assets/reference.html").status_code, 404)
+            self.assertEqual(client.get("/assets/phase9.css").status_code, 200)
             self.assertIn("default-src 'none'", ready.headers["content-security-policy"])
             self.assertEqual(len(client.get("/openapi.json").json()["paths"]), 15)
 
@@ -329,6 +330,9 @@ class Phase857HttpTests(unittest.TestCase):
             self.assertEqual(model["features"][11], "opponent_matches_seen")
             self.assertEqual({r["source"] for r in model["phase7"]}, {"FBref"})
             self.assertEqual({r["source"] for r in model["retrospective"]}, {"Understat", "Sportmonks"})
+            self.assertEqual({r["period"] for r in model["phase7"]},
+                             {"2024-08-15 to 2025-05-25", "2025-08-15 to 2025-09-30"})
+            self.assertEqual({r["period"] for r in model["retrospective"]}, {"2025/26 after 2025-09-30", "2026/27"})
             store = client.app.state.service.store
             with self.assertRaisesRegex(sqlite3.DatabaseError, "not authorized"):
                 store.query("DELETE FROM registry")

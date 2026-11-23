@@ -8,7 +8,7 @@ const pages = {
 };
 const state = {
   page: "home", tab: "fixture", fixture: null, config: null, teams: [], fixtures: [],
-  history: [], hasHistory: false,
+  history: [], hasHistory: false, analysisOrigin: null,
 };
 const pending = new Map();
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
@@ -31,15 +31,27 @@ function loading(id) {
   notice(id, "Loading…");
 }
 
-async function display(id, work, apply) {
+async function display(id, work, apply, forecastContext) {
   const request = Symbol();
   pending.set(id, request);
-  loading(id);
+  if (forecastContext) {
+    $(id).setAttribute("aria-busy", "true");
+    renderHere(id, prediction(forecastContext(), {status: "LOADING"}));
+  } else {
+    loading(id);
+  }
   try {
     const result = await work();
     if (pending.get(id) === request) apply(result);
   } catch (error) {
-    if (pending.get(id) === request) notice(id, error.message || "The request failed.", true);
+    if (pending.get(id) === request) {
+      const text = error.message || "The request failed.";
+      if (forecastContext) {
+        renderHere(id, prediction(forecastContext(), {status: "FORECAST_ERROR", error: {message: text}}));
+      } else {
+        notice(id, text, true);
+      }
+    }
   } finally {
     if (pending.get(id) === request) {
       $(id)?.removeAttribute("aria-busy");
@@ -140,6 +152,7 @@ function updatePredictTab() {
   cancel("predictionOutput");
   $("predError").style.display = "none";
   $("predictionOutput").hidden = true;
+  $("predictionOutput").replaceChildren();
   $("fixtureBack").hidden = true;
   $("fixturePick").hidden = state.tab !== "fixture";
   $("customPick").hidden = state.tab !== "custom";
@@ -153,7 +166,20 @@ function updatePredictTab() {
 function resetPrediction(tab) {
   state.tab = tab;
   state.fixture = null;
+  state.analysisOrigin = null;
   updatePredictTab();
+}
+
+function showForecast(fixture, result) {
+  const preview = result.preview;
+  if (preview && (preview.canonical_fixture_key !== fixture.canonical_fixture_key ||
+      preview.history_snapshot_version !== state.config.snapshot_version ||
+      preview.model_version !== state.config.model_version ||
+      preview.dataset_kind !== (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real"))) {
+    throw new Error("The forecast context changed. Reload XPECTA before previewing again.");
+  }
+  state.fixture = fixture;
+  renderHere("predictionOutput", prediction(fixture, result));
 }
 
 async function forecastFor(fixture) {
@@ -162,7 +188,7 @@ async function forecastFor(fixture) {
   $("fixtureBack").hidden = state.tab !== "fixture";
   $("predictionOutput").hidden = false;
   await display("predictionOutput", () => api.preview(fixture.canonical_fixture_key),
-    result => renderHere("predictionOutput", prediction(fixture, result)));
+    result => showForecast(fixture, result), () => fixture);
 }
 
 function selectFixture(key) {
@@ -178,18 +204,16 @@ async function customPrediction() {
   const button = $("runPrediction");
   const home = $("customHome").value;
   const away = $("customAway").value;
+  let fixture = {home_team: home, away_team: away, season: state.config.current_season};
   button.disabled = true;
   $("predictionOutput").hidden = false;
   try {
     await display("predictionOutput", async () => {
       const matches = await api.fixtures({home, away, season: state.config.current_season});
       if (matches.length !== 1) throw new Error("No canonical fixture was found for this matchup.");
-      const fixture = matches[0];
-      return {fixture, result: await api.preview(fixture.canonical_fixture_key)};
-    }, ({fixture, result}) => {
-      state.fixture = fixture;
-      renderHere("predictionOutput", prediction(fixture, result));
-    });
+      fixture = matches[0];
+      return api.preview(fixture.canonical_fixture_key);
+    }, result => showForecast(fixture, result), () => fixture);
   } finally {
     button.disabled = false;
   }
@@ -227,7 +251,7 @@ function renderHistory() {
   if (!state.hasHistory) return;
   const rows = visibleHistory();
   $("historyCount").textContent = `${rows.length} / ${state.history.length} records`;
-  renderHere("historyTable", historyTable(rows));
+  renderHere("historyTable", historyTable(rows, state.history.length));
 }
 
 function showHistory() {
@@ -275,6 +299,7 @@ function toggleMobile(open) {
 function navigate() {
   const candidate = location.hash.slice(1);
   const page = Object.hasOwn(pages, candidate) ? candidate : "home";
+  const previousPage = state.page;
   state.page = page;
   document.querySelectorAll(".page").forEach(section => section.classList.toggle("active", section.id === `page-${page}`));
   document.querySelectorAll("[data-page]").forEach(button => {
@@ -286,6 +311,14 @@ function navigate() {
   document.title = `${pages[page]} · XPECTA`;
   window.scrollTo(0, 0);
   if (!state.config) return;
+  if (previousPage === "predict" && page !== "predict") {
+    state.fixture = null;
+    updatePredictTab();
+  }
+  if (previousPage === "analysis" && page !== "analysis") {
+    if (page === "predict" && state.analysisOrigin) restorePredictionFromAnalysis();
+    else state.analysisOrigin = null;
+  }
   if (page === "analysis") void showAnalysis();
   if (page === "stats") void showStats();
   if (page === "history") void showHistory();
@@ -297,29 +330,51 @@ function go(page) {
   else location.hash = page;
 }
 
+function restorePredictionFromAnalysis() {
+  const home = $("analysisHome").value;
+  const away = $("analysisAway").value;
+  const origin = state.analysisOrigin;
+  const sameFixture = origin && origin.fixture.home_team === home && origin.fixture.away_team === away &&
+    origin.fixture.season === Number($("analysisSeason").value);
+  resetPrediction(sameFixture ? origin.tab : "custom");
+  if (state.tab === "custom") {
+    $("customHome").value = home;
+    $("customAway").value = away;
+  }
+  // Re-evaluate through the current binding. A cached result could have expired at kickoff or on refresh.
+  if (sameFixture) void forecastFor(origin.fixture);
+}
+
 function bind() {
   document.addEventListener("click", event => {
-    const button = event.target.closest("[data-page],[data-jump],[data-fixture],[data-pred-mode],[data-history],[data-compare],[data-guide],[data-analyze],[data-to-custom]");
+    const button = event.target.closest("[data-page],[data-jump],[data-fixture],[data-pred-mode],[data-history],[data-compare],[data-guide],[data-analyze],[data-to-custom],[data-retry-forecast],[data-back-to-fixtures]");
     if (!button) return;
     const {page, jump, fixture, predMode, history, compare} = button.dataset;
     if (page || jump) {
-      if ((page || jump) === "predict") resetPrediction("fixture");
-      go(page || jump);
+      const destination = page || jump;
+      if (destination === "predict" && !(state.page === "analysis" && state.analysisOrigin)) {
+        resetPrediction("fixture");
+      }
+      go(destination);
     } else if (fixture) selectFixture(fixture);
     else if (predMode) resetPrediction(predMode);
     else if (history) void showDetails(history);
     else if (compare) void showComparison(compare);
     else if (button.hasAttribute("data-guide")) openGuide();
+    else if (button.hasAttribute("data-back-to-fixtures")) resetPrediction("fixture");
+    else if (button.hasAttribute("data-retry-forecast")) {
+      if (state.tab === "fixture" && state.fixture) void forecastFor(state.fixture);
+      else void customPrediction();
+    }
     else if (button.hasAttribute("data-analyze") && state.fixture) {
+      state.analysisOrigin = {fixture: state.fixture, tab: state.tab};
       $("analysisSeason").value = state.fixture.season;
       filterTeams("analysis");
       $("analysisHome").value = state.fixture.home_team;
       $("analysisAway").value = state.fixture.away_team;
       go("analysis");
     } else if (button.hasAttribute("data-to-custom")) {
-      resetPrediction("custom");
-      $("customHome").value = $("analysisHome").value;
-      $("customAway").value = $("analysisAway").value;
+      restorePredictionFromAnalysis();
       go("predict");
     }
   });
@@ -375,6 +430,12 @@ function bind() {
 }
 
 async function initialize() {
+  const stylesheet = document.createElement("link");
+  stylesheet.rel = "stylesheet";
+  stylesheet.href = "/assets/phase9.css";
+  document.head.append(stylesheet);
+  $("predictionOutput").setAttribute("aria-live", "polite");
+  $("exportHistory").textContent = "↓ Export filtered CSV";
   bind();
   resetPrediction("fixture");
   navigate();

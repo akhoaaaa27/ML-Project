@@ -284,6 +284,7 @@ class MatchAnalysis(BaseModel):
 class EvaluationMetric(BaseModel):
     label: str
     source: str
+    period: str
     fixtures: Count
     observations: Count
     mae: Xg

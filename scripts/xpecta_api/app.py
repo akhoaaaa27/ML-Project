@@ -286,6 +286,7 @@ def create_app(settings=None):
         "api.js": (FRONTEND / "api.js", "text/javascript"),
         "app.js": (FRONTEND / "app.js", "text/javascript"),
         "view.js": (FRONTEND / "view.js", "text/javascript"),
+        "phase9.css": (FRONTEND / "phase9.css", "text/css"),
         "montserrat.ttf": (FRONTEND / "montserrat.ttf", "font/ttf"),
     }
 

@@ -276,11 +276,14 @@ class ResearchService:
 
     def _model_summary(self):
         metric_path = ROOT / "outputs/final_test/final_test_metrics.csv"
+        protocol = json.loads(metric_path.with_name("evaluation_protocol.json").read_text(encoding="utf-8"))
         phase7 = []
         with metric_path.open(encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
                 if row["model"] == "Linear Regression":
+                    partition = protocol["partitions"][row["test_split"]]
                     phase7.append(dict(label=row["test_split"], source="FBref", fixtures=int(row["n_matches"]),
+                                       period=f"{partition['start']} to {partition['end']}",
                                        observations=int(row["n_observations"]), mae=float(row["mae"]), rmse=float(row["rmse"])))
         validation = json.loads((ROOT / "docs/PHASE_8_5_6_VALIDATION.json").read_text(encoding="utf-8"))
         require(validation["artifact_sha256"] == MODEL_SHA256 and validation["production_approved"] is False,
@@ -288,7 +291,12 @@ class ResearchService:
         retrospective = []
         for name, row in validation["cohorts"].items():
             overall = row["metrics"]["overall"]
+            season = row["season"]
+            period = f"{season}/{(season + 1) % 100:02d}"
+            if row["before_or_at_boundary"]:
+                period += f" after {validation['training_reference_end']}"
             retrospective.append(dict(label=name, source=row["label_source"], fixtures=row["scored_fixtures"],
+                                      period=period,
                                       observations=row["scored_team_observations"], mae=overall["lr"]["mae"],
                                       rmse=overall["lr"]["rmse"], baseline_mae=overall["baseline"]["mae"]))
         return dict(self.metadata, phase7=phase7, retrospective=retrospective,

@@ -7,6 +7,7 @@ export const seasonName = year => `${year}/${String(Number(year) + 1).slice(-2)}
 export const statusName = value => String(value ?? "").replaceAll("_", " ");
 const day = value => value ? esc(value.slice(0, 10)) : "—";
 const time = value => value ? `${day(value)} ${esc(value.slice(11, 16))} UTC` : "—";
+const shortDay = new Intl.DateTimeFormat("en-GB", {day: "numeric", month: "short", timeZone: "UTC"});
 const signed = value => (value > 0 ? "+" : "") + number(value);
 const width = (value, max) => Number.isFinite(value) ? Math.max(0, Math.min(100, value / max * 100)) : 0;
 const logos = new Map([...$("clubAssets").content.querySelectorAll("img")].map(image => [image.dataset.team, image.src]));
@@ -40,12 +41,15 @@ function xgSources(counts) {
 
 export function fixtureCard(fixture, forecast) {
   const key = esc(fixture.canonical_fixture_key);
+  const kickoff = fixture.kickoff_utc;
+  const dateLabel = shortDay.format(new Date(kickoff ?? fixture.match_date));
   return `<article class="fixture-card">
-    <div class="fixture-top"><span class="chip">${esc(seasonName(fixture.season))}</span><span>${fixture.kickoff_utc ? time(fixture.kickoff_utc) : day(fixture.match_date)}</span></div>
+    <div class="fixture-top"><span class="chip">${esc(seasonName(fixture.season))}</span>
+      <time datetime="${esc(kickoff ?? fixture.match_date)}">${esc(dateLabel)} · ${kickoff ? `${esc(kickoff.slice(11, 16))} UTC` : "Kickoff unverified"}</time></div>
     <div class="fixture-teams"><div class="fixture-team">${crest(fixture.home_team)}<strong>${esc(fixture.home_team)}</strong></div>
       <span class="fixture-vs">VS</span><div class="fixture-team">${crest(fixture.away_team)}<strong>${esc(fixture.away_team)}</strong></div></div>
-    <div class="fixture-bottom"><div class="fixture-xg">${forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}` : "—"}
-      <small>${forecast ? "Published xG" : "Availability on selection"}</small></div>
+    <div class="fixture-bottom"><div class="fixture-xg">${forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}<small>Published xG</small>`
+      : '<span class="fixture-status">Check forecast availability</span>'}</div>
       <button class="btn btn-green btn-sm" data-fixture="${key}">VIEW PREDICTION ↗</button></div>
     </article>`;
 }
@@ -69,24 +73,31 @@ export function leaderboard(stats) {
     `<p class="tiny muted">Sources by team · ${rank.map(row => `${esc(row.team)}: ${esc(xgSources(row.overall.xg_sources))}`).join(" · ")}</p>`;
 }
 
-function panels(home, away, forecast) {
+function panels(home, away, forecast, loading = false) {
   return `<div class="forecast-output">${[["home", home], ["away", away]].map(([side, team]) =>
     `<div class="forecast-panel ${side === "away" ? "away" : ""}">
       <div class="forecast-team-name">${crest(team, "sm")}<div>${esc(team)}<div class="mini-label">${side.toUpperCase()} TEAM</div></div></div>
-      <div class="forecast-big" data-xg="${side}">${number(forecast[side + "_xg"])}</div><div class="mini-label">PREDICTED xG</div></div>`).join("")}</div>`;
+      ${forecast ? `<div class="forecast-big" data-xg="${side}">${number(forecast[side + "_xg"])}</div><div class="mini-label">PREDICTED xG</div>`
+      : `<div class="forecast-placeholder">${loading ? "Checking…" : "—"}</div><div class="mini-label">${loading ? "CHECKING ELIGIBILITY" : "PREDICTED xG UNAVAILABLE"}</div>`}</div>`).join("")}</div>`;
 }
 
 export function prediction(fixture, result) {
   const live = fixture.observed_status === "live";
+  const loading = result.status === "LOADING";
   const title = `<div class="title-row"><div><div class="eyebrow">PREDICTION RESULTS · RESEARCH</div>
     <h2 class="section-title">${esc(fixture.home_team.toUpperCase())} <span class="detail-vs">VS</span> ${esc(fixture.away_team.toUpperCase())}</h2>
-    <p class="subtext">${seasonName(fixture.season)} · ${fixture.kickoff_utc ? time(fixture.kickoff_utc) : day(fixture.match_date)}
+    <p class="subtext">${seasonName(fixture.season)}${fixture.match_date ? ` · ${fixture.kickoff_utc ? time(fixture.kickoff_utc) : day(fixture.match_date)}` : ""}
     ${live ? ' · <strong data-observed-status="live">LIVE</strong>' : ""}</p></div>
     <span class="chip orange" data-readiness>${esc(statusName(result.status))}</span></div>`;
   const forecast = result.preview;
   if (!forecast) {
-    const reason = result.eligibility?.reason || result.error?.code || "No eligible prediction";
-    return title + message(statusName(reason), true);
+    const reason = result.error?.message || statusName(result.eligibility?.reason || "No eligible prediction");
+    const retry = result.status === "FORECAST_ERROR" || result.status === "WAITING_DATA";
+    return `<div class="prediction-state">${title}${panels(fixture.home_team, fixture.away_team, null, loading)}
+      ${loading ? '<div class="indicator" role="status">Loading…</div>' : message(reason, true)}
+      ${loading ? "" : `<div class="mt20 matchup-actions">
+        ${retry ? '<button class="btn btn-green" data-retry-forecast>CHECK AGAIN ↗</button>' : ""}
+        <button class="btn btn-outline" data-back-to-fixtures>VIEW OTHER FIXTURES ↗</button></div>`}</div>`;
   }
   const [home, away] = [fixture.home_team, fixture.away_team];
   return title + panels(home, away, forecast) +
@@ -94,7 +105,8 @@ export function prediction(fixture, result) {
       ${bars([[home, forecast.home_xg], [away, forecast.away_xg]])}</div>
     <div class="grid2 mt20"><div class="card"><div class="mini-label">COMBINED PREDICTED xG</div><div class="prediction-metric">${number(forecast.home_xg + forecast.away_xg)}</div></div>
       <div class="card"><div class="mini-label">PREDICTED xG DIFFERENCE</div><div class="prediction-metric">${signed(forecast.home_xg - forecast.away_xg)}</div><p class="card-desc">Home xG minus away xG</p></div></div>
-    <div class="card mt20"><h3 class="card-title">PREDICTION SUMMARY</h3><p class="subtext">${esc(forecast.source_notice)}</p></div>
+    <div class="card mt20"><h3 class="card-title">PREDICTION SUMMARY</h3><p class="subtext">${esc(forecast.source_notice)}</p>
+      <p class="card-desc">The two estimates describe total team xG. They do not predict a scoreline or a win probability.</p></div>
     <div class="card mt20"><div class="top-small"><h3 class="card-title">PREDICTION INFORMATION</h3><button class="help-icon" data-guide>?</button></div>
       <div class="grid3 mt20"><div><div class="mini-label">History cutoff</div><p>${day(forecast.history_cutoff)}</p></div>
         <div><div class="mini-label">Model and snapshot</div><p>LR ${esc(forecast.model_version)} · ${esc(forecast.history_snapshot_version)}</p></div>
@@ -103,7 +115,7 @@ export function prediction(fixture, result) {
       <button class="btn btn-outline" data-jump="history">VIEW PREDICTION HISTORY ↗</button></div>`;
 }
 
-function trend(series, labels) {
+function trend(series, labels, colors = ["#2f8601", "#ff5f25"]) {
   const [w, h, left, top, right, bottom] = [580, 238, 39, 18, 18, 32];
   const scale = Math.max(1, ...series.flatMap(row => row.values).filter(Number.isFinite)) * 1.18;
   const slots = Math.max(2, labels.length);
@@ -119,7 +131,7 @@ function trend(series, labels) {
     return `<text x="${x(i)}" y="${h - 10}" text-anchor="middle">${esc(label)}</text>`;
   }).join("");
   const plots = series.map(({name, values}, side) => {
-    const color = side ? "#ff5f25" : "#2f8601";
+    const color = colors[side];
     let path = "";
     let points = "";
     values.forEach((value, i) => {
@@ -130,7 +142,7 @@ function trend(series, labels) {
     return `<path d="${path}" fill="none" stroke="${color}" stroke-width="3"/>${points}`;
   }).join("");
   return `<svg viewBox="0 0 ${w} ${h}" class="chart-svg" role="img" aria-label="Historical xG trend">${grid}${ticks}${plots}</svg>
-    <div class="chart-legend">${series.map(({name}, i) => `<span><i class="legend-dot ${i ? "orange" : ""}"></i>${esc(name)}</span>`).join("")}</div>`;
+    <div class="chart-legend">${series.map(({name}, i) => `<span><i class="legend-dot" style="background:${colors[i]}"></i>${esc(name)}</span>`).join("")}</div>`;
 }
 
 function historyNote(data) {
@@ -152,6 +164,11 @@ export function teamStats(main, comparison) {
   const rows = main.trend;
   const observed = rows.filter(row => Number.isFinite(row.xg) && Number.isFinite(row.xga));
   const goalsMinusXg = observed.length ? observed.reduce((sum, row) => sum + row.goals_for - row.xg, 0) : null;
+  const venueStats = (title, row) => `<div class="location-box">
+    <div class="mini-label">${title} · ${row.verified_fixtures} VERIFIED MATCHES</div>
+    <div class="stat-value-xl ${title === "AWAY" ? "away-value" : ""}">${number(row.mean_xg)}</div>
+    <div class="tiny muted">Average xG · ${row.observed_xg_fixtures}/${row.verified_fixtures} observed</div>
+    <div class="tiny">Average xGA · <strong>${number(row.mean_xga)}</strong></div></div>`;
   return `<div class="card mint"><div class="compare-head"><div class="compare-team">${crest(team)}
       <div><h2 class="section-title" style="font-size:31px">${esc(team.toUpperCase())}</h2><span class="mini-label">LA LIGA · ${seasonName(season)}</span></div></div></div>
       <p class="card-desc">${esc(historyNote(main))}</p></div>
@@ -166,9 +183,12 @@ export function teamStats(main, comparison) {
         {name: "xG", values: rows.map(item => item.xg)}, {name: "xGA", values: rows.map(item => item.xga)}
       ], rows.map(item => item.date.slice(5))) : message("No matches in the selected season.")}</div></div>
     <div class="grid2 mt20"><div class="card"><h3 class="card-title">HOME AND AWAY</h3><div class="location-grid mt20">
-      ${venue(team, "HOME", main.home, "venue-home")}${venue(team, "AWAY", main.away, "venue-away")}</div></div>
+      ${venueStats("HOME", main.home)}${venueStats("AWAY", main.away)}</div></div>
       <div class="card"><h3 class="card-title">TEAM COMPARISON · ${seasonName(season)}</h3>
-        ${comparison ? `<p class="card-desc">${esc(historyNote(comparison))}</p>${bars([
+        ${comparison ? `<div class="compare-head mt20" data-team-comparison>
+          <div class="compare-team">${crest(team, "sm")}<strong>${esc(team)}</strong></div><span class="compare-versus">–</span>
+          <div class="compare-team">${crest(comparison.team, "sm")}<strong>${esc(comparison.team)}</strong></div></div>
+        <p class="card-desc">${esc(historyNote(comparison))}</p>${bars([
           [team + " · xG", overall.mean_xg], [comparison.team + " · xG", comparison.overall.mean_xg],
           [team + " · xGA", overall.mean_xga], [comparison.team + " · xGA", comparison.overall.mean_xga]
         ])}` : message("The comparison statistics are unavailable.")}</div></div>`;
@@ -201,8 +221,22 @@ export function matchAnalysis(data) {
       ...Array(max - row.trend.length).fill(null), ...row.trend.map(item => item[key])
     ]}));
     return `<div class="card analysis-trend-card"><h3 class="card-title">${heading}</h3>${max
-      ? trend(series, Array.from({length: max}, (_, i) => `T-${max - i}`)) : message("No matches to chart.")}</div>`;
+      ? trend(series, Array.from({length: max}, (_, i) => `T-${max - i}`), ["#86ef70", "#ff8a57"]) : message("No matches to chart.")}</div>`;
   };
+  const meetingRow = item => {
+    const actualHome = item.venue === "home";
+    const hosts = actualHome ? home.team : away.team;
+    const visitors = actualHome ? away.team : home.team;
+    const goals = actualHome ? [item.goals_for, item.goals_against] : [item.goals_against, item.goals_for];
+    const xg = actualHome ? [item.xg, item.xga] : [item.xga, item.xg];
+    return `<tr><td>${day(item.date)}</td><td><span class="h2h-team">${crest(hosts, "tiny")}${esc(hosts)}</span></td>
+      <td>${goals.join(" – ")}</td><td><span class="h2h-team">${crest(visitors, "tiny")}${esc(visitors)}</span></td>
+      <td>${xg.map(number).join(" / ")}</td></tr>`;
+  };
+  const insights = [home, away].map(row => `<div class="insight-row"><strong>${esc(row.team)}</strong><p class="subtext">
+    ${row.overall.observed_xg_fixtures ? `Observed averages in this window were ${number(row.overall.mean_xg)} xG and ${number(row.overall.mean_xga)} xGA.`
+      : "Observed xG is unavailable in the selected window."}
+    ${esc(historyNote(row))}</p></div>`).join("");
   return `<div class="title-row"><div><div class="eyebrow">TEAM COMPARISON · HISTORICAL DATA</div><h2 class="section-title">MATCHUP OVERVIEW.</h2></div>
     <span class="chip">LAST ${data.window} · ${seasonName(data.season)}</span></div>
     <div class="card analysis-overview-card"><div class="compare-head matchup-identity">${side(home, "home")}<span class="detail-vs">VS</span>${side(away, "away")}</div>
@@ -219,20 +253,28 @@ export function matchAnalysis(data) {
     <div class="mt30 analysis-content-section"><h2 class="section-title analysis-section-title">PERFORMANCE TRENDS</h2>
       <p class="card-desc">T-1 is each team's last verified match. Empty points represent missing values.</p>
       <div class="grid2 mt20">${chart("xg", "xG TREND COMPARISON")}${chart("xga", "xGA TREND COMPARISON")}</div></div>
-    <div class="card mt20 analysis-venue-card"><h3 class="card-title">HOME / AWAY PERFORMANCE</h3><div class="location-grid mt20">
+    <div class="card mt20 analysis-venue-card"><h3 class="card-title">HOME / AWAY PERFORMANCE</h3>
+      <p class="card-desc">Venue splits within the selected last ${data.window} verified matches for each team.</p><div class="location-grid mt20">
       ${venue(home.team, "HOME PERFORMANCE", home.home, "venue-home")}${venue(away.team, "AWAY PERFORMANCE", away.away, "venue-away")}</div></div>
     <div class="card mt20 analysis-h2h-card"><h3 class="card-title">HEAD-TO-HEAD HISTORY</h3><p class="card-desc">Selected season · ${h2h.verified_fixtures} verified meetings</p>
       ${h2h.verified_fixtures ? `<div class="grid3 mt20">${metric(home.team + " wins", h2h.wins)}${metric("Draws", h2h.draws)}${metric(away.team + " wins", h2h.losses)}</div>
-      <div class="table-wrap mt20"><table class="data-table"><thead><tr><th>Date</th><th>Venue</th><th>Score · ${esc(home.team)} first</th><th>Observed xG</th></tr></thead><tbody>
-      ${data.head_to_head_matches.map(item => `<tr><td>${day(item.date)}</td><td>${esc(item.venue)}</td><td>${item.goals_for} – ${item.goals_against}</td><td>${number(item.xg)} / ${number(item.xga)}</td></tr>`).join("")}</tbody></table></div>`
-      : message("No verified meetings in this season.")}</div>`;
+      <div class="grid2 mt20">${metric(home.team + " · Average xG", number(h2h.mean_xg), "Observed meetings")}
+      ${metric(away.team + " · Average xG", number(h2h.mean_xga), "Observed meetings")}</div>
+      <div class="table-wrap mt20" tabindex="0" role="region" aria-label="Head-to-head table"><table class="data-table h2h-table">
+      <thead><tr><th>Date</th><th>Home team</th><th>Score</th><th>Away team</th><th>Observed xG (H / A)</th></tr></thead><tbody>
+      ${data.head_to_head_matches.map(meetingRow).join("")}</tbody></table></div>`
+      : message("No verified meetings in this season.")}</div>
+    <div class="card mt20 analysis-insights-card"><h3 class="card-title">MATCH INSIGHTS</h3>${insights}
+      <div class="indicator mt20">Historical observations for the selected season. Provider definitions may differ.</div>
+      <div class="mt20"><button class="btn btn-outline" data-to-custom>VIEW PREDICTION ↗</button></div></div>`;
 }
 
-export function historyTable(rows) {
-  if (!rows.length) return message("No matching published forecasts in this ledger.");
-  return `<div class="table-wrap"><table class="data-table"><thead><tr><th>Matchup</th><th>Revision</th><th>Home xG</th><th>Away xG</th><th>Created</th><th>Model</th><th>Details</th></tr></thead>
+export function historyTable(rows, total) {
+  if (!rows.length) return total ? message("No published forecasts match the current filters.") :
+    '<section class="empty history-empty" aria-label="Empty prediction history"><h3 class="card-title">No published forecasts yet</h3><p class="subtext">This ledger lists immutable published revisions. Reading a preview does not add a record.</p><button class="btn btn-outline mt20" data-jump="predict">CHECK FIXTURE AVAILABILITY ↗</button></section>';
+  return `<div class="table-wrap history-table-region" tabindex="0" role="region" aria-label="Published forecasts"><table class="data-table"><thead><tr><th>Matchup</th><th>Revision</th><th>Home xG</th><th>Away xG</th><th>Created</th><th>Model</th><th>Details</th></tr></thead>
     <tbody>${rows.map(row => `<tr><td><strong>${esc(row.home_team)} vs ${esc(row.away_team)}</strong></td>
-      <td><span class="chip">${esc(row.forecast_stage)} · V${row.forecast_revision}</span></td><td>${number(row.home_xg)}</td><td>${number(row.away_xg)}</td>
+      <td><span class="chip">${esc(row.forecast_stage)} · V${row.forecast_revision}</span></td><td class="history-value home">${number(row.home_xg)}</td><td class="history-value away">${number(row.away_xg)}</td>
       <td>${time(row.generated_at_utc)}</td><td>LR ${esc(row.model_version)}</td>
       <td><button class="btn btn-outline btn-sm" data-history="${esc(row.forecast_id)}">VIEW ↗</button></td></tr>`).join("")}</tbody></table></div>`;
 }
@@ -268,14 +310,19 @@ export function renderModel(model) {
     <span style="color:#2f8601;font-weight:900;font-size:10px">${String(i + 1).padStart(2, "0")}</span>
     <div><code style="font-size:11px;font-weight:850;color:#183f15;overflow-wrap:anywhere">${esc(name)}</code><div class="tiny muted">${descriptions[i] || ""}</div></div></div>`).join("");
   $("modelMetricCards").innerHTML = [...model.phase7, ...model.retrospective].map(row => metric(
-    `MAE · ${row.source}`, number(row.mae), `${statusName(row.label)} · ${row.fixtures} matches`
+    `MAE · ${row.source}`, number(row.mae), `${statusName(row.label)} · ${row.period} · ${row.fixtures} matches`
   )).join("");
-  $("modelScatter").innerHTML = bars(model.phase7.flatMap(row => [
+  const plot = rows => {
+    const scale = Math.max(1, ...rows.map(([, value]) => value ?? 0));
+    return `<div class="model-evaluation-plot">${bars(rows, scale)}
+      <div class="chart-legend"><span>0.00</span><span>Absolute xG error</span><span>${number(scale)}</span></div></div>`;
+  };
+  $("modelScatter").innerHTML = plot(model.phase7.flatMap(row => [
     [`${statusName(row.label)} · MAE`, row.mae], [`${statusName(row.label)} · RMSE`, row.rmse]
-  ]), 1);
-  $("modelResidual").innerHTML = bars(model.retrospective.flatMap(row => [
+  ]));
+  $("modelResidual").innerHTML = plot(model.retrospective.flatMap(row => [
     [`${row.source} · LR MAE`, row.mae], [`${row.source} · Baseline MAE`, row.baseline_mae]
-  ]), 1);
+  ]));
   $("modelEvaluationNotice").textContent = `${model.model} V${model.model_version} · ${model.training_observations} training rows · ${model.evaluation_notice}`;
 }
 
