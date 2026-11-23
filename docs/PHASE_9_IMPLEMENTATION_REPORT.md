@@ -1,5 +1,7 @@
 # Phase 9 implementation report
 
+This report records the original Phase 9 implementation. For the current Windows procedure and pre-merge state, use the [Phase 9.9 thesis-defense runbook](PHASE_9_9_FINAL_REVALIDATION.md#windows-thesis-defense-runbook). The remediation reports cover [data freshness](PHASE_9_6_REFRESH_READINESS_REPORT.md), [fixture discovery](PHASE_9_7_FIXTURE_DISCOVERY_REPORT.md), and [forecast publication and history](PHASE_9_8_REAL_HISTORY_REPORT.md).
+
 The website serves six research pages at `http://127.0.0.1:8765/`. It uses the real Composite History V3 and frozen Linear Regression `1.0.0`. The originally protected histories, model, fitted imputer, Phase 7 evidence and eligibility service stay on their existing paths and versions.
 
 | Workstream | Scope and implementation |

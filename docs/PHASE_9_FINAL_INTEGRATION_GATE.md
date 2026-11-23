@@ -1,5 +1,7 @@
 # Phase 9 final integration gate
 
+This is the historical gate for the original Phase 9 implementation. The separate Phase 9.6–9.9 run records the newer data acquisition, candidate review state, fixture discovery, publication safeguards and actual rerun results. [Phase 9.9 revalidation](PHASE_9_9_FINAL_REVALIDATION.md)
+
 Verification date: 23 November 2026, Asia/Saigon. Baseline: `37f0e1e7d57b3f90197479cf1ce6db3b70b66ab8`. Tested implementation: `b2adbd49f80a4c454d9a4ee541ef4e88d5c28d9f` on `phase9-real-data-first-ui-finalization`. The decision applies to the localhost research demonstration, with `production_approved=false`.
 
 | Acceptance criterion | Result | Evidence |
