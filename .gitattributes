@@ -2,3 +2,25 @@ data/history/research/*/laliga_composite.sqlite3 -text
 data/history/research/*/manifest.json -text
 data/external/multisource/acquisition_manifest.json -text
 data/external/multisource/raw/current_2026_fixtures.csv -text
+web/xpecta/integrated.html -text -diff
+
+# The frozen research manifests pin the checkout bytes of these files.
+.gitignore text eol=crlf
+"Phases/Analyze Feature Contributions and Prediction Errors for La Liga xG Models.md" text eol=crlf
+"Phases/Build and Serialize the Final La Liga xG Inference Pipeline.md" text eol=crlf
+"Phases/Evaluate La Liga xG Models on Independent Temporal Holdouts.md" text eol=crlf
+"Phases/Implement Expanding Window Cross-Validation and Initial Model Training.md" text eol=crlf
+"Phases/Normalize Numeric Formats in the La Liga Dataset.md" text eol=crlf
+"Phases/Optimize Regression Models with Time-Aware Hyperparameter Tuning.md" text eol=crlf
+"Phases/Prepare Leakage-Safe Median Imputation for La Liga.md" text eol=crlf
+data/laliga_processed.csv text eol=crlf
+data/matches_laliga.csv text eol=crlf
+outputs/evaluation/analysis_manifest.json text eol=crlf
+outputs/final_test/final_test_manifest.json text eol=crlf
+outputs/inference/phase8_manifest.json text eol=crlf
+outputs/inference/protected_files.json text eol=crlf
+outputs/inference/test_results.json text eol=crlf
+outputs/inference/upcoming_snapshot_check.json text eol=crlf
+outputs/inference/verification_manifest.json text eol=crlf
+outputs/provider_poc/reports/protected_files.json text eol=crlf
+outputs/tuning/best_params.json text eol=crlf

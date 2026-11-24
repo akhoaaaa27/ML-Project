@@ -1,4 +1,4 @@
-"""FastAPI application for same-origin localhost use."""
+"""Same-origin XPECTA FastAPI application."""
 
 from contextlib import asynccontextmanager
 import logging
@@ -28,7 +28,7 @@ BODY_LIMIT = 2048
 
 ERRORS = {
     "INVALID_REQUEST": (422, "Request fields or parameters are invalid"),
-    "INVALID_HOST": (400, "Use a localhost address"),
+    "INVALID_HOST": (400, "Use the configured service address"),
     "REQUEST_TOO_LARGE": (413, "Request exceeds the configured size limit"),
     "INVALID_CONTENT_TYPE": (415, "Use application/json"),
     "CROSS_ORIGIN_WRITE": (403, "This origin cannot publish forecasts"),
@@ -66,10 +66,11 @@ def error_response(code):
 
 
 class LocalBoundary:
-    """Bound the ASGI body before JSON parsing and keep the local server off foreign hosts."""
+    """Restrict request hosts and bound request bodies before JSON parsing."""
 
-    def __init__(self, app):
+    def __init__(self, app, render_hostname):
         self.app = app
+        self.render_hostname = render_hostname.lower()
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -86,7 +87,8 @@ class LocalBoundary:
             await send(message)
 
         headers = Headers(scope=scope)
-        if not HOST.fullmatch(headers.get("host", "")):
+        host = headers.get("host", "").lower()
+        if not host or (host != self.render_hostname and not HOST.fullmatch(host)):
             await error_response("INVALID_HOST")(scope, receive, hardened_send)
             return
         if len(scope["query_string"]) > BODY_LIMIT:
@@ -157,19 +159,22 @@ def live() -> s.Live:
 def ready(request: Request, response: Response) -> s.Ready:
     service = request.app.state.service
     settings = request.app.state.settings
+    frontend_available = frontend_file(settings).is_file()
     reason = "TRUSTED_INPUT_UNAVAILABLE" if service is None else None
     if service is not None:
         try:
             service._verify_bound_snapshot()
         except (InferenceError, OSError):
             reason = "TRUSTED_INPUT_CHANGED"
+    if reason is None and settings.render_hostname and not frontend_available:
+        reason = "FRONTEND_UNAVAILABLE"
     if reason:
         response.status_code = 503
     return s.Ready(status="UNAVAILABLE" if reason else "READY", mode=settings.mode,
                    snapshot_version=settings.snapshot_version,
                    model_version=service.metadata["model_version"] if not reason else None,
                    reason=reason,
-                   frontend_available=(PREPARED / "integrated.html").is_file())
+                   frontend_available=frontend_available)
 
 
 @router.get("/bootstrap")
@@ -244,6 +249,13 @@ def model(service: Service) -> s.ModelSummary:
     return service.summary
 
 
+def frontend_file(settings):
+    local = PREPARED / "integrated.html"
+    if not settings.render_hostname and local.is_file():
+        return local
+    return FRONTEND / "integrated.html"
+
+
 def create_app(settings=None):
     settings = Settings.from_env() if settings is None else settings
 
@@ -286,7 +298,7 @@ def create_app(settings=None):
 
     @app.get("/", include_in_schema=False)
     def frontend():
-        path = PREPARED / "integrated.html"
+        path = frontend_file(settings)
         if not path.is_file():
             return error_response("FRONTEND_UNAVAILABLE")
         return FileResponse(path, media_type="text/html")
@@ -312,7 +324,7 @@ def create_app(settings=None):
 
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.origins), allow_credentials=False,
                        allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
-    app.add_middleware(LocalBoundary)
+    app.add_middleware(LocalBoundary, render_hostname=settings.render_hostname)
     return app
 
 
