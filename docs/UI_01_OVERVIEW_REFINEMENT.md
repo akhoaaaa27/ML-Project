@@ -20,7 +20,7 @@ Nhánh `ui-01-overview-refinement` bắt đầu từ `main` tại `d42df9b`. Đ�
 1. Overview chọn tối đa sáu fixture theo catalogue hiện có, rồi gọi `GET /api/v1/eligibility` cho từng thẻ hiển thị.
 2. Chỉ `READY` và `EARLY_READY` mở `POST /api/v1/forecasts/preview`. Endpoint này chạy suy luận theo cơ chế hiện có và trả preview, không ghi Forecast Ledger. Catalogue Prediction tiếp tục hiển thị dự báo đã công bố theo giao diện hiện có.
 3. Trước khi hiển thị, client kiểm tra mã trận, thời điểm kickoff, cutoff, phiên bản model, phiên bản snapshot, SHA-256 của History Store và ngữ cảnh dữ liệu. Hai giá trị hợp lệ theo thứ tự chủ nhà rồi đội khách, với hai chữ số thập phân. `0.00` được hiển thị nguyên giá trị.
-4. Preview trên lịch thật hết hạn tại mốc sớm nhất trong ba mốc gồm kickoff, giới hạn tuổi bằng chứng lịch từ API và kết thúc ngày cutoff UTC. Client hủy request khi rời Overview, bỏ phản hồi của lượt cũ và chỉ cập nhật vùng xG trong thẻ. Các lần render cùng lượt và cùng dữ liệu dùng chung nhóm request.
+4. Preview trên lịch thật hết hạn tại mốc sớm nhất trong ba mốc gồm kickoff, thời điểm vượt giới hạn tuổi bằng chứng lịch từ API và kết thúc ngày cutoff UTC. Overview tính mốc 48 giờ là hợp lệ theo cùng quy tắc với API. Client hủy request khi rời Overview, bỏ phản hồi của lượt cũ và chỉ cập nhật vùng xG trong thẻ. Các lần render cùng lượt và cùng dữ liệu dùng chung nhóm request.
 
 | Trạng thái | Thẻ hiển thị |
 | --- | --- |
@@ -30,6 +30,12 @@ Nhánh `ui-01-overview-refinement` bắt đầu từ `main` tại `d42df9b`. Đ�
 | UNAVAILABLE | Prediction unavailable |
 | LOADING | Checking prediction… |
 | FORECAST_ERROR | Could not load forecast |
+
+## Hiển thị thời gian UTC+0
+
+Thẻ trận trên Overview và Prediction, Kickoff và Generated ở chi tiết dự báo, mốc Created ở bảng và chi tiết Prediction History, cùng các mốc kiểm tra, thu thập và hết hạn của Schedule evidence dùng giờ 24 giờ và nhãn `UTC+0`. Thẻ giữ dạng gọn theo ngày và tháng. Schedule evidence hiển thị đến giây. Bộ lọc ngày của Prediction dùng ngày UTC+0.
+
+Định dạng trên giao diện chuyển cả timestamp ISO có offset sang UTC. Ví dụ `2026-11-24T00:30:00+02:00` hiển thị thành `2026-11-23 22:30 UTC+0`. Ngày lịch sử, ngày cutoff và khoảng đánh giá của model giữ dạng ngày hoặc mùa. Trận chưa có giờ xác minh tiếp tục hiển thị ngày và `Kickoff unverified`. API và CSV Forecast Ledger giữ định dạng ISO phục vụ tái lập và xử lý dữ liệu.
 
 ## File thay đổi
 
@@ -41,6 +47,7 @@ Nhánh `ui-01-overview-refinement` bắt đầu từ `main` tại `d42df9b`. Đ�
 | [view.js](../web/xpecta/view.js) | Sáu trạng thái vùng xG, tooltip provenance ở leaderboard. |
 | [phase9.css](../web/xpecta/phase9.css) | Vị trí CTA, vùng xG, hai thẻ thống kê và khung logo Footer. |
 | [browser_ui01.py](../tests/browser_ui01.py) | Kiểm thử trình duyệt thực và mock API cô lập, ghi bằng chứng vào thư mục local. |
+| [browser_phase9.py](../tests/browser_phase9.py) và [browser_phase857.py](../tests/browser_phase857.py) | Cập nhật kiểm thử hồi quy cho UTC+0 và kiểm tra dự báo Overview với API synthetic dùng model đóng băng. |
 | [UI_01_OVERVIEW_REFINEMENT.md](UI_01_OVERVIEW_REFINEMENT.md) | Báo cáo triển khai và kiểm thử. |
 
 ## Visual QA và ảnh đối chiếu
@@ -49,24 +56,24 @@ Nhánh `ui-01-overview-refinement` bắt đầu từ `main` tại `d42df9b`. Đ�
 
 | Viewport | Ảnh baseline | Ảnh sau | Kết quả |
 | --- | --- | --- | --- |
-| Desktop 1440 × 900 | [Trước](../data/external/multisource/phase857/ui-01/before/desktop-baseline.png) | [Sau](../data/external/multisource/phase857/ui-01/verified/desktop-overview.png) | Sáu thẻ, lưới 3 × 2, hai thẻ thống kê song song. |
-| Tablet 820 × 1180 | [Trước](../data/external/multisource/phase857/ui-01/before/tablet-baseline.png) | [Sau](../data/external/multisource/phase857/ui-01/verified/tablet-overview.png) | Sáu thẻ, hai cột, thống kê xếp dọc. |
-| Mobile 390 × 844 | [Trước](../data/external/multisource/phase857/ui-01/before/mobile-baseline.png) | [Sau](../data/external/multisource/phase857/ui-01/verified/mobile-overview.png) | Sáu thẻ, một cột, nội dung không tràn ngang. |
+| Desktop 1440 × 900 | [Trước](../data/external/multisource/phase857/ui-01/before/desktop-baseline.png) | [Sau](../data/external/multisource/phase857/ui-01/utc-plus-zero-final/desktop-overview.png) | Sáu thẻ, lưới 3 × 2, hai thẻ thống kê song song. |
+| Tablet 820 × 1180 | [Trước](../data/external/multisource/phase857/ui-01/before/tablet-baseline.png) | [Sau](../data/external/multisource/phase857/ui-01/utc-plus-zero-final/tablet-overview.png) | Sáu thẻ, hai cột, thống kê xếp dọc. |
+| Mobile 390 × 844 | [Trước](../data/external/multisource/phase857/ui-01/before/mobile-baseline.png) | [Sau](../data/external/multisource/phase857/ui-01/utc-plus-zero-final/mobile-overview.png) | Sáu thẻ, một cột, nội dung không tràn ngang. |
 
-Chiều cao Hero lần lượt là 570, 550 và 575 px ở cả hai bản. Tiêu đề, mô tả và các CTA giữ nguyên kích thước và vị trí tương đối trong Hero, chênh lệch dưới 0,01 CSS px. Kiểm tra bàn phím gồm focus qua Footer và mở đúng chi tiết từ nút View Prediction ở cả ba viewport. Mock có nhãn `UI-01 MOCK` và ảnh `verified/mock-forecast-states.png`, `verified/mock-tablet-forecast-states.png` và `verified/mock-mobile-forecast-states.png`.
+Chiều cao Hero lần lượt là 570, 550 và 575 px ở cả hai bản. Tiêu đề, mô tả và các CTA giữ nguyên kích thước và vị trí tương đối trong Hero, chênh lệch dưới 0,01 CSS px. Kiểm tra bàn phím gồm focus qua Footer và mở đúng chi tiết từ nút View Prediction ở cả ba viewport. Ảnh mock cho ba viewport nằm cạnh ảnh thật trong thư mục `utc-plus-zero-final/` và có nhãn `UI-01 MOCK`.
 
 ## Kết quả kiểm thử
 
 | Kiểm tra | Kết quả |
 | --- | --- |
 | `tests.test_phase857_api`, `tests.test_phase96_research`, `tests.test_forecast_eligibility`, `tests.test_forecast_integration` | 42/42 PASS. |
-| `python -m unittest discover -s tests -v` | 366/367 PASS. `test_no_raw_data_in_public_reports_or_tracked_paths` FAIL do `main` đã theo dõi CSV lịch và snapshot V3 mà test cũ cấm. `git ls-tree` xác nhận cả hai đường dẫn trên base. UI-01 không thay đổi dữ liệu hay test đó. |
-| `tests.browser_ui01` | PASS trên Edge 158, ba viewport. Công cụ kiểm tra UI thật, 0/4/8 fixture, giới hạn sáu lượt kiểm tra mỗi lần vào trang, số 0, READY/EARLY_READY, lỗi HTTP 503, digest sai, expiry, hủy request khi rời trang, đổi mùa và điều hướng Footer. |
+| `python -m unittest discover -s tests -v` | Lượt UI-01 ban đầu đạt 366/367. `test_no_raw_data_in_public_reports_or_tracked_paths` FAIL do `main` đã theo dõi CSV lịch và snapshot V3 mà test cũ cấm. `git ls-tree` xác nhận cả hai đường dẫn trên base. UI-01 không thay đổi dữ liệu hay test đó. |
+| `tests.browser_ui01` | PASS trên Edge 158, ba viewport. Công cụ kiểm tra UI thật, 0/4/8 fixture, giới hạn sáu lượt kiểm tra mỗi lần vào trang, số 0, READY/EARLY_READY, lỗi HTTP 503, digest sai, expiry, hủy request khi rời trang, đổi mùa và điều hướng Footer. Kiểm tra ngày UTC+0 khi fixture có offset +14, bằng chứng lịch và nhãn bộ lọc trên trình duyệt Asia/Ho_Chi_Minh. |
 | `tests.browser_phase9` | PASS, 18 cặp ảnh giữa sáu trang ở ba viewport. Catalogue, thống kê, detail và Custom Matchup hoạt động. Không có lỗi console hay request publish. |
-| `tests.browser_phase857` | PASS, 18 cặp ảnh và 43 ảnh kiểm thử. |
+| `tests.browser_phase857` | PASS, 18 cặp ảnh và 43 ảnh kiểm thử. Trong môi trường synthetic, thẻ Overview và chi tiết cho cùng xG từ model đóng băng tại đúng ngưỡng 48 giờ. Kiểm tra mốc thời gian và CSV trên trình duyệt America/Los_Angeles. |
 | Cú pháp và bảo toàn dữ liệu | `node --check`, Python compile và `git diff --check` đạt. Đối chiếu 77 và 107 mục bảo vệ, 13 feature và tám hash DB/manifest của snapshot đạt. |
 
-Runtime `REAL_RESEARCH` dùng snapshot `phase853_v3_20261122`. API báo `UNVERIFIED` do bằng chứng lịch hết hạn. Cả sáu thẻ đầu hiển thị `WAITING_DATA` trên cả ba viewport. Forecast Ledger ở mức 0 trước và sau kiểm thử thật. Các giá trị dương và `0.00` được kiểm tra riêng trong mock trình duyệt. Xác nhận bằng một forecast đủ điều kiện trên dữ liệu thật vẫn cần bằng chứng lịch hợp lệ.
+Runtime `REAL_RESEARCH` dùng snapshot `phase853_v3_20261122`. API báo `UNVERIFIED` do bằng chứng lịch hết hạn. Cả sáu thẻ đầu hiển thị `WAITING_DATA` trên cả ba viewport. Forecast Ledger ở mức 0 trước và sau kiểm thử thật. Giao diện với dữ liệu số được xác nhận trong cả lượt gọi API synthetic chạy model đóng băng và lượt mock kiểm tra `0.00`. Xác nhận bằng một forecast đủ điều kiện trên dữ liệu thật vẫn cần bằng chứng lịch hợp lệ.
 
 ## Ma trận nghiệm thu
 
@@ -74,7 +81,7 @@ Runtime `REAL_RESEARCH` dùng snapshot `phase853_v3_20261122`. API báo `UNVERIF
 | --- | --- | --- |
 | AC-01 | PASS | Hai phần tử chú thích đã được xóa khỏi HTML Overview. |
 | AC-02 | PASS | Ảnh và số đo trước/sau xác nhận bố cục Hero và hai CTA. |
-| AC-03 | PASS | Mock cô lập xác nhận UI hiển thị đúng xG nhận từ API và kiểm tra context. Các bài test forecast xác nhận API preview dùng model thật. Kiểm tra xG trên thẻ với trận thật hiện bị giới hạn bởi lịch hết hạn. |
+| AC-03 | PASS | API synthetic chạy model đóng băng và trả cùng cặp xG ở Overview lẫn chi tiết. Mock cô lập xác nhận định dạng và xử lý sai context. Kiểm tra xG trên thẻ với trận thật hiện bị giới hạn bởi lịch hết hạn. |
 | AC-04 | PASS | Sáu thẻ thật ở trạng thái pending, không có số giả. Mock kiểm tra pending, unavailable, lỗi preview và sai context. |
 | AC-05 | PASS | Thẻ giữ nhãn mùa sau khi xác nhận dữ liệu và API chưa có vòng đấu đã xác minh. |
 | AC-06 | PASS | Đã kiểm tra sáu trạng thái và số 0 hợp lệ. |

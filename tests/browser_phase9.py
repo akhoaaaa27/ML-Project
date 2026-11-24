@@ -123,8 +123,8 @@ def discovery(page, data, sample, output, viewport):
         candidate = page.locator(f'#presetFixtures [data-fixture="{row["canonical_fixture_key"]}"]')
         if row["kickoff_utc"]:
             day = row["kickoff_utc"][:10]
-            page.get_by_label("From (UTC)").fill(day)
-            page.get_by_label("Through (UTC)").fill(day)
+            page.get_by_label("From (UTC+0)").fill(day)
+            page.get_by_label("Through (UTC+0)").fill(day)
             expect(cards).to_have_count(1)
         with page.expect_request("**/api/v1/forecasts/preview") as call:
             candidate.press("Enter")

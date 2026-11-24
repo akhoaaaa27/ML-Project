@@ -1,7 +1,7 @@
 import {api} from "./api.js";
 import {fixturePage} from "./fixtures.js";
-import {$, comparison, csvText, fixtureCard, historyDetails, historyTable, leaderboard, matchAnalysis,
-  message, overviewForecast, prediction, presetFixtures, renderModel, seasonName, teamStats} from "./view.js";
+import {$, comparison, csvText, fixtureCard, formatUtcTimestamp, historyDetails, historyTable, leaderboard, matchAnalysis,
+  message, overviewForecast, prediction, presetFixtures, renderModel, seasonName, teamStats, UTC_LABEL} from "./view.js";
 
 const pages = {
   home: "Overview", predict: "Prediction", analysis: "Match Analysis",
@@ -176,8 +176,9 @@ async function loadOverviewForecast(fixture, slot, batch) {
 
     // The preview response omits schedule evidence. Keep the checked fixture's own expiry.
     const kickoff = Date.parse(fixture.kickoff_utc);
-    const expires = Math.min(kickoff, Date.parse(reviewed) + data.schedule_max_age_hours * 3600000,
-      Date.parse(cutoff) + 86400000);
+    const freshnessEnds = Date.parse(reviewed) + data.schedule_max_age_hours * 3600000;
+    // The eligibility policy includes the final millisecond of the schedule freshness window.
+    const expires = Math.min(kickoff, freshnessEnds + 1, Date.parse(cutoff) + 86400000);
     if (!Number.isFinite(expires) || target?.canonical_fixture_key !== key || Date.parse(target.kickoff_utc) !== kickoff) {
       throw new Error("Forecast timing could not be verified.");
     }
@@ -245,7 +246,7 @@ function renderDiscovery(latest = publishedByKey(), time = catalogueTime()) {
   $("fixturePrevious").disabled = found.page === 1;
   $("fixtureNext").disabled = found.page === found.pages;
   if (found.invalidRange) {
-    notice("presetFixtures", "The UTC end date must be on or after the start date.", true);
+    notice("presetFixtures", `The end date (${UTC_LABEL}) must be on or after the start date.`, true);
   } else {
     renderHere("presetFixtures", found.total ? presetFixtures(found.items, latest) : message("No fixtures match these filters."));
   }
@@ -257,8 +258,8 @@ function installDiscovery() {
     <form id="fixtureFilters" class="card fixture-filters mt20" aria-label="Filter fixture catalogue">
       <div class="field"><label for="fixtureSearch">Search teams</label><input id="fixtureSearch" name="search" type="search"></div>
       <div class="field"><label for="fixtureTeam">Team</label><select id="fixtureTeam" name="team"></select></div>
-      <div class="field"><label for="fixtureStart">From (UTC)</label><input id="fixtureStart" name="start" type="date"></div>
-      <div class="field"><label for="fixtureEnd">Through (UTC)</label><input id="fixtureEnd" name="end" type="date"></div>
+      <div class="field"><label for="fixtureStart">From (${UTC_LABEL})</label><input id="fixtureStart" name="start" type="date"></div>
+      <div class="field"><label for="fixtureEnd">Through (${UTC_LABEL})</label><input id="fixtureEnd" name="end" type="date"></div>
       <div class="field"><label for="fixtureStatus">Catalogue status</label><select id="fixtureStatus" name="status">
         <option value="upcoming">Upcoming</option><option value="">All listed</option><option value="scheduled">Scheduled</option>
         <option value="completed">Completed</option><option value="live">Live in snapshot</option>
@@ -306,10 +307,11 @@ function renderFreshness(data) {
   const snapshotLabel = state.config?.mode === "SYNTHETIC_DEMO" ? "Synthetic test snapshot" : "Research snapshot available";
   $("homeSchedule").textContent = data ? `${snapshotLabel} · ${label}` : label;
   $("fixtureDataStatus").textContent = label;
-  $("fixtureEvidence").textContent = data ? `${data.snapshot_version} · checked ${data.evaluated_at_utc}. ` +
+  $("fixtureEvidence").textContent = data ? `${data.snapshot_version} · checked ${formatUtcTimestamp(data.evaluated_at_utc, {seconds: true})}. ` +
     `${data.recent_review_upcoming_fixtures} of ${data.upcoming_fixtures} upcoming fixtures have recent evidence. ` +
     data.schedule_evidence.map(group =>
-      `${group.fixtures} acquired ${group.acquired_at_utc}, expiry ${group.expires_at_utc} (${group.status.toLowerCase()}).`).join(" ")
+      `${group.fixtures} acquired ${formatUtcTimestamp(group.acquired_at_utc, {seconds: true})}, ` +
+      `expiry ${formatUtcTimestamp(group.expires_at_utc, {seconds: true})} (${group.status.toLowerCase()}).`).join(" ")
     : "The service has not provided schedule evidence.";
 }
 

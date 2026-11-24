@@ -145,7 +145,8 @@ def monitor(page, issues):
 
 
 def workflow(browser, local, output, issues):
-    context = browser.new_context(viewport={"width": 1440, "height": 900}, accept_downloads=True)
+    context = browser.new_context(viewport={"width": 1440, "height": 900}, accept_downloads=True,
+                                  timezone_id="America/Los_Angeles")
     context.route("**/*", browser_route)
     page = context.new_page()
     monitor(page, issues)
@@ -153,10 +154,16 @@ def workflow(browser, local, output, issues):
     await_page(page, "home")
     cards = page.locator("#homeFixtures .fixture-card")
     expect(cards).to_have_count(4)
+    target = f'[data-fixture="{TARGET}"]'
+    target_card = cards.filter(has=page.locator(target))
+    overview_xg = target_card.locator('[data-forecast-state="EARLY_READY"] [data-overview-xg]')
+    expect(overview_xg).to_be_visible(timeout=15000)
+    displayed_xg = overview_xg.inner_text()
     first, middle, _, last = [card.bounding_box() for card in cards.all()]
     assert abs(last["x"] - middle["x"]) <= 1 and abs(last["width"] - first["width"]) <= 1
     assert page.evaluate("""async () => {
       const {fixturePage} = await import('/assets/fixtures.js');
+      const {formatUtcTimestamp} = await import('/assets/view.js');
       const now = '2026-11-20T10:00:00Z';
       const rows = Array.from({length: 20}, (_, index) => ({
         canonical_fixture_key: String(index).padStart(2, '0'), home_team: 'Atlético Madrid',
@@ -168,16 +175,23 @@ def workflow(browser, local, output, issues):
       const date = fixturePage(rows, {start: '2026-11-23', end: '2026-11-23'}, 99, now);
       return lengths.join() === '0,1,4,12,12' && second.total === 20 &&
         second.items[0].canonical_fixture_key === '13' && second.items.at(-1).kickoff_utc === null &&
-        date.total === 19 && date.page === 2;
+        date.total === 19 && date.page === 2 &&
+        formatUtcTimestamp('2026-11-24T00:30:00+02:00') === '2026-11-23 22:30 UTC+0' &&
+        formatUtcTimestamp('2026-11-24T23:15:09.123456-02:00', {seconds: true}) === '2026-11-25 01:15:09 UTC+0' &&
+        formatUtcTimestamp('2026-11-24T23:15:00-02:00', {compact: true}) === '25 Nov · 01:15 UTC+0' &&
+        [null, '', '2026-11-24', '2026-11-24T12:00:00', '2026-11-24Z', 'invalidZ']
+          .every(value => formatUtcTimestamp(value) === '—');
     }""")
     page.evaluate(LATE_PREVIEW)
-    page.locator("#homeFixtures button" + f'[data-fixture="{TARGET}"]').click()
+    target_card.locator(target).click()
     expect(page.locator("#predictionOutput")).to_have_attribute("aria-busy", "true")
     expect(page.locator("#predictionOutput .forecast-placeholder")).to_have_count(2)
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
     expect(page.get_by_text("Loading…", exact=True).last).to_be_visible()
     screenshot(page, output / "prediction-loading.png")
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(2)
+    assert displayed_xg == " VS ".join(page.locator("#predictionOutput [data-xg]").all_text_contents())
+    expect(page.locator("#predictionOutput").get_by_text("Generated", exact=True).locator("..")).to_contain_text("UTC+0")
     page.locator("#backToFixtures").click()
     page.locator("#presetFixtures button" + f'[data-fixture="{TARGET}"]').click()
     expect(page.locator("#predictionOutput [data-readiness]")).to_have_text("EARLY READY")
@@ -230,6 +244,7 @@ def workflow(browser, local, output, issues):
     page.locator(".nav-links [data-page=history]").click()
     await_page(page, "history")
     expect(page.locator("#historyTable tbody tr")).to_have_count(2)
+    expect(page.locator("#historyTable tbody tr").first).to_contain_text("UTC+0")
     page.locator("#historyType").select_option("UPDATED")
     expect(page.locator("#historyTable tbody tr")).to_have_count(1)
     page.locator("#historySearch").fill("unmatched")
@@ -239,6 +254,7 @@ def workflow(browser, local, output, issues):
     page.locator("#historySort").select_option("old")
     expect(page.locator("#historyTable tbody tr").first).to_contain_text("INITIAL")
     page.locator("#historyTable [data-history]").first.click()
+    expect(page.get_by_text("Created", exact=False).filter(has_text="UTC+0")).to_be_visible()
     page.get_by_text("Revision evidence", exact=True).click()
     expect(page.locator(".history-integrity")).to_contain_text("Feature SHA-256")
     page.locator("[data-compare]").click()
@@ -249,6 +265,7 @@ def workflow(browser, local, output, issues):
         page.locator("#exportHistory").click()
     csv = Path(pending.value.path()).read_text(encoding="utf-8-sig")
     assert all(name in csv for name in ('"INITIAL"', '"UPDATED"', '"dataset_kind"', '"record_sha256"', '"features_sha256"'))
+    assert '"generated_at_utc"' in csv and "UTC+0" not in csv
     assert page.evaluate(r"""async () => {
       const {csvText} = await import('/assets/view.js');
       const value = csvText([{home_team:' =2+2', away_team:'Tab\t\n"quoted"'}]);

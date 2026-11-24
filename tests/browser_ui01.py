@@ -17,6 +17,10 @@ EXPLORE = ["Overview", "Prediction", "Match Analysis", "Team Statistics", "Predi
 CLOCK = datetime(2026, 11, 24, 12, tzinfo=timezone.utc)
 
 
+def utc_label(value, pattern="%Y-%m-%d %H:%M:%S"):
+    return datetime.fromisoformat(value).astimezone(timezone.utc).strftime(pattern) + " UTC+0"
+
+
 def fixtures(page):
     return page.locator("#homeFixtures .fixture-card")
 
@@ -44,12 +48,14 @@ def real_browser(browser, output, config, data, history_count):
     for name, (width, height) in VIEWPORTS.items():
         issues, requests = [], []
         with browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=1,
-                                 timezone_id="UTC", locale="en-GB", reduced_motion="reduce") as context:
+                                 timezone_id="Asia/Ho_Chi_Minh", locale="en-GB", reduced_motion="reduce") as context:
             context.route("**/*", browser_route)
             page = context.new_page()
             monitor(page, issues)
             page.on("request", lambda request: requests.append((request.method, request.url)))
-            page.goto(LOCAL)
+            with page.expect_response("**/api/v1/data-status") as data_response:
+                page.goto(LOCAL)
+            page_data = data_response.value.json()
             expect(page.locator("#bridgeModeText")).to_have_text("REAL RESEARCH")
             expect(fixtures(page)).to_have_count(min(6, data["upcoming_fixtures"]))
             expect(states(page, "LOADING")).to_have_count(0, timeout=20000)
@@ -79,6 +85,14 @@ def real_browser(browser, output, config, data, history_count):
             assert explore.nth(1).evaluate("link => link.matches(':focus-visible')")
             page.keyboard.press("Enter")
             expect(page.locator("#page-predict")).to_be_visible()
+            expect(page.get_by_label("From (UTC+0)")).to_be_visible()
+            expect(page.get_by_label("Through (UTC+0)")).to_be_visible()
+            page.get_by_text("Schedule evidence", exact=True).click()
+            evidence = page.locator("#fixtureEvidence")
+            expect(evidence).to_contain_text(utc_label(page_data["evaluated_at_utc"]))
+            for group in page_data["schedule_evidence"]:
+                expect(evidence).to_contain_text(utc_label(group["acquired_at_utc"]))
+                expect(evidence).to_contain_text(utc_label(group["expires_at_utc"]))
             explore.first.press("Enter")
             expect(page.locator("#page-home")).to_be_visible()
             if boxes:
@@ -119,7 +133,8 @@ def real_browser(browser, output, config, data, history_count):
 def mock_page(context, config, data, source, size, *, offline=False):
     page = context.new_page()
     page.clock.install()
-    rows = [dict(row, kickoff_utc=(CLOCK + timedelta(seconds=30 + 30 * i)).isoformat(),
+    offset = timezone(timedelta(hours=14))
+    rows = [dict(row, kickoff_utc=(CLOCK + timedelta(seconds=30 + 30 * i)).astimezone(offset).isoformat(),
                  match_date=CLOCK.date().isoformat()) for i, row in enumerate(source[:size])]
     indices = {row["canonical_fixture_key"]: i for i, row in enumerate(rows)}
     calls = {"eligibility": [], "preview": [], "publish": []}
@@ -167,7 +182,7 @@ def mock_page(context, config, data, source, size, *, offline=False):
 
 
 def controlled_browser(browser, output, config, data, source):
-    with browser.new_context(viewport={"width": 1440, "height": 900}, timezone_id="UTC",
+    with browser.new_context(viewport={"width": 1440, "height": 900}, timezone_id="Asia/Ho_Chi_Minh",
                              locale="en-GB", device_scale_factor=1, reduced_motion="reduce") as context:
         for size in (0, 4, 8):
             page, calls, rows = mock_page(context, config, data, source, size)
@@ -199,6 +214,7 @@ def controlled_browser(browser, output, config, data, source):
                 page.locator(".nav-links [data-page=home]").click()
                 expect(states(page, "FORECAST_ERROR")).to_have_count(2)
             if size:
+                expect(fixtures(page).first.locator("time")).to_have_text("24 Nov · 12:00 UTC+0")
                 expect(states(page, "READY").locator("[data-overview-xg]")).to_have_text("0.00 VS 1.72")
                 expect(states(page, "EARLY_READY")).to_contain_text("Predicted xG · Early forecast")
                 expect(states(page, "WAITING_DATA")).to_contain_text("— VS —")
@@ -216,6 +232,17 @@ def controlled_browser(browser, output, config, data, source):
                 page.clock.fast_forward(32000)
                 expect(states(page, "READY")).to_have_count(0)
                 expect(states(page, "EARLY_READY")).to_have_count(1)
+            if size == 4:
+                page.locator("#page-home [data-jump=predict]").last.press("Enter")
+                start = page.get_by_label("From (UTC+0)")
+                end = page.get_by_label("Through (UTC+0)")
+                start.fill("2026-11-24")
+                end.fill("2026-11-24")
+                expect(page.locator("#presetFixtures .fixture-card")).to_have_count(4)
+                start.fill("2026-11-25")
+                expect(page.locator("#presetFixtures [role=alert]")).to_contain_text("The end date (UTC+0)")
+                end.fill("2026-11-25")
+                expect(page.locator("#presetFixtures .fixture-card")).to_have_count(0)
             page.close()
         page, calls, _ = mock_page(context, config, data, source, 0, offline=True)
         page.goto(LOCAL)
