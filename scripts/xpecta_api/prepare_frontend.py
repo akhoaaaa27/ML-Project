@@ -17,26 +17,40 @@ LOCAL_CRESTS = {
     "Malaga": ("malaga.webp", "image/webp"),
 }
 COPY_EDITS = (
+    ("select,input[type=text],input[type=search]{", "select,input[type=text],input[type=search],input[type=date]{"),
+    ("select,input[type=text],input[type=search],textarea{\n",
+     "select,input[type=text],input[type=search],input[type=date],textarea{\n"),
+    ("select,input[type=text],input[type=search],textarea{background:",
+     "select,input[type=text],input[type=search],input[type=date],textarea{background:"),
     ("Preconfigured sample fixtures. Select a match to explore simulated xG.", "Select a catalogue fixture to check availability and preview xG."),
     ("All preconfigured La Liga sample fixtures · 2026/27", "Fixtures from the selected research catalogue"),
     ("DEMO FIXTURES", "FIXTURE CATALOGUE"),
-    ("ⓘ Illustrative schedule only · Not verified against the official schedule · No automatic updates",
-     'ⓘ <span id="fixtureDataStatus">Checking schedule freshness…</span>'),
-    ("Choose two teams to generate a simulated pre-match xG result.", "Choose the home and away teams to find a fixture in the current season."),
-    (">DEMO ONLY</span>", ">FIXTURE LOOKUP</span>"),
+    ('<div class="indicator mt20">ⓘ Illustrative schedule only · Not verified against the official schedule · No automatic updates</div>', ""),
+    ("Choose two teams to generate a simulated pre-match xG result.",
+     "Choose the home and away teams for a hypothetical simulation."),
+    (">DEMO ONLY</span>", ">HYPOTHETICAL</span>"),
     ("ⓘ Hypothetical matchup using the fixed historical data cutoff, not an official fixture.",
-     "ⓘ Availability is checked against the selected snapshot and forecast policy."),
-    ("GENERATE SIMULATION ↗", "PREVIEW xG ↗"),
-    ("Explore xG, xGA, shots and team form using the available dataset.", "Explore observed xG, xGA and team form in the selected research snapshot."),
+     "ⓘ Simulations use verified history from the selected snapshot."),
+    ("Explore xG, xGA, shots and team form using the available dataset. Only matches before the analysis cutoff are included.",
+     "Explore observed xG, xGA and team form."),
+    ('<span class="chip">HISTORICAL DATA</span>', ""),
     ('<div class="mt20 analysis-controls">', '<div class="mt20 analysis-controls"><div class="field analysis-season"><label for="analysisSeason">Season</label><select id="analysisSeason"></select></div>'),
     ("Simulated xG predictions created in this browser. No post-match actual xG or ongoing accuracy tracking.",
-     "Browse immutable forecasts and compare published revisions for the same fixture."),
-    ("SIMULATED PREDICTION HISTORY", "PUBLISHED PREDICTION HISTORY"),
-    ("Data is stored locally in your browser", "Published forecasts from the selected ledger namespace"),
+     "Browse official match forecasts and custom simulations."),
+    ("SIMULATED PREDICTION HISTORY", "PREDICTION RECORDS"),
+    ("Data is stored locally in your browser", "Custom simulations are saved in this browser."),
+    ('<div class="grid3 mt20"><div class="field"><label for="historySearch">',
+     '<div class="grid4 mt20 history-filters"><div class="field"><label for="historySearch">'),
+    ('<div class="field"><label for="historyType">Prediction type</label>',
+     '<div class="field"><label for="historyRecordType">Record type</label><select id="historyRecordType">'
+     '<option value="all">All records</option><option value="OFFICIAL_MATCH_FORECAST">Official Match Forecast</option>'
+     '<option value="CUSTOM_SIMULATION">Custom Simulation</option></select></div>'
+     '<div class="field"><label for="historyType">Prediction type</label>'),
     ("Prediction type", "Forecast stage"),
     ("✕ Clear history", "✕ Clear filters"),
     ('<option value="fixture">Preset fixture</option><option value="custom">Custom simulation</option>',
      '<option value="INITIAL">Initial</option><option value="UPDATED">Updated</option>'),
+    ('<div id="historyTable"', '<p id="historyNotice" class="subtext" role="status"></p><div id="historyTable"'),
     ("This HTML version has no trained model integrated.", "The backend uses the frozen Linear Regression V1 pipeline."),
     ("INTERACTIVE DEMO · NO TRAINED MODEL", "FROZEN LINEAR REGRESSION V1"),
     ("Planned model: XGBoost Regression. In this HTML version, a simulation formula replaces model inference to demonstrate the interface and user experience; it is not a trained AI model.",
@@ -46,12 +60,11 @@ COPY_EDITS = (
     ("PROPOSED PIPELINE", "FROZEN PIPELINE"),
     ("This section illustrates the metrics to report after training. All values below are fictional and were not calculated from the HTML simulation.",
      "Verified metrics are shown separately by label source and evaluation period."),
-    ("ACTUAL VS. PREDICTED", "PHASE 7 · FBref"),
-    ("Sample chart illustrating how evaluation results could be presented", "Frozen model error on two historical FBref cohorts"),
-    ("RESIDUAL ANALYSIS", "PHASE 8.5.6 · RETROSPECTIVE"),
-    ("Illustrative residuals, not calculated from saved website predictions", "Provider-specific replay and paired historical baselines"),
+    ("ACTUAL VS. PREDICTED", "OBSERVED VS. PREDICTED"),
+    ("Sample chart illustrating how evaluation results could be presented", '<span id="modelScatterScope"></span>'),
+    ("Illustrative residuals, not calculated from saved website predictions", '<span id="modelResidualScope"></span>'),
     ("Real evaluation requires chronological train/validation/test splits and comparison on an independent test set. Replace these values only after training and evaluating the actual model.",
-     '<span id="modelEvaluationNotice">Loading evaluation context…</span>'),
+     '<span id="modelEvaluationNotice">Loading evaluation context…</span><div id="modelEvidence"></div>'),
     ("No external football API. Sample fixtures are not official schedules. Form data ends at the dataset cutoff.",
      "The local application uses a fixed snapshot. Schedule evidence can expire."),
     ("Simulated xG values are for testing the interface workflow. Integrating a real model requires replacing the formula and validating its outputs.",
@@ -133,8 +146,8 @@ def build(source, directory=PREPARED):
     text = replace_once(text, 'class="pill-live"', 'class="pill-live bridge-mode" id="bridgeMode"')
     text = replace_once(text, " DEMO · NOT LIVE</span>", ' <span id="bridgeModeText">CONNECTING</span></span>')
     text = replace_once(text, '<div class="grid4"><div class="metric"><div class="mini-label">MAE · ILLUSTRATIVE',
-                        '<div id="modelMetricCards" class="grid4"><div class="metric"><div class="mini-label">MAE · ILLUSTRATIVE')
-    text, count = re.subn(r'(<div id="modelMetricCards" class="grid4">).*?(?=<div class="grid2 mt20"><div class="card"><h3 class="card-title">PHASE 7)',
+                        '<p id="modelScope" class="card-desc"></p><div id="modelMetricCards" class="grid4"><div class="metric"><div class="mini-label">MAE · ILLUSTRATIVE')
+    text, count = re.subn(r'(<div id="modelMetricCards" class="grid4">).*?(?=<div class="grid2 mt20"><div class="card"><h3 class="card-title">OBSERVED VS. PREDICTED)',
                           r'\1</div>', text, count=1, flags=re.DOTALL)
     if count != 1:
         raise ValueError("Unexpected model metrics section")

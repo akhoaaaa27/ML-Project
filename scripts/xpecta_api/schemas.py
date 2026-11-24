@@ -71,6 +71,28 @@ class ForecastRequest(KeyQuery):
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
+class SimulationRequest(StrictInput):
+    home: TeamId
+    away: TeamId
+
+
+class Simulation(BaseModel):
+    home_team: TeamId
+    away_team: TeamId
+    home_xg: Xg
+    away_xg: Xg
+    season: Season
+    history_cutoff: date
+    generated_at_utc: datetime
+    history_snapshot_version: str
+    history_database_sha256: SHA256
+    model_version: str
+    model_artifact_sha256: SHA256
+    features_sha256: SHA256
+    dataset_kind: Literal["real", "synthetic"]
+    production_approved: Literal[False] = False
+
+
 class PreviewBinding(StrictInput):
     history_database_sha256: SHA256
     features_sha256: SHA256
@@ -313,6 +335,14 @@ class EvaluationMetric(BaseModel):
     baseline_mae: Xg | None = None
 
 
+class EvaluationObservation(BaseModel):
+    date: date
+    team: str
+    opponent: str
+    observed: Xg
+    predicted: Xg
+
+
 class ModelSummary(BaseModel):
     model: Literal["Linear Regression"]
     model_version: str
@@ -325,6 +355,8 @@ class ModelSummary(BaseModel):
     training_observations: Count
     phase7: list[EvaluationMetric]
     retrospective: list[EvaluationMetric]
+    main_test: EvaluationMetric
+    main_observations: list[EvaluationObservation]
     scientific_conclusion: str
     evaluation_notice: str
     production_approved: Literal[False] = False

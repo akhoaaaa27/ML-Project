@@ -3,6 +3,7 @@
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
+import os
 
 import httpx
 from playwright.sync_api import expect, sync_playwright
@@ -10,15 +11,11 @@ from playwright.sync_api import expect, sync_playwright
 from scripts.xpecta_api.settings import PRIVATE
 from tests.browser_phase857 import VIEWPORTS, browser_route, monitor
 
-LOCAL = "http://127.0.0.1:8765/"
+LOCAL = os.environ.get("XPECTA_TEST_URL", "http://127.0.0.1:8765").rstrip("/") + "/"
 API = LOCAL + "api/v1/"
 RUN_ROOT = PRIVATE / "ui-01"
 EXPLORE = ["Overview", "Prediction", "Match Analysis", "Team Statistics", "Prediction History", "AI Model"]
 CLOCK = datetime(2026, 11, 24, 12, tzinfo=timezone.utc)
-
-
-def utc_label(value, pattern="%Y-%m-%d %H:%M:%S"):
-    return datetime.fromisoformat(value).astimezone(timezone.utc).strftime(pattern) + " UTC+0"
 
 
 def fixtures(page):
@@ -53,11 +50,9 @@ def real_browser(browser, output, config, data, history_count):
             page = context.new_page()
             monitor(page, issues)
             page.on("request", lambda request: requests.append((request.method, request.url)))
-            with page.expect_response("**/api/v1/data-status") as data_response:
-                page.goto(LOCAL)
-            page_data = data_response.value.json()
+            page.goto(LOCAL)
             expect(page.locator("#bridgeModeText")).to_have_text("REAL RESEARCH")
-            expect(fixtures(page)).to_have_count(min(6, data["upcoming_fixtures"]))
+            expect(fixtures(page)).to_have_count(min(6, data["upcoming_fixtures"]), timeout=15000)
             expect(states(page, "LOADING")).to_have_count(0, timeout=20000)
             expect(page.locator("#homeTeamBars .bar-row").first).to_be_visible()
             expect(page.locator("#homeTeamBars .bar-row[title]").first).to_be_visible()
@@ -86,13 +81,8 @@ def real_browser(browser, output, config, data, history_count):
             page.keyboard.press("Enter")
             expect(page.locator("#page-predict")).to_be_visible()
             expect(page.get_by_label("From (UTC+0)")).to_be_visible()
-            expect(page.get_by_label("Through (UTC+0)")).to_be_visible()
-            page.get_by_text("Schedule evidence", exact=True).click()
-            evidence = page.locator("#fixtureEvidence")
-            expect(evidence).to_contain_text(utc_label(page_data["evaluated_at_utc"]))
-            for group in page_data["schedule_evidence"]:
-                expect(evidence).to_contain_text(utc_label(group["acquired_at_utc"]))
-                expect(evidence).to_contain_text(utc_label(group["expires_at_utc"]))
+            expect(page.get_by_label("To (UTC+0)")).to_be_visible()
+            expect(page.locator("#fixtureEvidence")).to_have_count(0)
             explore.first.press("Enter")
             expect(page.locator("#page-home")).to_be_visible()
             if boxes:
@@ -189,6 +179,11 @@ def controlled_browser(browser, output, config, data, source):
             if size == 8:
                 page.add_init_script("""const send = window.fetch.bind(window);
                 let delay = true;
+                window.delayNextPreview = () => {
+                  delay = true;
+                  window.previewAborted = false;
+                  window.releasePreview = null;
+                };
                 window.fetch = (url, options) => {
                   if (!delay || !url.endsWith('/forecasts/preview')) return send(url, options);
                   delay = false;
@@ -214,7 +209,7 @@ def controlled_browser(browser, output, config, data, source):
                 page.locator(".nav-links [data-page=home]").click()
                 expect(states(page, "FORECAST_ERROR")).to_have_count(2)
             if size:
-                expect(fixtures(page).first.locator("time")).to_have_text("24 Nov · 12:00 UTC+0")
+                expect(fixtures(page).first.locator("time")).to_have_text("24 Nov 2026 · 12:00 UTC+0")
                 expect(states(page, "READY").locator("[data-overview-xg]")).to_have_text("0.00 VS 1.72")
                 expect(states(page, "EARLY_READY")).to_contain_text("Predicted xG · Early forecast")
                 expect(states(page, "WAITING_DATA")).to_contain_text("— VS —")
@@ -235,14 +230,25 @@ def controlled_browser(browser, output, config, data, source):
             if size == 4:
                 page.locator("#page-home [data-jump=predict]").last.press("Enter")
                 start = page.get_by_label("From (UTC+0)")
-                end = page.get_by_label("Through (UTC+0)")
+                end = page.get_by_label("To (UTC+0)")
                 start.fill("2026-11-24")
                 end.fill("2026-11-24")
                 expect(page.locator("#presetFixtures .fixture-card")).to_have_count(4)
+                expect(page.locator('#presetFixtures [data-forecast-state="READY"] [data-overview-xg]')).to_have_text("0.00 VS 1.72")
                 start.fill("2026-11-25")
                 expect(page.locator("#presetFixtures [role=alert]")).to_contain_text("The end date (UTC+0)")
                 end.fill("2026-11-25")
                 expect(page.locator("#presetFixtures .fixture-card")).to_have_count(0)
+            if size == 8:
+                page.evaluate("() => window.delayNextPreview()")
+                page.locator("#page-home [data-jump=predict]").last.press("Enter")
+                page.wait_for_function("() => typeof window.releasePreview === 'function'")
+                page.get_by_label("Catalogue status").select_option("completed")
+                page.wait_for_function("() => window.previewAborted === true")
+                expect(page.locator("#presetFixtures .empty")).to_have_text("No fixtures match these filters.")
+                page.get_by_label("Catalogue status").select_option("upcoming")
+                expect(page.locator('#presetFixtures [data-forecast-state="EARLY_READY"]')).to_have_count(2)
+                expect(page.locator('#presetFixtures [data-forecast-state="FORECAST_ERROR"]')).to_have_count(2)
             page.close()
         page, calls, _ = mock_page(context, config, data, source, 0, offline=True)
         page.goto(LOCAL)

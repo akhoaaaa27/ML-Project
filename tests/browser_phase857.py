@@ -110,6 +110,14 @@ def screenshot(page, path):
     page.screenshot(path=str(path), animations="disabled", full_page=True)
 
 
+def choose_team(page, label, team):
+    chooser = page.get_by_role("combobox", name=label, exact=True)
+    chooser.fill(team)
+    chooser.press("ArrowDown")
+    chooser.press("Enter")
+    expect(chooser).to_have_value("" if team == "All teams" else team)
+
+
 def visual_pairs(browser, local, output, console_issues):
     reference = (PREPARED/"reference.html").as_uri()
     results = []
@@ -176,9 +184,8 @@ def workflow(browser, local, output, issues):
       return lengths.join() === '0,1,4,12,12' && second.total === 20 &&
         second.items[0].canonical_fixture_key === '13' && second.items.at(-1).kickoff_utc === null &&
         date.total === 19 && date.page === 2 &&
-        formatUtcTimestamp('2026-11-24T00:30:00+02:00') === '2026-11-23 22:30 UTC+0' &&
-        formatUtcTimestamp('2026-11-24T23:15:09.123456-02:00', {seconds: true}) === '2026-11-25 01:15:09 UTC+0' &&
-        formatUtcTimestamp('2026-11-24T23:15:00-02:00', {compact: true}) === '25 Nov · 01:15 UTC+0' &&
+        formatUtcTimestamp('2026-11-24T00:30:00+02:00') === '23 Nov 2026 · 22:30 UTC+0' &&
+        formatUtcTimestamp('2026-11-24T23:15:09.123456-02:00') === '25 Nov 2026 · 01:15 UTC+0' &&
         [null, '', '2026-11-24', '2026-11-24T12:00:00', '2026-11-24Z', 'invalidZ']
           .every(value => formatUtcTimestamp(value) === '—');
     }""")
@@ -198,12 +205,6 @@ def workflow(browser, local, output, issues):
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(2)
     screenshot(page, output / "preset-prediction.png")
     preset = [node.inner_text() for node in page.locator("#predictionOutput [data-xg]").all()]
-    page.get_by_role("button", name="Custom matchup").click()
-    page.locator("#customHome").select_option("Valencia")
-    page.locator("#customAway").select_option("Real Madrid")
-    page.locator("#runPrediction").click()
-    expect(page.locator("#predictionOutput [data-xg]")).to_have_count(2)
-    assert [node.inner_text() for node in page.locator("#predictionOutput [data-xg]").all()] == preset
     page.locator("[data-analyze]").click()
     await_page(page, "analysis")
     expect(page.locator(".analysis-insights-card")).to_be_visible()
@@ -240,14 +241,14 @@ def workflow(browser, local, output, issues):
     await_page(page, "model")
     expect(page.locator("#featuresList code")).to_have_count(13)
     expect(page.locator("#featuresList code").nth(11)).to_have_text("opponent_matches_seen")
-    expect(page.locator("#modelMetricCards")).to_contain_text("2025/26 after 2025-09-30")
+    expect(page.locator("#modelEvidence")).to_contain_text("2025/26 after 2025-09-30")
     page.locator(".nav-links [data-page=history]").click()
     await_page(page, "history")
     expect(page.locator("#historyTable tbody tr")).to_have_count(2)
     expect(page.locator("#historyTable tbody tr").first).to_contain_text("UTC+0")
     page.locator("#historyType").select_option("UPDATED")
     expect(page.locator("#historyTable tbody tr")).to_have_count(1)
-    page.locator("#historySearch").fill("unmatched")
+    choose_team(page, "Search teams", "Sevilla")
     expect(page.locator("#historyTable .empty")).to_be_visible()
     page.locator("#clearHistory").click()
     expect(page.locator("#historyTable tbody tr")).to_have_count(2)
@@ -283,6 +284,21 @@ def workflow(browser, local, output, issues):
     expect(page.locator("#predictionOutput .forecast-placeholder")).to_have_count(2)
     expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
     page.unroute("**/api/v1/forecasts/preview")
+    page.get_by_role("button", name="Custom matchup").click()
+    page.locator("#customHome").select_option("Valencia")
+    page.locator("#customAway").select_option("Real Madrid")
+    with page.expect_response("**/api/v1/simulations") as response:
+        page.locator("#runPrediction").click()
+    assert response.value.ok
+    expect(page.locator("#predictionOutput")).to_contain_text("HYPOTHETICAL SIMULATION")
+    page.locator('#predictionOutput [data-jump="history"]').click()
+    records = page.locator("#historyTable tbody tr")
+    expect(records).to_have_count(3)
+    expect(records.get_by_text("Official Match Forecast", exact=True)).to_have_count(2)
+    expect(records.get_by_text("Custom Simulation", exact=True)).to_have_count(1)
+    page.locator("#historyType").select_option("UPDATED")
+    expect(records).to_have_count(1)
+    expect(records).to_contain_text("Official Match Forecast")
     page.locator(".nav-links [data-page=home]").click()
     expect(page.locator("#homeFixtures .fixture-card").first).to_be_visible()
     context.close()
@@ -324,11 +340,8 @@ def live_fixture_workflow(browser, local, output, issues):
     expect(page.locator(f'#presetFixtures button[data-fixture="{TARGET}"]')).to_have_count(0)
     page.get_by_label("Catalogue status").select_option("live")
     expect(page.locator(f'#presetFixtures button[data-fixture="{TARGET}"]')).to_have_count(1)
-    page.get_by_role("button", name="Custom matchup").click()
-    page.locator("#customHome").select_option("Valencia")
-    page.locator("#customAway").select_option("Real Madrid")
     with page.expect_response(lambda response: response.url.endswith("/api/v1/forecasts/preview")) as preview:
-        page.locator("#runPrediction").click()
+        page.locator(f'#presetFixtures button[data-fixture="{TARGET}"]').click()
     response = preview.value
     assert response.status == 200 and response.json()["eligibility"]["target"]["observed_status"] == "live"
     expect(page.locator('#predictionOutput [data-observed-status="live"]')).to_have_text("LIVE")

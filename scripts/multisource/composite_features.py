@@ -24,20 +24,23 @@ class CompositeFeatures:
     fixture: dict
 
 
-def build_composite_features(home_team, away_team, match_date, season, history, *, prediction_cutoff=None):
+def build_composite_features(home_team, away_team, match_date, season, history, *, prediction_cutoff=None,
+                             hypothetical=False):
     try:
         season, day, home, away = fixture_identity(season, match_date, resolve(home_team), resolve(away_team))
     except (TypeError,ValueError):
         raise InferenceError("INVALID_FIXTURE","Invalid research fixture identity") from None
     cutoff = day if prediction_cutoff is None else parse_date(prediction_cutoff).isoformat()
     require(cutoff <= day, "INVALID_CUTOFF", "Prediction cutoff cannot follow fixture date")
-    identity = history.fixture(home,away,day,season)
-    key = canonical_key(season,home,away)
+    identity = {} if hypothetical else history.fixture(home,away,day,season)
+    key = None if hypothetical else canonical_key(season,home,away)
     config = read_history_config()
     selected, audit, provenance = [], {}, []
     for team in (home,away):
         coverage = history.assert_coverage(team,season,cutoff)
         registry = stint_history(history.prior_registry(team,season,cutoff,key),season)
+        if hypothetical:
+            require(not registry.empty, "INSUFFICIENT_HISTORY", "Simulation requires observed history for both teams")
         require(registry.empty or registry.date.lt(cutoff).all(), "INVALID_HISTORY", "Current/future match in history")
         require(registry.empty or int(registry.season.min()) == coverage["stint_start_season"],
                 "REGISTRY_COVERAGE_UNVERIFIED", "Registry stint differs from verified membership")
@@ -69,7 +72,7 @@ def build_composite_features(home_team, away_team, match_date, season, history, 
     rolling_only = pd.DataFrame(selected) if selected else pd.DataFrame(columns=columns)
     # Reuse the tested Phase 8.5.2 rolling/assembly implementation. Only count
     # features are restored from the full registry rather than the window rows.
-    X, _ = build_features(rolling_only,home,away,day,season)
+    X, _ = build_features(rolling_only,home,away,day,season,hypothetical=hypothetical)
     for i, team in enumerate((home,away)):
         opponent = (away,home)[i]
         X.loc[i,"matches_seen"] = audit[team]["matches_seen"]

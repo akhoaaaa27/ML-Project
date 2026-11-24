@@ -65,10 +65,12 @@ export const api = {
     && Array.isArray(value.schedule_evidence)}),
   eligibility: (fixture_key, signal) => request("/eligibility", {query: {fixture_key}, validate: isEligibility, signal}),
   preview: (fixture_key, signal) => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview, signal}),
+  simulate: (home, away) => request("/simulations", {body: {home, away}}),
   history: () => allPages("/forecasts"),
   forecast: id => request(`/forecasts/${encodeURIComponent(id)}`, {validate: isForecast}),
   compare: query => request("/forecasts/compare", {query, validate: hasKeys("v1", "v2", "changed_features")}),
   teamStats: (team, season) => request("/historical/team-stats", {query: {team, season}, validate: hasKeys("overall", "trend", "status")}),
   analysis: query => request("/historical/match-analysis", {query, validate: hasKeys("home", "away", "head_to_head", "window")}),
-  model: () => request("/model/summary", {validate: hasKeys("model", "features", "phase7", "retrospective")}),
+  model: () => request("/model/summary", {validate: value =>
+    hasKeys("model", "features", "phase7", "retrospective", "main_test")(value) && Array.isArray(value.main_observations)}),
 };

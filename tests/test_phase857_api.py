@@ -118,7 +118,9 @@ class Phase857HttpTests(unittest.TestCase):
             self.assertEqual(client.get("/assets/reference.html").status_code, 404)
             self.assertEqual(client.get("/assets/phase9.css").status_code, 200)
             self.assertIn("default-src 'none'", ready.headers["content-security-policy"])
-            self.assertEqual(len(client.get("/openapi.json").json()["paths"]), 15)
+            routes = client.get("/openapi.json").json()["paths"]
+            self.assertEqual(len(routes), 16)
+            self.assertIn("post", routes["/api/v1/simulations"])
 
     def test_team_fixture_identity_pagination_and_query_limits(self):
         with self.client() as client:

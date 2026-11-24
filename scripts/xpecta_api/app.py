@@ -39,6 +39,8 @@ ERRORS = {
     "FORECAST_NOT_FOUND": (404, "Forecast is absent from this namespace"),
     "SEASON_NOT_FOUND": (404, "Season is absent from the selected snapshot"),
     "INVALID_MATCHUP": (422, "Select two different canonical teams"),
+    "INVALID_SIMULATION_TEAMS": (422, "Select two different teams to simulate."),
+    "SIMULATION_INSUFFICIENT_DATA": (422, "Insufficient verified historical data for this simulation."),
     "INCOMPATIBLE_FORECASTS": (422, "Choose two revisions of the same fixture in lineage order"),
     "HISTORICAL_ONLY": (409, "Historical reference does not provide forecast publication"),
     "LEDGER_BUSY": (409, "A local operator is already writing the ledger"),
@@ -200,6 +202,11 @@ def preview(body: s.ForecastRequest, service: Service) -> s.ForecastAction:
     return service.preview(body.fixture_key)
 
 
+@router.post("/simulations")
+def simulate(body: s.SimulationRequest, service: Service) -> s.Simulation:
+    return service.simulate(body.home, body.away)
+
+
 @router.post("/forecasts/publish", dependencies=[Depends(require_operator)], responses={
     401: {"model": s.ErrorEnvelope}, 403: {"model": s.ErrorEnvelope}, 409: {"model": s.ErrorEnvelope},
 })
@@ -290,6 +297,9 @@ def create_app(settings=None):
         "view.js": (FRONTEND / "view.js", "text/javascript"),
         "phase9.css": (FRONTEND / "phase9.css", "text/css"),
         "fixtures.js": (FRONTEND / "fixtures.js", "application/javascript"),
+        "team-picker.js": (FRONTEND / "team-picker.js", "text/javascript"),
+        "simulations.js": (FRONTEND / "simulations.js", "text/javascript"),
+        "evaluation-charts.js": (FRONTEND / "evaluation-charts.js", "text/javascript"),
         "montserrat.ttf": (FRONTEND / "montserrat.ttf", "font/ttf"),
     }
 

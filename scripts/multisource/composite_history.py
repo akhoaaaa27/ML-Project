@@ -232,7 +232,7 @@ class CompositeHistory:
 
     def prior_registry(self, team, season, cutoff, exclude_key):
         rows = self.query("SELECT * FROM registry WHERE (home_team=? OR away_team=?) AND season<=? AND match_date<? "
-                          "AND canonical_fixture_key<>? AND match_status=? ORDER BY match_date,canonical_fixture_key",
+                          "AND canonical_fixture_key<>COALESCE(?, '') AND match_status=? ORDER BY match_date,canonical_fixture_key",
                           (team,team,season,cutoff,exclude_key,VERIFIED_COMPLETED))
         result = []
         for r in rows:
