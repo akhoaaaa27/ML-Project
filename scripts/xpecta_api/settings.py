@@ -39,6 +39,7 @@ class Settings:
     origins: tuple[str, ...] = ()
     snapshot_sha256: str = ""
     snapshot_manifest_sha256: str = ""
+    render_hostname: str = ""
 
     def __post_init__(self):
         if not isinstance(self.mode, Mode):
@@ -56,6 +57,11 @@ class Settings:
             raise ValueError("Invalid local demo name")
         if self.operator_token and (len(self.operator_token) < 24 or self.mode == Mode.HISTORICAL_REFERENCE):
             raise ValueError("Use a strong operator token in a forecasting mode")
+        if self.render_hostname:
+            if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.onrender\.com", self.render_hostname, re.I):
+                raise ValueError("Use the Render Web Service hostname")
+            if self.operator_token:
+                raise ValueError("Render deployments are read-only")
         if any(not re.fullmatch(r"http://(?:localhost|127\.0\.0\.1)(?::[1-9][0-9]{0,4})?", origin)
                for origin in self.origins):
             raise ValueError("Development origins must be explicit loopback HTTP origins")
@@ -90,5 +96,6 @@ class Settings:
             demo_name=os.getenv("XPECTA_DEMO_NAME", "defense"),
             operator_token=os.getenv("XPECTA_OPERATOR_TOKEN", ""),
             origins=tuple(s.strip() for s in os.getenv("XPECTA_DEV_ORIGINS", "").split(",") if s.strip()),
+            render_hostname=os.getenv("RENDER_EXTERNAL_HOSTNAME", ""),
             **snapshot,
         )

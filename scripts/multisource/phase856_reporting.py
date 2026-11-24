@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 from contextlib import closing
+import hashlib
 import json
 import re
 import socket
@@ -29,7 +30,11 @@ BRANCH = "phase8.5.6-provider-compatibility-validation"
 V3 = RESEARCH_ROOT / "phase853_v3_20261122/laliga_composite.sqlite3"
 OUTPUT_ROOT = LOCAL / "phase856"
 EVALUATION_NAME = "Retrospective date-cutoff replay"
-PROTECTED_MANIFESTS = ("outputs/inference/protected_files.json", "outputs/provider_poc/reports/protected_files.json")
+# These digests pin the baseline manifests with the repository's checkout line endings.
+PROTECTED_MANIFESTS = {
+    "outputs/inference/protected_files.json": "5e37816f79b99dafd0f5a2718b18a2a37bacaa7057ea2dff471c148444b660fa",
+    "outputs/provider_poc/reports/protected_files.json": "c3747965e7f5e86418236adfc6f2c8d0044e532c3a2fafeb987d2d2dde309cc3",
+}
 ARCHIVES = {year:f"raw/archive_{year}_fixtures.csv" for year in range(2019,2026)}
 REQUIRED_SOURCES = ("acquisition_manifest.json", "independent_completed.json", *ARCHIVES.values(),
                     "raw/archive_2025_shots.csv","raw/current_2026_fixtures.csv","data/laliga_processed_normalized.csv")
@@ -46,8 +51,10 @@ def write_json(path, value):
 def protected_integrity():
     counts = {}
     checksums = {}
-    for name in PROTECTED_MANIFESTS:
-        baseline = subprocess.check_output(["git","show",BASE+":"+name],cwd=ROOT)
+    for name, expected in PROTECTED_MANIFESTS.items():
+        baseline = (ROOT / name).read_bytes()
+        require(hashlib.sha256(baseline).hexdigest() == expected, "PROTECTED_ARTIFACT_MISMATCH",
+                f"Protected manifest hash mismatch: {name}")
         entries = json.loads(baseline)
         for filename, checksum in entries.items():
             path = ROOT / filename

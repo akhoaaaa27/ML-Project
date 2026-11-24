@@ -65,6 +65,9 @@ class Phase857SchemaTests(unittest.TestCase):
             {"mode": Mode.SYNTHETIC_DEMO, "snapshot_version": REAL_VERSION},
             {"mode": Mode.SYNTHETIC_DEMO, "snapshot_version": "../real"},
             {"mode": Mode.HISTORICAL_REFERENCE, "operator_token": OPERATOR},
+            {"render_hostname": "https://test.onrender.com"},
+            {"render_hostname": "*.onrender.com"},
+            {"render_hostname": "test.onrender.com", "operator_token": OPERATOR},
             {"origins": ("*",)},
         ):
             with self.subTest(args=args), self.assertRaises(ValueError):
@@ -77,6 +80,35 @@ class Phase857SchemaTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA-256"):
                 build(path, Path(work) / "output")
             self.assertFalse((Path(work) / "output").exists())
+
+
+class RenderHttpTests(unittest.TestCase):
+    hostname = "xpecta-test.onrender.com"
+
+    def test_render_hostname_serves_packaged_frontend_and_read_only_research(self):
+        settings = Settings(render_hostname=self.hostname)
+        with TestClient(create_app(settings), base_url=f"https://{self.hostname}") as client:
+            ready = client.get(BASE + "/health/ready")
+            self.assertEqual(ready.status_code, 200)
+            self.assertTrue(ready.json()["frontend_available"])
+            response = client.get("/")
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('<script type="module" src="/assets/app.js"></script>', response.text)
+            self.assertEqual(client.get("/assets/app.js").status_code, 200)
+            self.assertEqual(client.get("/assets/reference.html").status_code, 404)
+            denied = client.get(BASE + "/health/ready", headers={"Host": "other.onrender.com"})
+            self.assertEqual(denied.json()["error"]["code"], "INVALID_HOST")
+            denied = client.post(BASE + "/forecasts/publish", json={"fixture_key": TARGET})
+            self.assertEqual(denied.json()["error"]["code"], "PUBLICATION_DISABLED")
+
+    def test_render_readiness_requires_bundled_frontend(self):
+        settings = Settings(render_hostname=self.hostname)
+        with TemporaryDirectory() as tmp, patch("scripts.xpecta_api.app.FRONTEND", Path(tmp)):
+            with TestClient(create_app(settings), base_url=f"https://{self.hostname}") as client:
+                ready = client.get(BASE + "/health/ready")
+                self.assertEqual(ready.status_code, 503)
+                self.assertEqual(ready.json()["reason"], "FRONTEND_UNAVAILABLE")
+                self.assertFalse(ready.json()["frontend_available"])
 
 
 class Phase857HttpTests(unittest.TestCase):
