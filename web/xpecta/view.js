@@ -39,7 +39,22 @@ function xgSources(counts) {
   return entries.length ? entries.map(([source, count]) => `${labels[source] || source} (${count})`).join(" · ") : "No observed source";
 }
 
-export function fixtureCard(fixture, forecast) {
+export function overviewForecast({status, preview} = {status: "LOADING"}) {
+  const values = (home, away) => `${home} <span class="fixture-xg-vs">VS</span> ${away}`;
+  const text = {
+    LOADING: "Checking prediction…",
+    WAITING_DATA: "Prediction pending",
+    UNAVAILABLE: "Prediction unavailable",
+    FORECAST_ERROR: "Could not load forecast",
+  };
+  return `<div class="overview-xg" data-forecast-state="${esc(status)}" aria-busy="${status === "LOADING"}">
+    ${preview ? `<span data-overview-xg>${values(number(preview.home_xg), number(preview.away_xg))}</span>
+      <small>${status === "EARLY_READY" ? "Predicted xG · Early forecast" : "Predicted xG"}</small>` :
+      `${status === "WAITING_DATA" ? values("—", "—") : ""}<small>${esc(text[status])}</small>`}
+  </div>`;
+}
+
+export function fixtureCard(fixture, forecast, overview = false) {
   const key = esc(fixture.canonical_fixture_key);
   const kickoff = fixture.kickoff_utc;
   const dateLabel = shortDay.format(new Date(kickoff ?? fixture.match_date));
@@ -49,7 +64,7 @@ export function fixtureCard(fixture, forecast) {
       <time datetime="${esc(kickoff ?? fixture.match_date)}">${esc(dateLabel)} · ${kickoff ? `${esc(kickoff.slice(11, 16))} UTC` : "Kickoff unverified"}</time></div>
     <div class="fixture-teams"><div class="fixture-team">${crest(fixture.home_team)}<strong>${esc(fixture.home_team)}</strong></div>
       <span class="fixture-vs">VS</span><div class="fixture-team">${crest(fixture.away_team)}<strong>${esc(fixture.away_team)}</strong></div></div>
-    <div class="fixture-bottom"><div class="fixture-xg">${forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}<small>Published xG</small>`
+    <div class="fixture-bottom"><div class="fixture-xg"${overview ? ' role="status"' : ""}>${overview ? overviewForecast() : forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}<small>Published xG</small>`
       : '<span class="fixture-status">Check forecast availability</span>'}</div>
       <button class="btn btn-green btn-sm" data-fixture="${key}" aria-label="View prediction for ${esc(fixture.home_team)} vs ${esc(fixture.away_team)}">VIEW PREDICTION ↗</button></div>
     </article>`;
@@ -67,8 +82,7 @@ export function leaderboard(stats) {
   return rank.map(({team, overall}) => `<div class="bar-row" title="${esc(xgSources(overall.xg_sources))}">
     <div class="bar-label">${crest(team, "tiny")}<span>${esc(team)}</span></div>
     <div class="bar-track"><div class="bar-fill" style="width:${width(overall.mean_xg, max)}%"></div></div>
-    <div class="bar-number">${number(overall.mean_xg)}</div></div>`).join("") +
-    `<p class="tiny muted">Sources by team · ${rank.map(row => `${esc(row.team)}: ${esc(xgSources(row.overall.xg_sources))}`).join(" · ")}</p>`;
+    <div class="bar-number">${number(overall.mean_xg)}</div></div>`).join("");
 }
 
 function panels(home, away, forecast, loading = false) {

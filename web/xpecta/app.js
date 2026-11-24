@@ -1,7 +1,7 @@
 import {api} from "./api.js";
 import {fixturePage} from "./fixtures.js";
 import {$, comparison, csvText, fixtureCard, historyDetails, historyTable, leaderboard, matchAnalysis,
-  message, prediction, presetFixtures, renderModel, seasonName, teamStats} from "./view.js";
+  message, overviewForecast, prediction, presetFixtures, renderModel, seasonName, teamStats} from "./view.js";
 
 const pages = {
   home: "Overview", predict: "Prediction", analysis: "Match Analysis",
@@ -14,6 +14,7 @@ const state = {
 const pending = new Map();
 let scheduleTimer;
 let statusReceivedAt;
+let overviewBatch;
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
 const selectors = {
   customHome: "Valencia", customAway: "Real Madrid",
@@ -137,13 +138,99 @@ function catalogueTime() {
   return new Date(Date.parse(state.data.evaluated_at_utc) + performance.now() - statusReceivedAt).toISOString();
 }
 
+function stopOverview() {
+  if (!overviewBatch) return;
+  overviewBatch.controller.abort();
+  overviewBatch.timers.forEach(timer => clearTimeout(timer));
+  overviewBatch = null;
+}
+
+function matchesForecastContext(fixture, preview) {
+  return preview.canonical_fixture_key === fixture.canonical_fixture_key &&
+    preview.history_snapshot_version === state.config.snapshot_version &&
+    preview.model_version === state.config.model_version &&
+    preview.dataset_kind === (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real");
+}
+
+async function loadOverviewForecast(fixture, slot, batch) {
+  const key = fixture.canonical_fixture_key;
+  const signal = batch.controller.signal;
+  const render = result => {
+    if (overviewBatch === batch && batch.data === state.data) slot.innerHTML = overviewForecast(result);
+  };
+  try {
+    const {data} = batch;
+    if (!data || data.mode !== state.config.mode || data.snapshot_version !== state.config.snapshot_version) {
+      throw new Error("The active snapshot could not be verified.");
+    }
+    const eligibility = await api.eligibility(key, signal);
+    if (signal.aborted) return;
+    const {eligibility_status: status, target, fixture_reviewed_at_utc: reviewed, history_cutoff: cutoff} = eligibility;
+    if (eligibility.canonical_fixture_key !== key || eligibility.snapshot_version !== data.snapshot_version) {
+      throw new Error("The fixture context changed.");
+    }
+    if (status === "WAITING_DATA" || status === "UNAVAILABLE") {
+      render({status});
+      return;
+    }
+
+    // The preview response omits schedule evidence. Keep the checked fixture's own expiry.
+    const kickoff = Date.parse(fixture.kickoff_utc);
+    const expires = Math.min(kickoff, Date.parse(reviewed) + data.schedule_max_age_hours * 3600000,
+      Date.parse(cutoff) + 86400000);
+    if (!Number.isFinite(expires) || target?.canonical_fixture_key !== key || Date.parse(target.kickoff_utc) !== kickoff) {
+      throw new Error("Forecast timing could not be verified.");
+    }
+    const expire = () => render({status: Date.parse(catalogueTime()) >= kickoff ? "UNAVAILABLE" : "WAITING_DATA"});
+    if (Date.parse(catalogueTime()) >= expires) {
+      expire();
+      return;
+    }
+
+    const result = await api.preview(key, signal);
+    if (signal.aborted) return;
+    if (!result.preview) {
+      if (result.eligibility.canonical_fixture_key !== key || result.eligibility.snapshot_version !== data.snapshot_version) {
+        throw new Error("The fixture context changed.");
+      }
+      render(result);
+      return;
+    }
+    const {preview} = result;
+    const generated = Date.parse(preview.generated_at_utc);
+    if (!matchesForecastContext(fixture, preview) || preview.history_database_sha256 !== data.database_sha256 ||
+        !Number.isFinite(generated)) {
+      throw new Error("The forecast context changed.");
+    }
+    const remaining = expires - Math.max(generated, Date.parse(catalogueTime()));
+    if (preview.history_cutoff !== cutoff || remaining <= 0) {
+      expire();
+      return;
+    }
+    render(result);
+    if (state.config.mode === "REAL_RESEARCH") batch.timers.push(setTimeout(expire, remaining));
+  } catch {
+    if (!signal.aborted) render({status: "FORECAST_ERROR"});
+  }
+}
+
+function renderOverview(time = catalogueTime()) {
+  if (state.page !== "home" || !state.catalogueReady) return;
+  const fixtures = fixturePage(state.fixtures, {status: "upcoming"}, 1, time).items.slice(0, 6);
+  const keys = fixtures.map(row => row.canonical_fixture_key).join("|");
+  if (overviewBatch?.keys === keys && overviewBatch.data === state.data) return;
+  stopOverview();
+  const batch = {keys, data: state.data, controller: new AbortController(), timers: []};
+  overviewBatch = batch;
+  renderHere("homeFixtures", fixtures.length ?
+    fixtures.map(row => fixtureCard(row, null, true)).join("") : message("No upcoming fixtures are listed in this snapshot."));
+  const slots = $("homeFixtures").querySelectorAll(".fixture-xg");
+  fixtures.forEach((fixture, index) => void loadOverviewForecast(fixture, slots[index], batch));
+}
+
 function renderFixtures(time = catalogueTime()) {
-  const latest = publishedByKey();
-  const overview = fixturePage(state.fixtures, {status: "upcoming"}, 1, time);
-  renderHere("homeFixtures", overview.total ?
-    overview.items.slice(0, 6).map(row => fixtureCard(row, latest.get(row.canonical_fixture_key))).join("") :
-    message("No upcoming fixtures are listed in this snapshot."));
-  renderDiscovery(latest, time);
+  renderOverview(time);
+  renderDiscovery(publishedByKey(), time);
 }
 
 function renderDiscovery(latest = publishedByKey(), time = catalogueTime()) {
@@ -304,10 +391,7 @@ function resetPrediction(tab) {
 
 function showForecast(fixture, result) {
   const preview = result.preview;
-  if (preview && (preview.canonical_fixture_key !== fixture.canonical_fixture_key ||
-      preview.history_snapshot_version !== state.config.snapshot_version ||
-      preview.model_version !== state.config.model_version ||
-      preview.dataset_kind !== (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real"))) {
+  if (preview && !matchesForecastContext(fixture, preview)) {
     throw new Error("The forecast context changed. Reload XPECTA before previewing again.");
   }
   state.fixture = fixture;
@@ -328,6 +412,7 @@ async function forecastFor(fixture) {
 function selectFixture(key) {
   const fixture = state.fixtures.find(row => row.canonical_fixture_key === key);
   if (!fixture) return;
+  stopOverview();
   resetPrediction("fixture");
   go("predict");
   void forecastFor(fixture);
@@ -445,6 +530,11 @@ function navigate() {
   document.title = `${pages[page]} · XPECTA`;
   window.scrollTo(0, 0);
   if (!state.config) return;
+  if (page === "home") renderOverview();
+  else stopOverview();
+  if (previousPage === "home" && page === "predict" && state.fixture) {
+    $("predictionOutput").focus({preventScroll: true});
+  }
   if (previousPage === "predict" && page !== "predict") {
     state.fixture = null;
     updatePredictTab();
@@ -595,7 +685,6 @@ async function initialize() {
     }
     if (freshness.status === "fulfilled") {
       const data = freshness.value;
-      $("cutoffHero").textContent = data.latest_verified_completed_date || "—";
       $("totalMatches").textContent = data.verified_completed.toLocaleString("en-GB");
       showFreshness(data);
     } else {
