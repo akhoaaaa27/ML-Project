@@ -329,14 +329,20 @@ class RefreshTests(unittest.TestCase):
         np.testing.assert_array_equal(first.imputer_.statistics_,second.imputer_.statistics_)
         self.assertTrue(all(sha256(ROOT/name)==checksum for name,checksum in protected.items()))
 
-    def test_no_raw_data_in_public_reports_or_tracked_paths(self):
+    def test_prepare_keeps_new_raw_inputs_and_candidates_out_of_git(self):
+        import subprocess
+
+        git_files = ["git", "ls-files", "--", "data/external/multisource", "data/history/research"]
+        tracked = subprocess.check_output(git_files, cwd=ROOT)
         complete(self.records[3]);report=self.prep()
         self.assertNotIn("registry",report);self.assertNotIn("statistics",report)
         self.assertNotIn("source_directory",report)
-        import subprocess
-        tracked=subprocess.check_output(["git","ls-files"],cwd=ROOT).decode()
-        self.assertNotIn("data/external/multisource/raw/",tracked)
-        self.assertNotIn("data/history/research/",tracked)
+        self.assertEqual(subprocess.check_output(git_files, cwd=ROOT), tracked)
+        for path in ("data/external/multisource/phase96/new-source/fixtures.csv",
+                     "data/external/multisource/phase96/candidates/pending/reviews.json",
+                     "data/history/research/unshared-test/laliga_composite.sqlite3"):
+            with self.subTest(path=path):
+                self.assertEqual(subprocess.run(["git", "check-ignore", "--quiet", "--", path], cwd=ROOT).returncode, 0)
 
     def test_negative_fractional_or_impossible_counts_blocked(self):
         for i,value in enumerate([-1,1.5,3]):

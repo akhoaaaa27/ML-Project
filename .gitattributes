@@ -1,4 +1,4 @@
-data/history/research/phase853_v3_20261122/laliga_composite.sqlite3 -text
-data/history/research/phase853_v3_20261122/manifest.json -text
+data/history/research/*/laliga_composite.sqlite3 -text
+data/history/research/*/manifest.json -text
 data/external/multisource/acquisition_manifest.json -text
 data/external/multisource/raw/current_2026_fixtures.csv -text

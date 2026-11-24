@@ -65,6 +65,24 @@ $env:XPECTA_SNAPSHOT_MANIFEST_SHA256 = $approvedManifestSha256
 
 Compute the manifest SHA-256 at the authorized publication checkpoint and record it alongside the published database SHA-256. On V3, use the built-in pins by clearing the two environment overrides. The tests exercised valid and invalid binding evidence with isolated fixtures.
 
+## Share an approved version with the team through Git
+
+After `publish` succeeds, review the published SQLite and manifest for GitHub sharing. SQLite includes verification evidence and review notes. Use evidence and notes that can be shared with the repository audience. Keep downloads, candidate workspaces, and local launchers in their existing ignored directories.
+
+```powershell
+$version = '<published_version returned by refresh_composite publish>'
+.venv/Scripts/python.exe -X utf8 -m scripts.xpecta_api.share_snapshot $version --check
+.venv/Scripts/python.exe -X utf8 -m scripts.xpecta_api.share_snapshot $version
+git diff --cached --name-status
+git diff --cached -- data/history/shared_snapshot.json
+git commit -m "Publish Real Research snapshot $version"
+git push
+```
+
+The sharing command stages only the selected SQLite and manifest plus `data/history/shared_snapshot.json`. The Git index must already contain the exact bytes for that version's ancestors through V3. Release intermediate versions in order if they are part of the selected lineage. Commit the `.gitattributes` rules and the sharing code as part of the initial setup so the artifacts keep their verified checksums across Windows and Linux checkouts.
+
+After `git pull` and restart, Real Research uses the shared version and both checksums by default. An explicit `XPECTA_SNAPSHOT` setting still takes precedence, so a launcher pinned to V3 or a local successor must clear its three `XPECTA_SNAPSHOT*` settings to follow the shared version. Check `snapshot_version` at `/api/v1/health/ready` after restarting.
+
 ## 24 November 2026 refresh
 
 The local `phase96-20261124-verified` successor reconciled six new completed fixtures, filled statistics for three previously pending fixtures and applied one reviewed xG correction. Match history reached 23 November. LaLiga and the current export agreed on 30 kickoffs in rounds 14–16. The real runtime reported 10 `READY`, 20 `EARLY_READY` and 221 `WAITING_DATA` fixtures. Browser verification matched the six Overview forecasts to their read-only API previews. The 48-hour schedule evidence window expires at 10:20 UTC on 26 November. [LaLiga round 13 results](https://www.laliga.com/laliga-easports/resultados/2026-27/jornada-13) · [xGTables current-season export](https://www.xgtables.io/data/la-liga/2026/)

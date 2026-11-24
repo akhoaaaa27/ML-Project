@@ -1,7 +1,10 @@
 """Offline freshness and trusted server binding checks."""
 
 from datetime import timedelta
+import json
+import os
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
@@ -16,9 +19,78 @@ from scripts.xpecta_api.research_binding import verify_real_snapshot
 from scripts.xpecta_api.research_preflight import source_readiness
 from scripts.xpecta_api.schedule_status import schedule_status
 from scripts.xpecta_api.settings import Mode, REAL_VERSION, Settings
+from scripts.xpecta_api import share_snapshot
 
 
 class ResearchReadinessTests(unittest.TestCase):
+    def test_shared_selection_default_and_explicit_override(self):
+        with TemporaryDirectory() as tmp:
+            config = Path(tmp) / "shared_snapshot.json"
+            with (patch("scripts.xpecta_api.settings.SHARED_SNAPSHOT", config),
+                  patch.dict(os.environ, {}, clear=True)):
+                self.assertEqual(Settings.from_env().snapshot_version, REAL_VERSION)
+                config.write_text(json.dumps(dict(snapshot_version="reviewed-v4", snapshot_sha256="a" * 64,
+                                                  snapshot_manifest_sha256="b" * 64)), encoding="utf-8")
+                self.assertEqual(Settings.from_env().snapshot_version, "reviewed-v4")
+                self.assertEqual(Settings.from_env().snapshot_manifest_sha256, "b" * 64)
+                with patch.dict(os.environ, {"XPECTA_SNAPSHOT": REAL_VERSION}):
+                    self.assertEqual(Settings.from_env().snapshot_version, REAL_VERSION)
+                with patch.dict(os.environ, {"XPECTA_MODE": Mode.SYNTHETIC_DEMO.value}):
+                    self.assertEqual(Settings.from_env().snapshot_version, "updated")
+                config.write_text('{"snapshot_version": "reviewed-v4"}', encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "Invalid shared snapshot configuration"):
+                    Settings.from_env()
+
+    def test_share_stages_exact_snapshot_bytes_and_leaves_other_files_ignored(self):
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            research_root = repo / "data/history/research"
+            config = research_root.parent / "shared_snapshot.json"
+            attributes = (share_snapshot.ROOT / ".gitattributes").read_bytes()
+
+            def make_snapshot(version, parent):
+                directory = research_root / version
+                directory.mkdir(parents=True)
+                database = directory / "laliga_composite.sqlite3"
+                database.write_bytes(b"\x00sqlite\n")
+                (directory / "manifest.json").write_bytes(b"{}\r\n")
+                (directory / "private.txt").write_text("private", encoding="utf-8")
+                return SimpleNamespace(path=database, manifest=dict(version_id=version, parent_version=parent))
+
+            baseline = make_snapshot(REAL_VERSION, None)
+            child = make_snapshot("reviewed-v4", REAL_VERSION)
+            (repo / ".gitattributes").write_bytes(attributes)
+            (research_root.parent / ".gitignore").write_text("/research/*\n", encoding="utf-8")
+            engine = SimpleNamespace(root=research_root, open={REAL_VERSION: baseline, "reviewed-v4": child}.get)
+            with (patch.object(share_snapshot, "ROOT", repo),
+                  patch.object(share_snapshot, "SHARED_SNAPSHOT", config),
+                  patch.object(share_snapshot, "ForecastEligibility", return_value=engine),
+                  patch.object(share_snapshot, "verify_real_snapshot") as verify):
+                share_snapshot.git("init", "--quiet")
+                share_snapshot.git("config", "core.autocrlf", "true")
+                with self.assertRaisesRegex(InferenceError, "Share parent"):
+                    share_snapshot.stage_release("reviewed-v4")
+                self.assertFalse(config.exists())
+                parent_paths = [file.relative_to(repo).as_posix() for file in share_snapshot.snapshot_files(baseline)]
+                share_snapshot.git("add", "--force", "--", *parent_paths)
+                index_lock = repo / ".git/index.lock"
+                index_lock.touch()
+                try:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        share_snapshot.stage_release("reviewed-v4")
+                    self.assertFalse(config.exists())
+                finally:
+                    index_lock.unlink()
+                selection = share_snapshot.stage_release("reviewed-v4")
+                verify.assert_called_with(engine, child, Settings(**selection))
+                paths = [file.relative_to(repo).as_posix() for file in share_snapshot.snapshot_files(child)]
+                self.assertCountEqual(share_snapshot.git("ls-files").splitlines(),
+                                      [*parent_paths, *paths, config.relative_to(repo).as_posix()])
+                for path in paths:
+                    self.assertEqual(share_snapshot.git("rev-parse", f":{path}"),
+                                     share_snapshot.git("hash-object", "--no-filters", path))
+                self.assertEqual(json.loads(config.read_text(encoding="utf-8")), selection)
+
     def test_schedule_distinguishes_expiry_and_missing_evidence(self):
         acquired = utc("2026-11-21T20:20:23Z")
         engine = SimpleNamespace(_schedule_evidence=lambda store, fixture, catalogue: acquired)
