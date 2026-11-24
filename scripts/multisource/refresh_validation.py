@@ -164,6 +164,37 @@ def completion_evidence(directory, *, synthetic=False):
     return matches, sha256(path)
 
 
+def schedule_reviews(directory, as_of, *, synthetic=False):
+    path = directory / "independent_schedule.json"
+    if not path.is_file():
+        return {}, None
+    review = read_json(path)
+    reviewed_at = timestamp(review["reviewed_at"])
+    reviewed = datetime.fromisoformat(reviewed_at).astimezone(timezone.utc)
+    require(reviewed.date().isoformat() <= as_of, "FUTURE_SCHEDULE_REVIEW", "Review after snapshot as-of date")
+    digest = sha256(path)
+    matches = {}
+    for row in review["matches"]:
+        season, day, home, away = fixture_identity(row["season"], row["date"], row["home"], row["away"])
+        key = canonical_key(season, home, away)
+        require(season == 2026 and key not in matches, "INVALID_SCHEDULE_REVIEW", "Duplicate or out-of-scope review")
+        require(row["status"] == "scheduled", "INVALID_SCHEDULE_REVIEW", "Only confirmed upcoming fixtures are reviewed")
+        source = urlparse(row["source_url"])
+        require((synthetic and source.scheme == "synthetic") or
+                (not synthetic and source.scheme == "https" and source.hostname in {"www.laliga.com", "laliga.com"}
+                 and source.username is None and source.port is None and not source.query and not source.fragment
+                 and re.search(r"/(?:jornada-\d+|gameweek-\d+|partido/temporada-2026-2027-laliga-ea-sports-[\w-]+)$",
+                               source.path)),
+                "INVALID_SCHEDULE_REVIEW", "Schedule review requires an official league match or round page")
+        kickoff = checked_kickoff(row["kickoff_utc"], day)
+        require(kickoff and datetime.fromisoformat(kickoff) > reviewed,
+                "INVALID_SCHEDULE_REVIEW", "Kickoff must be after the schedule review")
+        matches[key] = dict(kickoff_utc=kickoff, reviewed_at=reviewed_at, source_url=row["source_url"],
+                            evidence_sha256=digest)
+    require(matches, "INVALID_SCHEDULE_REVIEW", "Schedule review has no matches")
+    return matches, digest
+
+
 def numeric_pair(fixture, raw, metadata, *, fields=None):
     fields = fields or {"xg":"xg", "sh":"shots", "sot":"shots_on_target"}
     rows = []
@@ -354,10 +385,15 @@ def build_candidate(parent, source_directory, candidate_version, as_of, *, datas
     evidence, evidence_hash = completion_evidence(directory, synthetic=synthetic)
     if evidence_hash:
         hashes["independent_completed.json"] = evidence_hash
+    reviewed_schedules, schedule_hash = schedule_reviews(directory, as_of, synthetic=synthetic)
+    if schedule_hash:
+        hashes["independent_schedule.json"] = schedule_hash
     registry, statistics, catalogues, schedule = state(parent)
     require(not registry.conflicts, "SOURCE_CONFLICT", "Parent has unresolved conflicts")
     changes = []; before = {k:business(r,statistics.get(k,[]),schedule[k]) for k,r in registry.fixtures.items()}
     updates = current_updates(directory, entries, registry, schedule, evidence, synthetic=synthetic)
+    require(set(reviewed_schedules) <= {key for key, _, _, _ in updates}, "INVALID_SCHEDULE_REVIEW",
+            "Schedule review contains a fixture outside the current catalogue")
     if not synthetic:
         updates += archive_updates(directory, entries, parent, registry, schedule)
     for key, single, pair, extra in updates:
@@ -366,6 +402,20 @@ def build_candidate(parent, source_directory, candidate_version, as_of, *, datas
         unreliable = any("unreliable" in r["xg_source"].lower() for r in statistics.get(key,[]))
         kinds, decision = classify(before[key], after, unreliable=unreliable)
         require(decision != "BLOCKED", kinds[0] if kinds else "INVALID_TRANSITION", "Candidate violates transition or semantic invariants", key=key)
+        schedule_review = reviewed_schedules.get(key)
+        if schedule_review:
+            require(row["observed_status"] == "scheduled" and extra["kickoff_utc"] == schedule_review["kickoff_utc"],
+                    "SOURCE_CONFLICT", "Official schedule review does not match the provider fixture", key=key)
+            previous_review = registry.fixtures[key].get("schedule_review")
+            if previous_review != schedule_review:
+                require(not previous_review or datetime.fromisoformat(schedule_review["reviewed_at"]) >
+                        datetime.fromisoformat(previous_review["reviewed_at"]),
+                        "INVALID_SCHEDULE_REVIEW", "Schedule review must be newer than the existing one", key=key)
+                kinds.append("SCHEDULE_REVERIFIED")
+                if decision == "NO_CHANGE":
+                    decision = "AUTO_ACCEPT"
+            row["schedule_review"] = schedule_review
+            single.evidence[-1]["schedule_review"] = schedule_review
         if decision == "NO_CHANGE":
             continue
         change = dict(canonical_fixture_key=key, change_type=kinds, decision=decision,
@@ -373,6 +423,8 @@ def build_candidate(parent, source_directory, candidate_version, as_of, *, datas
                       verification_source=row["verification_source"],verified_at=row["verified_at"],
                       fixture_provenance=copy.deepcopy(row.get("fixture_provenance")),
                       statistics=[{k:r[k] for k in GROUPS} for r in pair]))
+        if schedule_review:
+            change["source_provenance"]["schedule_review"] = schedule_review
         change["change_id"] = semantic_hash(change)
         changes.append(change)
         registry.fixtures[key] = row
@@ -400,7 +452,10 @@ def build_candidate(parent, source_directory, candidate_version, as_of, *, datas
         catalogues[season] = validate_catalogue(registry,season,catalogue["clubs"],catalogue["verification_source"],
                                                catalogue["source_version"],catalogue["verified_at"])
     after = {k:business(r,statistics.get(k,[]),schedule[k]) for k,r in registry.fixtures.items()}
-    effect = semantic_hash(dict(parent_sha256=sha256(parent.path), business=after, policy=POLICY_VERSION))
+    effect_inputs = dict(parent_sha256=sha256(parent.path), business=after, policy=POLICY_VERSION)
+    if reviewed_schedules:
+        effect_inputs["schedule_reviews"] = reviewed_schedules
+    effect = semantic_hash(effect_inputs)
     changes.sort(key=lambda r:r["change_id"])
     bundle = dict(policy_version=POLICY_VERSION, dataset_kind=dataset_kind, as_of=as_of,
                   source_directory=str(directory), parent_database=str(parent.path), parent_sha256=sha256(parent.path),

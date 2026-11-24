@@ -33,6 +33,8 @@ An expired group is distinct from absent evidence and a not-yet-current source. 
 3. Use the existing Phase 8.5.4 review flow. Inspect the candidate privately. For each manual item, record an explicit decision, evidence reference and rationale against that exact change and candidate. `status` rechecks the candidate and reports outstanding receipts. If evidence conflicts or is insufficient, leave the candidate unapproved.
 4. Once the operator authorizes publication, `refresh_composite publish` rechecks exact content and receipts, validates rolling feature order and frozen-inference parity in its provisional transaction, and publishes a separate immutable version only on success. Keep `phase853_v3_20261122` and its source inputs at their existing paths. [Phase 8.5.4 controlled refresh](PHASE_8_5_4_FINAL_MERGE_GATE.md)
 
+For kickoffs independently reconfirmed against LaLiga, the staging directory can include `independent_schedule.json`. Set `reviewed_at` to the actual UTC review timestamp. Each entry in `matches` needs the season, UTC date, directed `home` and `away` team names, `status` of `scheduled`, `kickoff_utc`, and an official LaLiga round or match URL in `source_url`. Record only fixtures whose status and kickoff match the provider export. A reconfirmed unchanged kickoff has a `SCHEDULE_REVERIFIED` change tied to the evidence digest. A changed kickoff still requires manual review. The 48-hour window uses the actual review timestamp.
+
 ```powershell
 $run = Get-Date -Format 'yyyyMMdd-HHmmss'
 $source = "data/external/multisource/phase96/provider-$run"
@@ -61,4 +63,10 @@ $env:XPECTA_SNAPSHOT_MANIFEST_SHA256 = $approvedManifestSha256
 .venv/Scripts/python.exe -X utf8 -m scripts.xpecta_api.app
 ```
 
-Compute the manifest SHA-256 at the authorized publication checkpoint and record it alongside the published database SHA-256. On V3, use the built-in pins by clearing the two environment overrides. The tests exercised valid and invalid binding evidence with isolated fixtures. A real successor startup is pending approval and publication.
+Compute the manifest SHA-256 at the authorized publication checkpoint and record it alongside the published database SHA-256. On V3, use the built-in pins by clearing the two environment overrides. The tests exercised valid and invalid binding evidence with isolated fixtures.
+
+## 24 November 2026 refresh
+
+The local `phase96-20261124-verified` successor reconciled six new completed fixtures, filled statistics for three previously pending fixtures and applied one reviewed xG correction. Match history reached 23 November. LaLiga and the current export agreed on 30 kickoffs in rounds 14–16. The real runtime reported 10 `READY`, 20 `EARLY_READY` and 221 `WAITING_DATA` fixtures. Browser verification matched the six Overview forecasts to their read-only API previews. The 48-hour schedule evidence window expires at 10:20 UTC on 26 November. [LaLiga round 13 results](https://www.laliga.com/laliga-easports/resultados/2026-27/jornada-13) · [xGTables current-season export](https://www.xgtables.io/data/la-liga/2026/)
+
+The published local snapshot and acquisition evidence reside in the ignored research and staging directories. For another machine, obtain its reviewed snapshot separately and configure its local version and both pins, or run the controlled refresh with newly verified inputs.
