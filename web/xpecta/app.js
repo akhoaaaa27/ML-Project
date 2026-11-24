@@ -1,7 +1,9 @@
 import {api} from "./api.js";
 import {fixturePage} from "./fixtures.js";
-import {$, comparison, csvText, fixtureCard, formatUtcTimestamp, historyDetails, historyTable, leaderboard, matchAnalysis,
-  message, overviewForecast, prediction, presetFixtures, renderModel, seasonName, teamStats, UTC_LABEL} from "./view.js";
+import {$, comparison, csvText, fixtureCard, historyDetails, historyTable, leaderboard, matchAnalysis,
+  message, cardForecast, prediction, renderModel, seasonName, simulationDetails, simulationResult, teamStats, UTC_LABEL} from "./view.js";
+import {teamPicker} from "./team-picker.js";
+import {simulationHistory, saveSimulation, validSimulation} from "./simulations.js";
 
 const pages = {
   home: "Overview", predict: "Prediction", analysis: "Match Analysis",
@@ -9,12 +11,14 @@ const pages = {
 };
 const state = {
   page: "home", tab: "fixture", fixture: null, config: null, teams: [], fixtures: [],
-  history: [], hasHistory: false, analysisOrigin: null, discoveryPage: 1, catalogueReady: false, data: null,
+  history: [], historyStatus: "loading", analysisOrigin: null, discoveryPage: 1, catalogueReady: false, data: null,
 };
 const pending = new Map();
 let scheduleTimer;
 let statusReceivedAt;
-let overviewBatch;
+const cardBatches = new Map();
+const pickers = {};
+let historyPending;
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
 const selectors = {
   customHome: "Valencia", customAway: "Real Madrid",
@@ -80,8 +84,7 @@ function setSelectors() {
   for (const id of seasons) addOptions(id, available.map(year => [year, seasonName(year)]),
     id === "analysisSeason" && state.config.mode === "SYNTHETIC_DEMO" ? state.config.current_season : available.find(y => y < state.config.current_season) ?? available[0]);
   for (const [id, preferred] of Object.entries(selectors)) {
-    const teams = id.startsWith("custom") ? state.teams.filter(team => team.seasons.includes(state.config.current_season)) : state.teams;
-    addOptions(id, teams.map(team => [team.id, team.name]), preferred);
+    addOptions(id, state.teams.map(team => [team.id, team.name]), preferred);
   }
   for (const prefix of ["stats", "analysis"]) filterTeams(prefix);
 }
@@ -138,11 +141,12 @@ function catalogueTime() {
   return new Date(Date.parse(state.data.evaluated_at_utc) + performance.now() - statusReceivedAt).toISOString();
 }
 
-function stopOverview() {
-  if (!overviewBatch) return;
-  overviewBatch.controller.abort();
-  overviewBatch.timers.forEach(timer => clearTimeout(timer));
-  overviewBatch = null;
+function stopCards(region) {
+  const batch = cardBatches.get(region);
+  if (!batch) return;
+  batch.controller.abort();
+  batch.timers.forEach(timer => clearTimeout(timer));
+  cardBatches.delete(region);
 }
 
 function matchesForecastContext(fixture, preview) {
@@ -152,11 +156,11 @@ function matchesForecastContext(fixture, preview) {
     preview.dataset_kind === (state.config.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real");
 }
 
-async function loadOverviewForecast(fixture, slot, batch) {
+async function loadCardForecast(fixture, slot, batch) {
   const key = fixture.canonical_fixture_key;
   const signal = batch.controller.signal;
   const render = result => {
-    if (overviewBatch === batch && batch.data === state.data) slot.innerHTML = overviewForecast(result);
+    if (cardBatches.get(batch.region) === batch && batch.data === state.data) slot.innerHTML = cardForecast(result);
   };
   try {
     const {data} = batch;
@@ -215,18 +219,38 @@ async function loadOverviewForecast(fixture, slot, batch) {
   }
 }
 
+function renderCardBatch(region, fixtures, empty, published = new Map()) {
+  const keys = fixtures.map(row => row.canonical_fixture_key).join("|");
+  const publishedIds = fixtures.map(row => row.observed_status === "completed" ?
+    published.get(row.canonical_fixture_key)?.forecast_id ?? "" : "").join("|");
+  const previous = cardBatches.get(region);
+  if (previous?.keys === keys && previous.data === state.data && previous.publishedIds === publishedIds) return;
+  stopCards(region);
+  const batch = {keys, publishedIds, region, data: state.data, controller: new AbortController(), timers: []};
+  cardBatches.set(region, batch);
+  if (!fixtures.length) {
+    renderHere(region, message(empty));
+    return;
+  }
+  const cards = fixtures.map(row => {
+    if (row.observed_status === "scheduled") return fixtureCard(row);
+    const forecast = row.observed_status === "completed" ? published.get(row.canonical_fixture_key) : null;
+    return fixtureCard(row, forecast ? {status: "PUBLISHED", preview: forecast} : {status: "UNAVAILABLE"});
+  }).join("");
+  renderHere(region, region === "homeFixtures" ? cards : `<div class="match-grid mt20">${cards}</div>`);
+  const slots = $(region).querySelectorAll(".fixture-xg");
+  const queue = fixtures.map((row, index) => [row, slots[index]]).filter(([row]) => row.observed_status === "scheduled");
+  async function worker() {
+    while (queue.length && !batch.controller.signal.aborted) await loadCardForecast(...queue.shift(), batch);
+  }
+  const workers = Math.min(4, queue.length);
+  for (let index = 0; index < workers; index++) void worker();
+}
+
 function renderOverview(time = catalogueTime()) {
   if (state.page !== "home" || !state.catalogueReady) return;
   const fixtures = fixturePage(state.fixtures, {status: "upcoming"}, 1, time).items.slice(0, 6);
-  const keys = fixtures.map(row => row.canonical_fixture_key).join("|");
-  if (overviewBatch?.keys === keys && overviewBatch.data === state.data) return;
-  stopOverview();
-  const batch = {keys, data: state.data, controller: new AbortController(), timers: []};
-  overviewBatch = batch;
-  renderHere("homeFixtures", fixtures.length ?
-    fixtures.map(row => fixtureCard(row, null, true)).join("") : message("No upcoming fixtures are listed in this snapshot."));
-  const slots = $("homeFixtures").querySelectorAll(".fixture-xg");
-  fixtures.forEach((fixture, index) => void loadOverviewForecast(fixture, slots[index], batch));
+  renderCardBatch("homeFixtures", fixtures, "No upcoming fixtures are listed in this snapshot.");
 }
 
 function renderFixtures(time = catalogueTime()) {
@@ -235,8 +259,10 @@ function renderFixtures(time = catalogueTime()) {
 }
 
 function renderDiscovery(latest = publishedByKey(), time = catalogueTime()) {
-  if (!state.catalogueReady) return;
+  if (!state.catalogueReady || state.page !== "predict" || state.tab !== "fixture" || state.fixture) return;
   const filters = Object.fromEntries(new FormData($("fixtureFilters")));
+  filters.team1 = pickers.fixtureTeam1.value();
+  filters.team2 = pickers.fixtureTeam2.value();
   const found = fixturePage(state.fixtures, filters, state.discoveryPage, time);
   state.discoveryPage = found.page;
   $("fixtureResults").textContent = found.total
@@ -245,10 +271,12 @@ function renderDiscovery(latest = publishedByKey(), time = catalogueTime()) {
   $("fixturePage").textContent = `Page ${found.page} of ${found.pages}`;
   $("fixturePrevious").disabled = found.page === 1;
   $("fixtureNext").disabled = found.page === found.pages;
-  if (found.invalidRange) {
-    notice("presetFixtures", `The end date (${UTC_LABEL}) must be on or after the start date.`, true);
+  if (found.invalidRange || found.invalidTeams) {
+    stopCards("presetFixtures");
+    notice("presetFixtures", found.invalidTeams ? "Select two different teams to filter fixtures." :
+      `The end date (${UTC_LABEL}) must be on or after the start date.`, true);
   } else {
-    renderHere("presetFixtures", found.total ? presetFixtures(found.items, latest) : message("No fixtures match these filters."));
+    renderCardBatch("presetFixtures", found.items, "No fixtures match these filters.", latest);
   }
 }
 
@@ -256,10 +284,10 @@ function installDiscovery() {
   $("fixturePick").querySelector("h2").textContent = "FIND FIXTURES";
   $("presetFixtures").insertAdjacentHTML("beforebegin", `
     <form id="fixtureFilters" class="card fixture-filters mt20" aria-label="Filter fixture catalogue">
-      <div class="field"><label for="fixtureSearch">Search teams</label><input id="fixtureSearch" name="search" type="search"></div>
-      <div class="field"><label for="fixtureTeam">Team</label><select id="fixtureTeam" name="team"></select></div>
+      <div class="field"><label for="fixtureTeam1">Team 1</label><input id="fixtureTeam1"></div>
+      <div class="field"><label for="fixtureTeam2">Team 2</label><input id="fixtureTeam2"></div>
       <div class="field"><label for="fixtureStart">From (${UTC_LABEL})</label><input id="fixtureStart" name="start" type="date"></div>
-      <div class="field"><label for="fixtureEnd">Through (${UTC_LABEL})</label><input id="fixtureEnd" name="end" type="date"></div>
+      <div class="field"><label for="fixtureEnd">To (${UTC_LABEL})</label><input id="fixtureEnd" name="end" type="date"></div>
       <div class="field"><label for="fixtureStatus">Catalogue status</label><select id="fixtureStatus" name="status">
         <option value="upcoming">Upcoming</option><option value="">All listed</option><option value="scheduled">Scheduled</option>
         <option value="completed">Completed</option><option value="live">Live in snapshot</option>
@@ -275,17 +303,19 @@ function installDiscovery() {
       <button class="btn btn-outline btn-sm" id="fixtureNext" disabled>Next</button>
     </nav>`);
   $("homeFixtures").insertAdjacentHTML("beforebegin", '<p id="homeSchedule" class="indicator"></p>');
-  $("fixtureDataStatus").setAttribute("aria-live", "polite");
-  $("fixtureDataStatus").parentElement.insertAdjacentHTML("afterend", `
-    <details class="fixture-evidence mt20"><summary>Schedule evidence</summary>
-      <p id="fixtureEvidence" class="subtext"></p></details>`);
   $("fixtureFilters").addEventListener("submit", event => event.preventDefault());
   const apply = () => {
     state.discoveryPage = 1;
     renderDiscovery();
   };
+  pickers.fixtureTeam1 = teamPicker($("fixtureTeam1"), "Team 1", apply);
+  pickers.fixtureTeam2 = teamPicker($("fixtureTeam2"), "Team 2", apply);
   $("fixtureFilters").addEventListener("input", apply);
-  $("fixtureFilters").addEventListener("reset", () => setTimeout(apply, 0));
+  $("fixtureFilters").addEventListener("reset", () => {
+    pickers.fixtureTeam1.clear();
+    pickers.fixtureTeam2.clear();
+    setTimeout(apply, 0);
+  });
   for (const [id, direction] of [["fixturePrevious", -1], ["fixtureNext", 1]]) {
     $(id).addEventListener("click", () => {
       state.discoveryPage += direction;
@@ -306,13 +336,6 @@ function renderFreshness(data) {
   const label = wording[data?.schedule_freshness] ?? "Schedule status unavailable";
   const snapshotLabel = state.config?.mode === "SYNTHETIC_DEMO" ? "Synthetic test snapshot" : "Research snapshot available";
   $("homeSchedule").textContent = data ? `${snapshotLabel} · ${label}` : label;
-  $("fixtureDataStatus").textContent = label;
-  $("fixtureEvidence").textContent = data ? `${data.snapshot_version} · checked ${formatUtcTimestamp(data.evaluated_at_utc, {seconds: true})}. ` +
-    `${data.recent_review_upcoming_fixtures} of ${data.upcoming_fixtures} upcoming fixtures have recent evidence. ` +
-    data.schedule_evidence.map(group =>
-      `${group.fixtures} acquired ${formatUtcTimestamp(group.acquired_at_utc, {seconds: true})}, ` +
-      `expiry ${formatUtcTimestamp(group.expires_at_utc, {seconds: true})} (${group.status.toLowerCase()}).`).join(" ")
-    : "The service has not provided schedule evidence.";
 }
 
 function showFreshness(data) {
@@ -389,6 +412,8 @@ function resetPrediction(tab) {
   state.fixture = null;
   state.analysisOrigin = null;
   updatePredictTab();
+  if (tab === "fixture") renderDiscovery();
+  else stopCards("presetFixtures");
 }
 
 function showForecast(fixture, result) {
@@ -414,8 +439,12 @@ async function forecastFor(fixture) {
 function selectFixture(key) {
   const fixture = state.fixtures.find(row => row.canonical_fixture_key === key);
   if (!fixture) return;
-  stopOverview();
-  resetPrediction("fixture");
+  stopCards("homeFixtures");
+  stopCards("presetFixtures");
+  state.tab = "fixture";
+  state.fixture = fixture;
+  state.analysisOrigin = null;
+  updatePredictTab();
   go("predict");
   void forecastFor(fixture);
 }
@@ -425,24 +454,45 @@ async function customPrediction() {
   const button = $("runPrediction");
   const home = $("customHome").value;
   const away = $("customAway").value;
-  let fixture = {home_team: home, away_team: away, season: state.config.current_season};
-  button.disabled = true;
+  state.fixture = null;
   $("predictionOutput").hidden = false;
+  if (home === away) {
+    cancel("predictionOutput");
+    notice("predictionOutput", "Select two different teams to simulate.", true);
+    return;
+  }
+  button.disabled = true;
   try {
-    await display("predictionOutput", async () => {
-      const matches = await api.fixtures({home, away, season: state.config.current_season});
-      if (matches.length !== 1) throw new Error("No canonical fixture was found for this matchup.");
-      fixture = matches[0];
-      return api.preview(fixture.canonical_fixture_key);
-    }, result => showForecast(fixture, result), () => fixture);
+    await display("predictionOutput", () => api.simulate(home, away), result => {
+      const kind = simulationKind();
+      if (!validSimulation(result, kind) || result.home_team !== home || result.away_team !== away ||
+          result.history_snapshot_version !== state.config.snapshot_version || result.model_version !== state.config.model_version) {
+        throw new Error("The simulation context changed. Reload XPECTA and try again.");
+      }
+      state.fixture = result;
+      renderHere("predictionOutput", simulationResult(result));
+      try {
+        saveSimulation(result, kind);
+      } catch {
+        toast("The simulation ran, but local history could not save it.");
+      }
+    });
   } finally {
     button.disabled = false;
   }
 }
 
 function showAnalysis() {
+  if (!state.config) return;
+  const home = $("analysisHome").value;
+  const away = $("analysisAway").value;
+  if (home === away) {
+    cancel("analysisOutput");
+    notice("analysisOutput", "Select two different teams to analyze.", true);
+    return;
+  }
   return display("analysisOutput", () => api.analysis({
-    home: $("analysisHome").value, away: $("analysisAway").value,
+    home, away,
     season: $("analysisSeason").value, window: $("analysisWindow").value,
   }), result => renderHere("analysisOutput", matchAnalysis(result)));
 }
@@ -458,35 +508,53 @@ function showStats() {
   }, result => renderHere("statsOutput", teamStats(...result)));
 }
 
+const simulationKind = () => state.config?.mode === "SYNTHETIC_DEMO" ? "synthetic" : "real";
+
 function visibleHistory() {
-  const query = $("historySearch").value.toLowerCase().trim();
+  const team = pickers.historySearch.value();
+  const recordType = $("historyRecordType").value;
   const stage = $("historyType").value;
   const direction = $("historySort").value === "old" ? 1 : -1;
-  return state.history.filter(row => (stage === "all" || row.forecast_stage === stage) &&
-    [row.home_team, row.away_team].some(team => team.toLowerCase().includes(query)))
-    .sort((a, b) => direction * (a.generated_at_utc.localeCompare(b.generated_at_utc) ||
-      a.forecast_revision - b.forecast_revision));
+  const {rows: simulations, warning} = simulationHistory(simulationKind());
+  const all = [...state.history.map(row => ({...row, record_type: "OFFICIAL_MATCH_FORECAST"})), ...simulations];
+  const rows = all.filter(row => (recordType === "all" || recordType === row.record_type) &&
+    (stage === "all" || stage === row.forecast_stage) && (!team || [row.home_team, row.away_team].includes(team)))
+    .sort((a, b) => direction * (Date.parse(a.generated_at_utc) - Date.parse(b.generated_at_utc) ||
+      (a.forecast_revision ?? 0) - (b.forecast_revision ?? 0)));
+  return {rows, total: all.length, warning};
 }
 
 function renderHistory() {
-  if (!state.hasHistory) return;
-  const rows = visibleHistory();
-  $("historyCount").textContent = `${rows.length} / ${state.history.length} records`;
-  renderHere("historyTable", historyTable(rows, state.history.length));
+  const {rows, total, warning} = visibleHistory();
+  const showOfficial = $("historyRecordType").value !== "CUSTOM_SIMULATION";
+  const showSimulations = $("historyRecordType").value !== "OFFICIAL_MATCH_FORECAST" && $("historyType").value === "all";
+  const messages = [showSimulations && warning, showOfficial && state.historyStatus === "loading" && "Loading official forecasts…",
+    showOfficial && state.historyStatus === "error" && "Official forecasts are unavailable."].filter(Boolean);
+  $("historyCount").textContent = `${rows.length} / ${total} records`;
+  $("historyNotice").textContent = messages.join(" ");
+  renderHere("historyTable", historyTable(rows, total, showOfficial && state.historyStatus !== "ready"));
 }
 
-function showHistory() {
-  return display("historyTable", api.history, rows => {
-    state.history = rows;
-    state.hasHistory = true;
+async function showHistory() {
+  if (historyPending) return;
+  state.historyStatus = "loading";
+  renderHistory();
+  historyPending = api.history();
+  try {
+    state.history = await historyPending;
+    state.historyStatus = "ready";
+  } catch {
+    state.historyStatus = "error";
+  } finally {
+    historyPending = null;
     renderHistory();
-    if (state.fixtures.length) renderFixtures();
-  });
+    renderFixtures();
+  }
 }
 
 function exportHistory() {
-  const rows = visibleHistory();
-  if (!rows.length) return toast("No matching forecasts to export.");
+  const {rows} = visibleHistory();
+  if (!rows.length) return toast("No matching records to export.");
   const file = URL.createObjectURL(new Blob([csvText(rows)], {type: "text/csv;charset=utf-8"}));
   const link = document.createElement("a");
   link.href = file;
@@ -504,6 +572,13 @@ function showDetails(id) {
       .sort((a, b) => a.forecast_revision - b.forecast_revision);
     renderHere("modalBody", historyDetails(row, revisions));
   });
+}
+
+function showSimulation(id) {
+  const row = simulationHistory(simulationKind()).rows.find(record => record.simulation_id === id);
+  if (!row) return toast("This simulation is unavailable.");
+  modal("CUSTOM SIMULATION");
+  renderHere("modalBody", simulationDetails(row));
 }
 
 function showComparison(key) {
@@ -533,7 +608,8 @@ function navigate() {
   window.scrollTo(0, 0);
   if (!state.config) return;
   if (page === "home") renderOverview();
-  else stopOverview();
+  else stopCards("homeFixtures");
+  if (page !== "predict") stopCards("presetFixtures");
   if (previousPage === "home" && page === "predict" && state.fixture) {
     $("predictionOutput").focus({preventScroll: true});
   }
@@ -545,6 +621,7 @@ function navigate() {
     if (page === "predict" && state.analysisOrigin) restorePredictionFromAnalysis();
     else state.analysisOrigin = null;
   }
+  if (page === "predict") renderDiscovery();
   if (page === "analysis") void showAnalysis();
   if (page === "stats") void showStats();
   if (page === "history") void showHistory();
@@ -560,7 +637,7 @@ function restorePredictionFromAnalysis() {
   const home = $("analysisHome").value;
   const away = $("analysisAway").value;
   const origin = state.analysisOrigin;
-  const sameFixture = origin && origin.fixture.home_team === home && origin.fixture.away_team === away &&
+  const sameFixture = origin?.fixture.canonical_fixture_key && origin.fixture.home_team === home && origin.fixture.away_team === away &&
     origin.fixture.season === Number($("analysisSeason").value);
   resetPrediction(sameFixture ? origin.tab : "custom");
   if (state.tab === "custom") {
@@ -573,7 +650,7 @@ function restorePredictionFromAnalysis() {
 
 function bind() {
   document.addEventListener("click", event => {
-    const button = event.target.closest("[data-page],[data-jump],[data-fixture],[data-pred-mode],[data-history],[data-compare],[data-guide],[data-analyze],[data-to-custom],[data-retry-forecast],[data-back-to-fixtures]");
+    const button = event.target.closest("[data-page],[data-jump],[data-fixture],[data-pred-mode],[data-history],[data-simulation],[data-compare],[data-guide],[data-analyze],[data-to-custom],[data-retry-forecast],[data-back-to-fixtures]");
     if (!button) return;
     const {page, jump, fixture, predMode, history, compare} = button.dataset;
     if (page || jump) {
@@ -585,6 +662,7 @@ function bind() {
     } else if (fixture) selectFixture(fixture);
     else if (predMode) resetPrediction(predMode);
     else if (history) void showDetails(history);
+    else if (button.dataset.simulation) showSimulation(button.dataset.simulation);
     else if (compare) void showComparison(compare);
     else if (button.hasAttribute("data-guide")) openGuide();
     else if (button.hasAttribute("data-back-to-fixtures")) resetPrediction("fixture");
@@ -623,16 +701,27 @@ function bind() {
   }
   $("homeSeason").addEventListener("change", homeBars);
   $("analysisRefresh").addEventListener("click", showAnalysis);
+  for (const id of ["analysisHome", "analysisAway", "analysisWindow"]) $(id).addEventListener("change", showAnalysis);
   $("statsRefresh").addEventListener("click", showStats);
-  $("historySearch").addEventListener("input", renderHistory);
+  $("historyRecordType").addEventListener("change", () => {
+    const simulations = $("historyRecordType").value === "CUSTOM_SIMULATION";
+    $("historyType").disabled = simulations;
+    if (simulations) $("historyType").value = "all";
+    renderHistory();
+  });
   $("historyType").addEventListener("change", renderHistory);
   $("historySort").addEventListener("change", renderHistory);
   $("exportHistory").addEventListener("click", exportHistory);
   $("clearHistory").addEventListener("click", () => {
-    $("historySearch").value = "";
+    pickers.historySearch.clear();
+    $("historyRecordType").value = "all";
     $("historyType").value = "all";
+    $("historyType").disabled = false;
     $("historySort").value = "new";
     renderHistory();
+  });
+  window.addEventListener("storage", event => {
+    if (state.page === "history" && (event.key === null || event.key.startsWith("xpecta.simulation."))) renderHistory();
   });
   $("openXgGuide").addEventListener("click", openGuide);
   $("footerXgGuide").addEventListener("click", event => { event.preventDefault(); openGuide(); });
@@ -666,6 +755,7 @@ async function initialize() {
   $("predictionOutput").tabIndex = -1;
   $("exportHistory").textContent = "↓ Export filtered CSV";
   installDiscovery();
+  pickers.historySearch = teamPicker($("historySearch"), "Search teams", renderHistory);
   bind();
   resetPrediction("fixture");
   navigate();
@@ -675,16 +765,15 @@ async function initialize() {
     [state.config, state.teams] = await Promise.all([api.bootstrap(), api.teams()]);
     $("bridgeModeText").textContent = state.config.label;
     setSelectors();
-    addOptions("fixtureTeam", [["", "All teams"], ...state.teams.filter(team =>
-      team.seasons.includes(state.config.current_season)).map(team => [team.id, team.name])], "");
+    const current = state.teams.filter(team => team.seasons.includes(state.config.current_season));
+    pickers.fixtureTeam1.setTeams(current);
+    pickers.fixtureTeam2.setTeams(current);
+    pickers.historySearch.setTeams(state.teams);
     navigate();
-    const [fixtures, freshness, history] = await Promise.allSettled([
-      api.fixtures({season: state.config.current_season}), api.dataStatus(), api.history(),
+    void showHistory();
+    const [fixtures, freshness] = await Promise.allSettled([
+      api.fixtures({season: state.config.current_season}), api.dataStatus(),
     ]);
-    if (history.status === "fulfilled") {
-      state.history = history.value;
-      state.hasHistory = true;
-    }
     if (freshness.status === "fulfilled") {
       const data = freshness.value;
       $("totalMatches").textContent = data.verified_completed.toLocaleString("en-GB");

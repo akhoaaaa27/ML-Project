@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime
 from hashlib import sha256 as content_sha256
 import json
+import os
 from pathlib import Path
 import re
 from urllib.parse import parse_qs, urlsplit
@@ -14,9 +15,9 @@ from playwright.sync_api import expect, sync_playwright
 from scripts.inference.common import sha256
 from scripts.xpecta_api.prepare_frontend import REFERENCE_SHA256
 from scripts.xpecta_api.settings import FRONTEND, PREPARED, PRIVATE, REAL_SHA256
-from tests.browser_phase857 import PAGES, VIEWPORTS, await_page, browser_route, geometry, monitor
+from tests.browser_phase857 import PAGES, VIEWPORTS, await_page, browser_route, choose_team, geometry, monitor
 
-LOCAL = "http://127.0.0.1:8765"
+LOCAL = os.environ.get("XPECTA_TEST_URL", "http://127.0.0.1:8765").rstrip("/")
 
 
 def real_inputs():
@@ -41,11 +42,12 @@ def real_inputs():
     return config, data, sample, completed, latest["total"]
 
 
-def open_custom(page, row):
-    page.locator('[data-pred-mode="custom"]').click()
-    page.locator("#customHome").select_option(row["home_team"])
-    page.locator("#customAway").select_option(row["away_team"])
-    page.locator("#runPrediction").click()
+def open_completed(page, row):
+    page.locator('[data-pred-mode="fixture"]').click()
+    page.get_by_label("Catalogue status").select_option("completed")
+    choose_team(page, "Team 1", row["home_team"])
+    choose_team(page, "Team 2", row["away_team"])
+    page.locator(f'#presetFixtures [data-fixture="{row["canonical_fixture_key"]}"]').click()
 
 
 def predictions(page, sample, completed, output, viewport):
@@ -80,7 +82,7 @@ def predictions(page, sample, completed, output, viewport):
             assert values.all_text_contents() == before
         page.locator("#predictionOutput").screenshot(path=str(output/f"{viewport}-{expected.lower()}.png"), animations="disabled")
         checked[expected] = row["canonical_fixture_key"]
-    open_custom(page, completed)
+    open_completed(page, completed)
     expect(status).to_have_text("UNAVAILABLE")
     expect(values).to_have_count(0)
     expect(blocked).to_have_count(2)
@@ -90,16 +92,14 @@ def predictions(page, sample, completed, output, viewport):
 
 
 def discovery(page, data, sample, output, viewport):
-    search = page.get_by_role("searchbox", name="Search teams")
+    search = page.get_by_role("combobox", name="Team 1")
     expect(search).to_be_visible()
     cards = page.locator("#presetFixtures .fixture-card")
     buttons = page.locator("#presetFixtures [data-fixture]")
     count = page.locator("#fixtureResults")
     total = data["upcoming_fixtures"]
     expect(cards).to_have_count(min(12, total))
-    expect(page.locator("#fixtureDataStatus")).not_to_contain_text("Checking schedule")
-    if data["schedule_freshness"] == "VERIFIED":
-        expect(page.locator("#fixtureDataStatus")).to_have_text("Recent schedule evidence")
+    expect(page.get_by_text("Schedule evidence", exact=True)).to_have_count(0)
     if total > 12:
         first = buttons.evaluate_all("(items) => items.map(item => item.dataset.fixture)")
         page.get_by_role("button", name="Next").press("Enter")
@@ -110,21 +110,21 @@ def discovery(page, data, sample, output, viewport):
         page.get_by_role("button", name="Previous").click()
         expect(page.locator("#fixturePage")).to_contain_text("Page 1 of")
     search.fill("no match in this catalogue")
-    expect(cards).to_have_count(0)
-    expect(count).to_contain_text("0 matches")
+    expect(page.get_by_text("No matching teams", exact=True)).to_be_visible()
+    expect(cards).to_have_count(min(12, total))
     page.get_by_role("button", name="Clear filters").click()
     expect(search).to_have_value("")
     expect(cards).to_have_count(min(12, total))
     if sample:
         row, _ = next(((row, verdict) for row, verdict in sample if row["kickoff_utc"]), sample[0])
         team = row["home_team"]
-        page.get_by_role("form", name="Filter fixture catalogue").get_by_label("Team", exact=True).select_option(team)
-        search.fill(" " + team.upper().replace(" ", "   ") + " ")
+        choose_team(page, "Team 1", team)
+        choose_team(page, "Team 2", row["away_team"])
         candidate = page.locator(f'#presetFixtures [data-fixture="{row["canonical_fixture_key"]}"]')
         if row["kickoff_utc"]:
             day = row["kickoff_utc"][:10]
             page.get_by_label("From (UTC+0)").fill(day)
-            page.get_by_label("Through (UTC+0)").fill(day)
+            page.get_by_label("To (UTC+0)").fill(day)
             expect(cards).to_have_count(1)
         with page.expect_request("**/api/v1/forecasts/preview") as call:
             candidate.press("Enter")
@@ -132,7 +132,7 @@ def discovery(page, data, sample, output, viewport):
         expect(page.locator("#predictionOutput")).to_be_focused()
         page.locator("#backToFixtures").click()
         expect(candidate).to_be_focused()
-        expect(search).to_have_value(" " + team.upper().replace(" ", "   ") + " ")
+        expect(search).to_have_value(team)
         page.get_by_role("button", name="Clear filters").click()
         expect(cards).to_have_count(min(12, total))
     page.get_by_label("Catalogue status").select_option("completed")
@@ -185,16 +185,16 @@ def schedule_expiry(browser, output, issues, writes):
         with page.expect_response("**/api/v1/data-status") as status:
             page.goto(LOCAL + "/#predict")
         data = status.value.json()
-        label = page.locator("#fixtureDataStatus")
+        label = page.locator("#homeSchedule")
         gaps = [
             (datetime.fromisoformat(group["expires_at_utc"]) - datetime.fromisoformat(data["evaluated_at_utc"])).total_seconds()
             for group in data["schedule_evidence"] if group["status"] == "VALID"
         ]
         if not gaps:
             if data["expired_review_upcoming_fixtures"]:
-                expect(label).to_have_text("Schedule evidence is stale")
+                expect(label).to_contain_text("Schedule evidence is stale")
             return "NO_VALID_GROUP_AT_ACTUAL_CHECK"
-        expect(label).to_have_text("Recent schedule evidence" if data["schedule_freshness"] == "VERIFIED"
+        expect(label).to_contain_text("Recent schedule evidence" if data["schedule_freshness"] == "VERIFIED"
                                   else "Some fixtures lack recent schedule evidence")
         first_fixture = page.locator("#presetFixtures .fixture-card").first
         expect(first_fixture).to_be_visible()
@@ -208,7 +208,7 @@ def schedule_expiry(browser, output, issues, writes):
         with page.expect_response("**/api/v1/data-status") as replay:
             page.clock.fast_forward(round(max(gaps) * 1000) + 100)
         assert replay.value.json()["evaluated_at_utc"] == data["evaluated_at_utc"]
-        expect(label).to_have_text("Schedule evidence is stale")
+        expect(label).to_contain_text("Schedule evidence is stale")
         if "T" in first_kickoff and datetime.fromisoformat(first_kickoff) <= boundary:
             expect(page.locator(f'#presetFixtures [data-fixture="{first_key}"]')).to_have_count(0)
         expect(page.locator("#predictionOutput [data-xg]")).to_have_count(0)
@@ -242,7 +242,7 @@ def run(run_id):
                 live.goto(LOCAL + "/#" + name)
                 await_page(original, name)
                 if name == "history" and not ledger_count:
-                    expect(live.get_by_role("heading", name="No published forecasts yet")).to_be_visible()
+                    expect(live.get_by_role("heading", name="No prediction records yet")).to_be_visible()
                 elif name == "predict" and not sample:
                     expect(live.locator("#presetFixtures .empty")).to_be_visible()
                 else:
@@ -256,7 +256,7 @@ def run(run_id):
                     expect(live.locator("[data-team-comparison] .crest")).to_have_count(2)
                 if name == "model":
                     expect(live.locator("#featuresList code")).to_have_count(13)
-                    expect(live.locator("#modelMetricCards")).to_contain_text("2024-08-15 to 2025-05-25")
+                    expect(live.locator("#modelScope")).to_contain_text("2024-08-15 to 2025-05-25")
                 for page in (original, live):
                     page.wait_for_load_state("networkidle")
                     page.evaluate("document.fonts.ready")
