@@ -20,10 +20,12 @@ from scripts.inference.model_artifact import load_trusted_pipeline
 from scripts.multisource.composite_history import CompositeHistory, RESEARCH_ROOT, publish_version
 from scripts.multisource.composite_inference import CompositePredictor
 from scripts.multisource.fixture_catalogue import FIELDS, checked_kickoff, data_status, fixture_catalogue
+from scripts.multisource.forecast_eligibility import FIXTURE_MAX_AGE, ForecastEligibility, utc
 from scripts.multisource.match_registry import semantic_hash
 from scripts.multisource.refresh_composite import main, prepare, publish, review, status
 from scripts.multisource.refresh_demo import complete, save_source, synthetic_parent
 from scripts.multisource.refresh_validation import read_json, state
+from scripts.xpecta_api.schedule_status import schedule_status
 
 
 class RefreshTests(unittest.TestCase):
@@ -61,6 +63,37 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(result["PUBLISH_STATUS"],"NO_CHANGE")
         self.assertEqual(publish(self.work/"test",root=self.root)["PUBLISH_STATUS"],"NO_CHANGE")
         self.assertEqual(len(list(self.root.glob("*/manifest.json"))),1)
+
+    def test_unchanged_kickoff_requires_matching_review_to_renew(self):
+        row = self.records[3]
+        row["kickoff_utc"] = row["date"] + "T19:00:00Z"
+        self.prep(candidate="scheduled")
+        self.approve("scheduled")
+        _, self.parent = self.published("scheduled")
+        self.assertEqual(self.prep(candidate="redownload", save=False)["PUBLISH_STATUS"], "NO_CHANGE")
+
+        reviewed_at = row["date"] + "T09:00:00Z"
+        review_path = self.source / "independent_schedule.json"
+        match = dict(season=2026, date=row["date"], home=row["home"], away=row["away"],
+                     status="scheduled", source_url="synthetic://official/schedule", kickoff_utc=row["kickoff_utc"])
+        invalid = dict(match, kickoff_utc=row["date"] + "T20:00:00Z")
+        review_path.write_text(json.dumps(dict(reviewed_at=reviewed_at, matches=[invalid])), encoding="utf-8")
+        self.assertEqual(self.prep(candidate="mismatch", save=False)["error"], "SOURCE_CONFLICT")
+
+        review_path.write_text(json.dumps(dict(reviewed_at=reviewed_at, matches=[match])), encoding="utf-8")
+        self.assertEqual(self.prep(save=False)["AUTO_ACCEPTED"], 1)
+        change, = self.bundle()["changes"]
+        self.assertEqual(change["change_type"], ["SCHEDULE_REVERIFIED"])
+        self.assertEqual(change["old_values"], change["new_values"])
+        self.assertEqual(change["source_provenance"]["schedule_review"]["evidence_sha256"], sha256(review_path))
+        _, successor = self.published()
+        fixture = next(item for item in fixture_catalogue(successor)
+                       if item["canonical_fixture_key"] == change["canonical_fixture_key"])
+        engine = ForecastEligibility(synthetic_root=self.root, simulated_clock=lambda: reviewed_at)
+        expires = utc(reviewed_at) + FIXTURE_MAX_AGE
+        self.assertEqual(schedule_status(engine, successor, [fixture], expires)["recent_review_upcoming_fixtures"], 1)
+        stale = schedule_status(engine, successor, [fixture], expires + timedelta(microseconds=1))
+        self.assertEqual(stale["recent_review_upcoming_fixtures"], 0)
 
     def test_download_requires_explicit_opt_in_new_directory(self):
         with patch("scripts.multisource.refresh_composite.acquire",side_effect=ValueError("mocked acquisition")) as download:
@@ -296,14 +329,20 @@ class RefreshTests(unittest.TestCase):
         np.testing.assert_array_equal(first.imputer_.statistics_,second.imputer_.statistics_)
         self.assertTrue(all(sha256(ROOT/name)==checksum for name,checksum in protected.items()))
 
-    def test_no_raw_data_in_public_reports_or_tracked_paths(self):
+    def test_prepare_keeps_new_raw_inputs_and_candidates_out_of_git(self):
+        import subprocess
+
+        git_files = ["git", "ls-files", "--", "data/external/multisource", "data/history/research"]
+        tracked = subprocess.check_output(git_files, cwd=ROOT)
         complete(self.records[3]);report=self.prep()
         self.assertNotIn("registry",report);self.assertNotIn("statistics",report)
         self.assertNotIn("source_directory",report)
-        import subprocess
-        tracked=subprocess.check_output(["git","ls-files"],cwd=ROOT).decode()
-        self.assertNotIn("data/external/multisource/raw/",tracked)
-        self.assertNotIn("data/history/research/",tracked)
+        self.assertEqual(subprocess.check_output(git_files, cwd=ROOT), tracked)
+        for path in ("data/external/multisource/phase96/new-source/fixtures.csv",
+                     "data/external/multisource/phase96/candidates/pending/reviews.json",
+                     "data/history/research/unshared-test/laliga_composite.sqlite3"):
+            with self.subTest(path=path):
+                self.assertEqual(subprocess.run(["git", "check-ignore", "--quiet", "--", path], cwd=ROOT).returncode, 0)
 
     def test_negative_fractional_or_impossible_counts_blocked(self):
         for i,value in enumerate([-1,1.5,3]):

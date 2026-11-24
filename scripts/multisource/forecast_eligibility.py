@@ -69,6 +69,11 @@ class ForecastEligibility:
     def _schedule_evidence(self, store, selected, catalogue):
         key = selected["canonical_fixture_key"]
         payload = json.loads(store.query("SELECT payload FROM registry WHERE canonical_fixture_key=?", (key,))[0]["payload"])
+        schedule_review = payload.get("schedule_review")
+        if schedule_review:
+            if selected["kickoff_utc"] == schedule_review["kickoff_utc"]:
+                return utc(schedule_review["reviewed_at"])
+            return None
         csv_evidence = payload.get("fixture_provenance")
         if csv_evidence:
             return utc(csv_evidence["fetched_at"])

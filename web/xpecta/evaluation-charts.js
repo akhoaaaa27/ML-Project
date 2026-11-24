@@ -21,12 +21,30 @@ export function evaluationCharts(points, format, escape) {
       <text x="${left - 10}" y="${y(value) + 4}" text-anchor="end">${tick(value)}</text>
       <text x="${x(value)}" y="${bottom + 18}" text-anchor="middle">${tick(value)}</text>`;
   }).join("");
-  const scatter = svg(398, 381, "Observed versus predicted team xG", `${grid}
+  const matchThreshold = 0.05;
+  const pointsByComparison = {
+    "predicted-higher": {label: "Predicted higher", dots: []},
+    "observed-higher": {label: "Observed higher", dots: []},
+    "near-match": {label: `Within ${format(matchThreshold)} xG`, dots: []},
+  };
+  for (const row of points) {
+    const gap = row.predicted - row.observed;
+    const comparison = Math.abs(gap) <= matchThreshold ? "near-match" :
+      gap > 0 ? "predicted-higher" : "observed-higher";
+    pointsByComparison[comparison].dots.push(`<circle class="evaluation-point ${comparison}"
+      cx="${x(row.observed)}" cy="${y(row.predicted)}" r="3.1"
+      ${hover(row, `Observed ${format(row.observed)} xG · Predicted ${format(row.predicted)} xG`)}</circle>`);
+  }
+  const groups = Object.entries(pointsByComparison);
+  const legend = `<ul class="evaluation-legend" aria-label="Scatter plot legend">${groups.map(([comparison, {label}]) =>
+    `<li><span class="evaluation-swatch ${comparison}" aria-hidden="true"></span>${escape(label)}</li>`).join("")}</ul>`;
+  const scatter = svg(398, 381, "Observed versus predicted team xG", `
+    <desc>Each point pairs observed xG on the horizontal axis with predicted xG on the vertical axis.</desc>
+    ${grid}
     <line class="evaluation-reference" x1="${left}" x2="${right}" y1="${bottom}" y2="${top}"/>
-    ${points.map(row => `<circle class="evaluation-point" cx="${x(row.observed)}" cy="${y(row.predicted)}" r="3.1"
-      ${hover(row, `Observed ${format(row.observed)} xG · Predicted ${format(row.predicted)} xG`)}</circle>`).join("")}
+    ${groups.map(([, {dots}]) => dots.join("")).join("")}
     <text x="${left + plotSize / 2}" y="373" text-anchor="middle">Observed xG</text>
-    <text x="15" y="${top + plotSize / 2}" text-anchor="middle" transform="rotate(-90 15 ${top + plotSize / 2})">Predicted xG</text>`);
+    <text x="15" y="${top + plotSize / 2}" text-anchor="middle" transform="rotate(-90 15 ${top + plotSize / 2})">Predicted xG</text>`) + legend;
 
   const sample = points.filter((_, i) => i % 9 === 0);
   const residualOf = row => row.observed - row.predicted;

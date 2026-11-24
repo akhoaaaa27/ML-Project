@@ -164,14 +164,37 @@ def stats_and_model(page, output, name):
     expect(splits).not_to_contain_text("Understat (")
     expect(splits).not_to_contain_text("FBref (")
     screenshot(page, output / f"{name}-stats.png")
-    page.goto(LOCAL + "/#model")
+    with page.expect_response("**/api/v1/model/summary") as summary:
+        page.goto(LOCAL + "/#model")
+    points = summary.value.json()["main_observations"]
     for score in ("0.5665", "0.7497", "0.6368", "11.03%"):
         expect(page.locator("#modelMetricCards").get_by_text(score, exact=True)).to_be_visible()
     expect(page.locator("#modelScatter circle")).to_have_count(760)
+    scatter = page.locator("#modelScatter")
+    for group, label, color in (
+        ("predicted-higher", "Predicted higher", "rgb(118, 227, 93)"),
+        ("observed-higher", "Observed higher", "rgb(255, 185, 134)"),
+        ("near-match", "Within 0.05 xG", "rgb(155, 222, 255)"),
+    ):
+        dot = scatter.locator(f"circle.{group}").first
+        swatch = scatter.locator(f".evaluation-swatch.{group}")
+        expect(swatch.locator("..")).to_have_text(label)
+        expect(dot).to_have_css("fill", color)
+        expect(swatch).to_have_css("background-color", color)
+    assert scatter.locator("circle").evaluate_all("""(dots, points) => {
+      const groups = points.reduce((groups, row) => {
+        const gap = row.predicted - row.observed;
+        const name = Math.abs(gap) <= 0.05 ? 'near-match' : gap > 0 ? 'predicted-higher' : 'observed-higher';
+        groups[name]++;
+        return groups;
+      }, {'predicted-higher': 0, 'observed-higher': 0, 'near-match': 0});
+      return Object.entries(groups).every(([name, count]) =>
+        dots.filter(dot => dot.classList.contains(name)).length === count);
+    }""", points)
     expect(page.locator("#modelResidual .evaluation-bar")).to_have_count(85)
     assert page.locator("#modelResidual .evaluation-bar.negative").count() > 0
     expect(page.locator("#modelResidualScope")).to_contain_text("85 of 760")
-    assert "2024-08-15" in page.locator("#modelScatter circle").first.get_attribute("data-tip")
+    assert scatter.locator('circle[data-tip^="2024-08-15 ·"]').count() > 0
     screenshot(page, output / f"{name}-model.png")
 
 

@@ -1,6 +1,6 @@
 # XPECTA Windows thesis defense runbook
 
-Use the existing Phase 9 branch and the implementation revision recorded in the [final release gate](PHASE_9_FRG_05_FINAL_RELEASE_GATE.md). Keep the Windows project `.venv`, trusted frozen model, prepared V9.12 reference, and read permission on the V3 SQLite and manifest. The verified environment was Python 3.14.0, FastAPI 0.121.3, Uvicorn 0.38.0, scikit-learn 1.9.1, NumPy 2.5.4 and pandas 3.1.0. Edge with Playwright 1.58.0 was used for browser regression.
+Use the existing Phase 9 branch and the implementation revision recorded in the [final release gate](PHASE_9_FRG_05_FINAL_RELEASE_GATE.md). Keep the Windows project `.venv`, trusted frozen model, prepared V9.12 reference, and read permission on the selected snapshot and its lineage through V3. The verified environment was Python 3.14.0, FastAPI 0.121.3, Uvicorn 0.38.0, scikit-learn 1.9.1, NumPy 2.5.4 and pandas 3.1.0. Edge with Playwright 1.58.0 was used for browser regression.
 
 ## Launch real research
 
@@ -13,7 +13,7 @@ Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue
 # Only if the prepared frontend is missing:
 # .venv/Scripts/python.exe -X utf8 -m scripts.xpecta_api.prepare_frontend 'D:/Downloads/XPECTA_V9_12_Glass_Navigation (2).html'
 $env:XPECTA_MODE = 'REAL_RESEARCH'
-$env:XPECTA_SNAPSHOT = 'phase853_v3_20261122'
+$env:XPECTA_SNAPSHOT = $null
 $env:XPECTA_SNAPSHOT_SHA256 = ''
 $env:XPECTA_SNAPSHOT_MANIFEST_SHA256 = ''
 $env:XPECTA_OPERATOR_TOKEN = ''

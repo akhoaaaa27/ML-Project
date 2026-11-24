@@ -77,8 +77,25 @@
 .evaluation-chart text { fill: #c8d9cc; font-size: 12px; }
 .evaluation-grid { stroke: #3e4e45; fill: none; }
 .evaluation-reference { stroke: #e5eee6; stroke-dasharray: 5 4; fill: none; }
-.evaluation-point { fill: var(--green3); opacity: .60; }
+.evaluation-point { fill: var(--point-color); opacity: .72; }
+:is(.evaluation-point, .evaluation-swatch).predicted-higher { --point-color: var(--green, #76e35d); }
+:is(.evaluation-point, .evaluation-swatch).observed-higher { --point-color: #ffb986; }
+:is(.evaluation-point, .evaluation-swatch).near-match { --point-color: #9bdeff; }
+.evaluation-point.near-match { opacity: 1; stroke: #183c4c; stroke-width: .8; }
 .evaluation-point:hover { opacity: 1; }
+.evaluation-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #d5e6da;
+  font-size: 12px;
+}
+.evaluation-legend li { display: flex; align-items: center; gap: 6px; }
+.evaluation-swatch { width: .7em; height: .7em; border-radius: 50%; background: var(--point-color); }
 .evaluation-bar { fill: var(--green3); }
 .evaluation-bar.negative { fill: #ff8a57; }
 @media (max-width: 680px) {
