@@ -19,10 +19,11 @@ const isPreview = value => isObject(value) && (
   ["WAITING_DATA", "UNAVAILABLE", "FORECAST_ERROR"].includes(value.status) && isEligibility(value.eligibility)
 );
 
-async function request(path, {query = {}, body, validate = isObject} = {}) {
+async function request(path, {query = {}, body, validate = isObject, signal} = {}) {
   const params = new URLSearchParams(Object.entries(query).filter(([, value]) => value != null));
   const url = root + path + (params.size ? `?${params}` : "");
-  const options = {credentials: "same-origin", signal: AbortSignal.timeout(12000)};
+  const timeout = AbortSignal.timeout(12000);
+  const options = {credentials: "same-origin", signal: signal ? AbortSignal.any([signal, timeout]) : timeout};
   if (body !== undefined) {
     Object.assign(options, {
       method: "POST",
@@ -62,7 +63,8 @@ export const api = {
   dataStatus: () => request("/data-status", {validate: value =>
     hasKeys("schedule_freshness", "verified_completed", "evaluated_at_utc", "database_sha256")(value)
     && Array.isArray(value.schedule_evidence)}),
-  preview: fixture_key => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview}),
+  eligibility: (fixture_key, signal) => request("/eligibility", {query: {fixture_key}, validate: isEligibility, signal}),
+  preview: (fixture_key, signal) => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview, signal}),
   history: () => allPages("/forecasts"),
   forecast: id => request(`/forecasts/${encodeURIComponent(id)}`, {validate: isForecast}),
   compare: query => request("/forecasts/compare", {query, validate: hasKeys("v1", "v2", "changed_features")}),

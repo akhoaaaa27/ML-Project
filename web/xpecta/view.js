@@ -6,8 +6,19 @@ export const number = value => Number.isFinite(value) ? value.toFixed(2) : "—"
 export const seasonName = year => `${year}/${String(Number(year) + 1).slice(-2)}`;
 export const statusName = value => String(value ?? "").replaceAll("_", " ");
 const day = value => value ? esc(value.slice(0, 10)) : "—";
-const time = value => value ? `${day(value)} ${esc(value.slice(11, 16))} UTC` : "—";
 const shortDay = new Intl.DateTimeFormat("en-GB", {day: "numeric", month: "short", timeZone: "UTC"});
+export const UTC_LABEL = "UTC+0";
+
+export function formatUtcTimestamp(value, {compact = false, seconds = false} = {}) {
+  if (typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return "—";
+  const instant = new Date(value);
+  if (!Number.isFinite(instant.getTime())) return "—";
+  const iso = instant.toISOString();
+  const date = compact ? `${shortDay.format(instant)} ·` : iso.slice(0, 10);
+  return `${date} ${iso.slice(11, seconds ? 19 : 16)} ${UTC_LABEL}`;
+}
+
 const signed = value => (value > 0 ? "+" : "") + number(value);
 const width = (value, max) => Number.isFinite(value) ? Math.max(0, Math.min(100, value / max * 100)) : 0;
 const logos = new Map([...$("clubAssets").content.querySelectorAll("img")].map(image => [image.dataset.team, image.src]));
@@ -39,17 +50,33 @@ function xgSources(counts) {
   return entries.length ? entries.map(([source, count]) => `${labels[source] || source} (${count})`).join(" · ") : "No observed source";
 }
 
-export function fixtureCard(fixture, forecast) {
+export function overviewForecast({status, preview} = {status: "LOADING"}) {
+  const values = (home, away) => `${home} <span class="fixture-xg-vs">VS</span> ${away}`;
+  const text = {
+    LOADING: "Checking prediction…",
+    WAITING_DATA: "Prediction pending",
+    UNAVAILABLE: "Prediction unavailable",
+    FORECAST_ERROR: "Could not load forecast",
+  };
+  return `<div class="overview-xg" data-forecast-state="${esc(status)}" aria-busy="${status === "LOADING"}">
+    ${preview ? `<span data-overview-xg>${values(number(preview.home_xg), number(preview.away_xg))}</span>
+      <small>${status === "EARLY_READY" ? "Predicted xG · Early forecast" : "Predicted xG"}</small>` :
+      `${status === "WAITING_DATA" ? values("—", "—") : ""}<small>${esc(text[status])}</small>`}
+  </div>`;
+}
+
+export function fixtureCard(fixture, forecast, overview = false) {
   const key = esc(fixture.canonical_fixture_key);
   const kickoff = fixture.kickoff_utc;
-  const dateLabel = shortDay.format(new Date(kickoff ?? fixture.match_date));
+  const dateLabel = kickoff ? formatUtcTimestamp(kickoff, {compact: true}) :
+    `${shortDay.format(new Date(fixture.match_date))} · Kickoff unverified`;
   return `<article class="fixture-card">
     <div class="fixture-top"><span class="chip">${esc(seasonName(fixture.season))}${fixture.observed_status === "scheduled"
       ? "" : ` · ${esc(statusName(fixture.observed_status))}`}</span>
-      <time datetime="${esc(kickoff ?? fixture.match_date)}">${esc(dateLabel)} · ${kickoff ? `${esc(kickoff.slice(11, 16))} UTC` : "Kickoff unverified"}</time></div>
+      <time datetime="${esc(kickoff ?? fixture.match_date)}">${esc(dateLabel)}</time></div>
     <div class="fixture-teams"><div class="fixture-team">${crest(fixture.home_team)}<strong>${esc(fixture.home_team)}</strong></div>
       <span class="fixture-vs">VS</span><div class="fixture-team">${crest(fixture.away_team)}<strong>${esc(fixture.away_team)}</strong></div></div>
-    <div class="fixture-bottom"><div class="fixture-xg">${forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}<small>Published xG</small>`
+    <div class="fixture-bottom"><div class="fixture-xg"${overview ? ' role="status"' : ""}>${overview ? overviewForecast() : forecast ? `${number(forecast.home_xg)} <span class="fixture-xg-vs">VS</span> ${number(forecast.away_xg)}<small>Published xG</small>`
       : '<span class="fixture-status">Check forecast availability</span>'}</div>
       <button class="btn btn-green btn-sm" data-fixture="${key}" aria-label="View prediction for ${esc(fixture.home_team)} vs ${esc(fixture.away_team)}">VIEW PREDICTION ↗</button></div>
     </article>`;
@@ -67,8 +94,7 @@ export function leaderboard(stats) {
   return rank.map(({team, overall}) => `<div class="bar-row" title="${esc(xgSources(overall.xg_sources))}">
     <div class="bar-label">${crest(team, "tiny")}<span>${esc(team)}</span></div>
     <div class="bar-track"><div class="bar-fill" style="width:${width(overall.mean_xg, max)}%"></div></div>
-    <div class="bar-number">${number(overall.mean_xg)}</div></div>`).join("") +
-    `<p class="tiny muted">Sources by team · ${rank.map(row => `${esc(row.team)}: ${esc(xgSources(row.overall.xg_sources))}`).join(" · ")}</p>`;
+    <div class="bar-number">${number(overall.mean_xg)}</div></div>`).join("");
 }
 
 function panels(home, away, forecast, loading = false) {
@@ -84,7 +110,7 @@ export function prediction(fixture, result) {
   const loading = result.status === "LOADING";
   const title = `<div class="title-row"><div><div class="eyebrow">PREDICTION RESULTS · RESEARCH</div>
     <h2 class="section-title">${esc(fixture.home_team.toUpperCase())} <span class="detail-vs">VS</span> ${esc(fixture.away_team.toUpperCase())}</h2>
-    <p class="subtext">${seasonName(fixture.season)}${fixture.match_date ? ` · ${fixture.kickoff_utc ? time(fixture.kickoff_utc) : day(fixture.match_date)}` : ""}
+    <p class="subtext">${seasonName(fixture.season)}${fixture.match_date ? ` · ${fixture.kickoff_utc ? formatUtcTimestamp(fixture.kickoff_utc) : day(fixture.match_date)}` : ""}
     ${live ? ' · <strong data-observed-status="live">LIVE</strong>' : ""}</p></div>
     <span class="chip orange" data-readiness>${esc(statusName(result.status))}</span></div>`;
   const forecast = result.preview;
@@ -110,7 +136,7 @@ export function prediction(fixture, result) {
     <div class="card mt20"><div class="top-small"><h3 class="card-title">PREDICTION INFORMATION</h3><button class="help-icon" data-guide>?</button></div>
       <div class="grid3 mt20"><div><div class="mini-label">History cutoff</div><p>${day(forecast.history_cutoff)}</p></div>
         <div><div class="mini-label">Model and snapshot</div><p>LR ${esc(forecast.model_version)} · ${esc(forecast.history_snapshot_version)}</p></div>
-        <div><div class="mini-label">Generated</div><p>${time(forecast.generated_at_utc)}</p></div></div></div>
+        <div><div class="mini-label">Generated</div><p>${formatUtcTimestamp(forecast.generated_at_utc)}</p></div></div></div>
     <div class="mt20 matchup-actions"><button class="btn btn-green" data-analyze>VIEW MATCH ANALYSIS ↗</button>
       <button class="btn btn-outline" data-jump="history">VIEW PREDICTION HISTORY ↗</button></div>`;
 }
@@ -275,14 +301,14 @@ export function historyTable(rows, total) {
   return `<div class="table-wrap history-table-region" tabindex="0" role="region" aria-label="Published forecasts"><table class="data-table"><thead><tr><th>Matchup</th><th>Revision</th><th>Home xG</th><th>Away xG</th><th>Created</th><th>Model</th><th>Details</th></tr></thead>
     <tbody>${rows.map(row => `<tr><td><strong>${esc(row.home_team)} vs ${esc(row.away_team)}</strong></td>
       <td><span class="chip">${esc(row.forecast_stage)} · V${row.forecast_revision}</span></td><td class="history-value home">${number(row.home_xg)}</td><td class="history-value away">${number(row.away_xg)}</td>
-      <td>${time(row.generated_at_utc)}</td><td>LR ${esc(row.model_version)}</td>
+      <td>${formatUtcTimestamp(row.generated_at_utc)}</td><td>LR ${esc(row.model_version)}</td>
       <td><button class="btn btn-outline btn-sm" data-history="${esc(row.forecast_id)}">VIEW ↗</button></td></tr>`).join("")}</tbody></table></div>`;
 }
 
 export function historyDetails(row, revisions) {
   return panels(row.home_team, row.away_team, row) + `<div class="space20"></div>
     <p class="subtext">V${row.forecast_revision} · ${esc(row.forecast_stage)} · ${esc(statusName(row.eligibility_status))}<br>
-      Created ${time(row.generated_at_utc)} · Cutoff ${day(row.history_cutoff)}<br>
+      Created ${formatUtcTimestamp(row.generated_at_utc)} · Cutoff ${day(row.history_cutoff)}<br>
       Snapshot ${esc(row.history_snapshot_version)} · LR ${esc(row.model_version)}</p>
     <div class="list-note">${esc(row.source_notice)}</div>
     <details class="fixture-evidence mt20"><summary>Revision evidence</summary>
