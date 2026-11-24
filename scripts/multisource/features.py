@@ -12,11 +12,11 @@ from scripts.prepare_training_features import FEATURES, read_history_config
 from .mapping import fixture_identity
 
 
-def build_features(history, home, away, day, season, *, expected=None):
+def build_features(history, home, away, day, season, *, expected=None, hypothetical=False):
     season, day, home, away = fixture_identity(season, day, home, away)
     config = read_history_config()
     own, audit = [], {}
-    key = f"research:laliga:{season}:{home}:{away}"
+    key = None if hypothetical else f"research:laliga:{season}:{home}:{away}"
     for team, is_home in [(home, 1), (away, 0)]:
         prior = history.loc[history.team.eq(team) & history.season.le(season)
                             & history.date.lt(day) & history.canonical_key.ne(key)]

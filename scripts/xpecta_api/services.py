@@ -2,19 +2,21 @@
 
 from collections import Counter
 import csv
-from datetime import date
+from datetime import date, timedelta
 import json
 from statistics import mean
 
 from scripts.inference.common import MODEL_DIR, ROOT, sha256
 from scripts.inference.model_artifact import load_trusted_pipeline
+from scripts.multisource.composite_inference import CompositePredictor
 from scripts.multisource.fixture_catalogue import fixture_catalogue
 from scripts.multisource.forecast_eligibility import FIXTURE_MAX_AGE, utc, utc_text
-from scripts.multisource.forecast_generation import generate_forecast
+from scripts.multisource.forecast_generation import feature_input, generate_forecast
 from scripts.multisource.forecast_service import ForecastService
-from scripts.multisource.match_registry import VERIFIED_COMPLETED, require
+from scripts.multisource.match_registry import VERIFIED_COMPLETED, require, semantic_hash
 from scripts.multisource.phase856_reporting import protected_integrity
 
+from .evaluation import main_test
 from .research_binding import verify_pins, verify_real_snapshot
 from .schedule_status import schedule_status
 from .settings import APP_VERSION, DEMO_CLOCKS, MODEL_METADATA_SHA256, MODEL_SHA256, Mode
@@ -167,6 +169,40 @@ class ResearchService:
             return dict(status=candidate["eligibility_status"], preview=candidate)
         return self._action(result)
 
+    def simulate(self, home, away):
+        self._verify_bound_snapshot()
+        require(home != away, "INVALID_SIMULATION_TEAMS", "Choose two distinct teams")
+        require(home in self.teams and away in self.teams, "TEAM_NOT_FOUND", "Unknown team")
+        seasons = set(self.teams[home]["seasons"]) & set(self.teams[away]["seasons"])
+        require(seasons, "SIMULATION_INSUFFICIENT_DATA", "No common verified season")
+        season = max(seasons)
+        now = self.forecast.eligibility.now()
+        if self.mode != Mode.SYNTHETIC_DEMO:
+            require(utc(self.store.manifest["build_timestamp"]) <= now,
+                    "SIMULATION_INSUFFICIENT_DATA", "Snapshot is not yet available")
+        catalogue = self.store.query("SELECT payload FROM catalogues WHERE season=?", (season,))
+        require(catalogue, "SIMULATION_INSUFFICIENT_DATA", "No verified coverage")
+        bounds = json.loads(catalogue[0]["payload"])["verified_before_by_team"]
+        latest = self.store.query(
+            "SELECT MAX(match_date) AS last FROM registry WHERE season=? AND match_status=? AND match_date<?",
+            (season, VERIFIED_COMPLETED, now.date().isoformat()),
+        )[0]["last"]
+        require(latest and bounds.get(home) and bounds.get(away), "SIMULATION_INSUFFICIENT_DATA", "No verified history")
+        cutoff = min(now.date(), date.fromisoformat(latest) + timedelta(days=1),
+                     date.fromisoformat(bounds[home]), date.fromisoformat(bounds[away]))
+        result = CompositePredictor(self.store).predict(home, away, cutoff.isoformat(), season, hypothetical=True)
+        if result["status"] != "success":
+            code = result["error"]["code"]
+            if code in {"INSUFFICIENT_HISTORY", "MISSING_ROLLING_STATISTICS",
+                        "REGISTRY_COVERAGE_UNVERIFIED", "INVALID_PROVENANCE"}:
+                code = "SIMULATION_INSUFFICIENT_DATA"
+            require(False, code, "No supported simulation")
+        return dict(result, generated_at_utc=utc_text(self.forecast.eligibility.now()),
+                    history_snapshot_version=self.version, history_database_sha256=self.digest,
+                    model_version=self.metadata["model_version"], model_artifact_sha256=result["artifact_sha256"],
+                    features_sha256=semantic_hash(feature_input(result["features"])),
+                    dataset_kind=self.forecast.eligibility.dataset_kind)
+
     def _published(self, record):
         fixture = self._require_fixture(record["canonical_fixture_key"])
         require(record["model_artifact_sha256"] == MODEL_SHA256, "LEDGER_CORRUPT", "Unexpected model in the ledger")
@@ -307,6 +343,7 @@ class ResearchService:
                                       observations=row["scored_team_observations"], mae=overall["lr"]["mae"],
                                       rmse=overall["lr"]["rmse"], baseline_mae=overall["baseline"]["mae"]))
         return dict(self.metadata, phase7=phase7, retrospective=retrospective,
+                    **main_test(metric_path.parent, phase7),
                     scientific_conclusion=validation["scientific_conclusion"],
                     evaluation_notice="Phase 7 FBref and Phase 8.5.6 retrospective cohorts use different periods and labels. "
                                       "Replay uses a strict date cutoff. Historical source availability and prospective accuracy are unverified.")

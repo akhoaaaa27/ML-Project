@@ -20,14 +20,17 @@ class CompositePredictor:
         self.history = history
         self.pipeline,self.metadata = load_trusted_pipeline()
 
-    def construct(self, home, away, day, season, *, prediction_cutoff=None):
+    def construct(self, home, away, day, season, *, prediction_cutoff=None, hypothetical=False):
         self.history.verify_integrity()
-        return build_composite_features(home,away,day,season,self.history,prediction_cutoff=prediction_cutoff)
+        return build_composite_features(home,away,day,season,self.history,prediction_cutoff=prediction_cutoff,
+                                        hypothetical=hypothetical)
 
-    def predict(self, home, away, day, season, *, prediction_cutoff=None, mode="RESEARCH_INFERENCE"):
+    def predict(self, home, away, day, season, *, prediction_cutoff=None, mode="RESEARCH_INFERENCE",
+                hypothetical=False):
         try:
             require(mode == "RESEARCH_INFERENCE", "PRODUCTION_NOT_APPROVED", "Composite production upcoming is not approved")
-            built = self.construct(home,away,day,season,prediction_cutoff=prediction_cutoff)
+            built = self.construct(home,away,day,season,prediction_cutoff=prediction_cutoff,
+                                   hypothetical=hypothetical)
             require(sha256(MODEL_DIR/"laliga_lr_pipeline.joblib") == self.metadata["artifact_sha256"],
                     "ARTIFACT_CORRUPT", "Frozen artifact changed")
             with threadpool_limits(limits=1):
