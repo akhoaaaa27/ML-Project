@@ -106,7 +106,7 @@ export function simulationDetails(row) {
     `<div class="card mt20"><h3 class="card-title">SIMULATION INFORMATION</h3><div class="grid3 mt20">
       <div><div class="mini-label">Generated</div><p>${formatUtcTimestamp(row.generated_at_utc)}</p></div>
       <div><div class="mini-label">History cutoff</div><p>${day(row.history_cutoff)}</p></div>
-      <div><div class="mini-label">Model and snapshot</div><p>LR ${esc(row.model_version)} · ${esc(row.history_snapshot_version)}</p></div>
+      <div><div class="mini-label">Model</div><p>LR ${esc(row.model_version)}</p></div>
     </div><p class="card-desc">Verified history before the cutoff · ${seasonName(row.season)}</p></div>`;
 }
 
