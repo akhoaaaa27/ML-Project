@@ -110,7 +110,7 @@ class ForecastEligibility:
 
         if len(matches) != 1:
             return outcome("UNAVAILABLE", "INVALID_FIXTURE")
-        target = matches[0]
+        target = matches[0].copy()
         day = target["match_date"]
         cutoff = min(as_of, day)
         result.update(target=target, history_cutoff=cutoff)

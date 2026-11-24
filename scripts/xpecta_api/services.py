@@ -8,10 +8,11 @@ from statistics import mean
 
 from scripts.inference.common import MODEL_DIR, ROOT, sha256
 from scripts.inference.model_artifact import load_trusted_pipeline
+from scripts.multisource.composite_history import database_digest
 from scripts.multisource.composite_inference import CompositePredictor
 from scripts.multisource.fixture_catalogue import fixture_catalogue
 from scripts.multisource.forecast_eligibility import FIXTURE_MAX_AGE, utc, utc_text
-from scripts.multisource.forecast_generation import feature_input, generate_forecast
+from scripts.multisource.forecast_generation import feature_input, generate_bound_forecast
 from scripts.multisource.forecast_service import ForecastService
 from scripts.multisource.match_registry import VERIFIED_COMPLETED, require, semantic_hash
 from scripts.multisource.phase856_reporting import protected_integrity
@@ -67,7 +68,7 @@ class ResearchService:
                 "ARTIFACT_CORRUPT", "Model binding does not match the frozen artifact")
         _, self.metadata = load_trusted_pipeline()
         self.store = self.forecast.eligibility.open(self.version)
-        self.digest = sha256(self.store.path)
+        self.digest = database_digest(self.store.path)
         self.pins = None if synthetic else verify_real_snapshot(self.forecast.eligibility, self.store, settings)
         self.fixtures = {row["canonical_fixture_key"]: row for row in fixture_catalogue(self.store)}
         roster = {}
@@ -86,11 +87,10 @@ class ResearchService:
                     operator_writes_enabled=bool(self.settings.operator_token))
 
     def _verify_bound_snapshot(self):
-        self.store.verify_integrity()
         if self.pins:
             verify_pins(self.store, *self.pins)
         else:
-            require(sha256(self.store.path) == self.digest, "HISTORY_CORRUPT", "Bound history changed")
+            require(self.store.verify_integrity() == self.digest, "HISTORY_CORRUPT", "Bound history changed")
 
     def _require_fixture(self, key):
         row = self.fixtures.get(key)
@@ -153,14 +153,16 @@ class ResearchService:
             return dict(canonical_fixture_key=key, snapshot_version=self.version, eligibility_status="UNAVAILABLE",
                         reason="HISTORICAL_ONLY", target=self.fixtures.get(key),
                         generated_at_utc=utc_text(self.forecast.eligibility.now()))
-        return self.forecast.evaluate_forecast_eligibility(key, self.version)
+        engine = self.forecast.eligibility
+        return engine._evaluate(key, self.store, self.fixtures.values(), engine.now())
 
     def preview(self, key):
         if self.mode == Mode.HISTORICAL_REFERENCE:
             eligibility = self.eligibility(key)
             return dict(status="UNAVAILABLE", eligibility=eligibility)
         self._verify_bound_snapshot()
-        result = generate_forecast(key, self.version, eligibility=self.forecast.eligibility)
+        engine = self.forecast.eligibility
+        result = generate_bound_forecast(key, engine, self.store, self.fixtures.values(), engine.now())
         if result["status"] == "GENERATED":
             candidate = result["forecast"]
             require(candidate["model_artifact_sha256"] == MODEL_SHA256 and candidate["history_database_sha256"] == self.digest,
@@ -302,6 +304,15 @@ class ResearchService:
     def team_stats(self, team, season):
         self._verify_bound_snapshot()
         return self._present_history(team, season, self._history(team, season, self._history_cutoff(), 50))
+
+    def season_leaderboard(self, season):
+        self._verify_bound_snapshot()
+        require(season in self.seasons, "SEASON_NOT_FOUND", "Season is absent from this snapshot")
+        before = self._history_cutoff()
+        return dict(season=season, snapshot_version=self.version, items=[
+            dict(team=team, overall=history_summary(self._history_rows(team, season, before, 50)))
+            for team, row in self.teams.items() if season in row["seasons"]
+        ])
 
     def match_analysis(self, query):
         self._verify_bound_snapshot()

@@ -67,10 +67,10 @@ def fixture_catalogue(store, *, legacy_directory=LOCAL):
 
 
 def data_status(store):
-    store.verify_integrity()
+    digest = store.verify_integrity()
     m = store.manifest
     return dict(contract_version=CONTRACT_VERSION, snapshot_version=m["version_id"],
-                parent_version=m["parent_version"], database_sha256=sha256(store.path),
+                parent_version=m["parent_version"], database_sha256=digest,
                 build_timestamp=m["build_timestamp"],
                 latest_verified_completed_date=max((r["match_date"] for r in store.query(
                     "SELECT match_date FROM registry WHERE match_status='VERIFIED_COMPLETED'")), default=None),

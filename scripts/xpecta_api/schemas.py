@@ -55,9 +55,12 @@ class CompareQuery(KeyQuery):
     v2: ForecastId
 
 
-class TeamStatsQuery(StrictInput):
-    team: TeamId
+class SeasonQuery(StrictInput):
     season: Season
+
+
+class TeamStatsQuery(SeasonQuery):
+    team: TeamId
 
 
 class AnalysisQuery(StrictInput):
@@ -310,6 +313,17 @@ class TeamStats(BaseModel):
     home: HistoricalSummary
     away: HistoricalSummary
     trend: list[TrendPoint]
+
+
+class LeaderboardTeam(BaseModel):
+    team: TeamId
+    overall: HistoricalSummary
+
+
+class SeasonLeaderboard(BaseModel):
+    season: Season
+    snapshot_version: str
+    items: list[LeaderboardTeam]
 
 
 class MatchAnalysis(BaseModel):

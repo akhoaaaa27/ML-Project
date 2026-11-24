@@ -56,6 +56,8 @@ def real_browser(browser, output, config, data, history_count):
             expect(states(page, "LOADING")).to_have_count(0, timeout=20000)
             expect(page.locator("#homeTeamBars .bar-row").first).to_be_visible()
             expect(page.locator("#homeTeamBars .bar-row[title]").first).to_be_visible()
+            assert sum("/historical/season-leaderboard" in url for _, url in requests) == 1
+            assert all("/historical/team-stats" not in url for _, url in requests)
             expect(page.locator("#page-home .hero-note, #page-home .hero-caption")).to_have_count(0)
             expect(page.locator("#page-home .stat-feature")).to_contain_text("Selected season · Observed xG per match")
             expect(page.locator("#homeTeamBars")).not_to_contain_text("Sources by team")
@@ -87,14 +89,15 @@ def real_browser(browser, output, config, data, history_count):
             expect(page.locator("#page-home")).to_be_visible()
             if boxes:
                 button = fixtures(page).first.locator("[data-fixture]")
-                with page.expect_request("**/api/v1/forecasts/preview") as detail:
+                key = button.get_attribute("data-fixture")
+                with page.expect_request(lambda request: request.url.endswith("/forecasts/preview") and
+                                         request.method == "POST" and request.post_data_json["fixture_key"] == key):
                     button.press("Enter")
-                assert detail.value.post_data_json["fixture_key"] == button.get_attribute("data-fixture")
                 expect(page.locator("#predictionOutput")).to_be_focused()
                 explore.first.press("Enter")
             if name == "desktop":
                 season = next(year for year in config["seasons"] if year != int(page.locator("#homeSeason").input_value()))
-                with page.expect_response(lambda response: "/historical/team-stats" in response.url and
+                with page.expect_response(lambda response: "/historical/season-leaderboard" in response.url and
                                           f"season={season}" in response.url) as filtered:
                     page.locator("#homeSeason").select_option(str(season))
                 assert filtered.value.ok

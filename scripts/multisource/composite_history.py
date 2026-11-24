@@ -3,6 +3,7 @@
 from contextlib import closing
 import copy
 from datetime import datetime, timezone
+from hashlib import file_digest
 import json
 import os
 from pathlib import Path
@@ -22,6 +23,13 @@ from .team_registry import resolve
 RESEARCH_ROOT = ROOT / "data/history/research"
 SCHEMA_VERSION = 1
 LOGICAL_PROVIDER = "laliga_composite_v1"
+
+
+def database_digest(path):
+    with Path(path).open("rb") as database:
+        return file_digest(database, "sha256").hexdigest()
+
+
 SCHEMA = """
 PRAGMA foreign_keys=ON;
 CREATE TABLE registry(canonical_fixture_key TEXT PRIMARY KEY, season INTEGER NOT NULL, match_date TEXT NOT NULL,
@@ -153,7 +161,7 @@ def publish_version(registry, statistics, catalogues, *, version_id, input_hashe
                 connection.execute("INSERT INTO metadata VALUES (?,?)", ("refresh",dumps(refresh_metadata)))
             require(connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
                     and not connection.execute("PRAGMA foreign_key_check").fetchall(), "DATABASE_INVALID", "SQLite validation failed")
-        sidecar = dict(core_manifest=core, database_sha256=sha256(database))
+        sidecar = dict(core_manifest=core, database_sha256=database_digest(database))
         (temp/"manifest.json").write_text(dumps(sidecar)+"\n", encoding="utf-8")
         provisional = CompositeHistory(database, research_root=root)
         if validator is not None:
@@ -163,7 +171,7 @@ def publish_version(registry, statistics, catalogues, *, version_id, input_hashe
             core["research_validation_status"] = "validated_registry_rolling_features_and_frozen_inference_parity"
             with closing(sqlite3.connect(database)) as connection, connection:
                 connection.execute("UPDATE metadata SET payload=? WHERE name='manifest'", (dumps(core),))
-            (temp/"manifest.json").write_text(dumps(dict(core_manifest=core,database_sha256=sha256(database)))+"\n",encoding="utf-8")
+            (temp/"manifest.json").write_text(dumps(dict(core_manifest=core,database_sha256=database_digest(database)))+"\n",encoding="utf-8")
             CompositeHistory(database,research_root=root)
         os.rename(temp, destination)  # Lock + absent destination: no in-use version replaced.
         temp = None
@@ -193,7 +201,9 @@ class CompositeHistory:
         require(stored == self.manifest, "HISTORY_CORRUPT", "Manifest differs from embedded version")
 
     def verify_integrity(self):
-        require(sha256(self.path) == self._sidecar["database_sha256"], "HISTORY_CORRUPT", "Composite checksum mismatch")
+        digest = database_digest(self.path)
+        require(digest == self._sidecar["database_sha256"], "HISTORY_CORRUPT", "Composite checksum mismatch")
+        return digest
 
     def query(self, sql, parameters=()):
         with closing(sqlite3.connect(self.path.as_uri()+"?mode=ro&immutable=1", uri=True)) as connection:

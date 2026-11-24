@@ -19,10 +19,10 @@ const isPreview = value => isObject(value) && (
   ["WAITING_DATA", "UNAVAILABLE", "FORECAST_ERROR"].includes(value.status) && isEligibility(value.eligibility)
 );
 
-async function request(path, {query = {}, body, validate = isObject, signal} = {}) {
+async function request(path, {query = {}, body, validate = isObject, signal, timeoutMs = 12000} = {}) {
   const params = new URLSearchParams(Object.entries(query).filter(([, value]) => value != null));
   const url = root + path + (params.size ? `?${params}` : "");
-  const timeout = AbortSignal.timeout(12000);
+  const timeout = AbortSignal.timeout(timeoutMs);
   const options = {credentials: "same-origin", signal: signal ? AbortSignal.any([signal, timeout]) : timeout};
   if (body !== undefined) {
     Object.assign(options, {
@@ -36,7 +36,7 @@ async function request(path, {query = {}, body, validate = isObject, signal} = {
     response = await fetch(url, options);
     payload = await response.json();
   } catch {
-    throw new ApiError("The local XPECTA service did not respond.", "LOCAL_API_UNAVAILABLE");
+    throw new ApiError("The XPECTA service did not respond.", "LOCAL_API_UNAVAILABLE");
   }
   if (!response.ok) {
     throw new ApiError(payload?.error?.message || "XPECTA could not complete this request.",
@@ -63,13 +63,15 @@ export const api = {
   dataStatus: () => request("/data-status", {validate: value =>
     hasKeys("schedule_freshness", "verified_completed", "evaluated_at_utc", "database_sha256")(value)
     && Array.isArray(value.schedule_evidence)}),
-  eligibility: (fixture_key, signal) => request("/eligibility", {query: {fixture_key}, validate: isEligibility, signal}),
-  preview: (fixture_key, signal) => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview, signal}),
+  eligibility: (fixture_key, signal) => request("/eligibility", {query: {fixture_key}, validate: isEligibility, signal, timeoutMs: 30000}),
+  preview: (fixture_key, signal) => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview, signal, timeoutMs: 30000}),
   simulate: (home, away) => request("/simulations", {body: {home, away}}),
   history: () => allPages("/forecasts"),
   forecast: id => request(`/forecasts/${encodeURIComponent(id)}`, {validate: isForecast}),
   compare: query => request("/forecasts/compare", {query, validate: hasKeys("v1", "v2", "changed_features")}),
   teamStats: (team, season) => request("/historical/team-stats", {query: {team, season}, validate: hasKeys("overall", "trend", "status")}),
+  leaderboard: season => request("/historical/season-leaderboard", {query: {season}, validate: value =>
+    hasKeys("season", "snapshot_version", "items")(value) && Array.isArray(value.items)}),
   analysis: query => request("/historical/match-analysis", {query, validate: hasKeys("home", "away", "head_to_head", "window")}),
   model: () => request("/model/summary", {validate: value =>
     hasKeys("model", "features", "phase7", "retrospective", "main_test")(value) && Array.isArray(value.main_observations)}),

@@ -243,7 +243,7 @@ function renderCardBatch(region, fixtures, empty, published = new Map()) {
   async function worker() {
     while (queue.length && !batch.controller.signal.aborted) await loadCardForecast(...queue.shift(), batch);
   }
-  const workers = Math.min(4, queue.length);
+  const workers = Math.min(2, queue.length);
   for (let index = 0; index < workers; index++) void worker();
 }
 
@@ -384,11 +384,12 @@ function showFreshness(data) {
 
 function homeBars() {
   const season = Number($("homeSeason").value);
-  const teams = state.teams.filter(team => team.seasons.includes(season));
-  return display("homeTeamBars", () => Promise.allSettled(teams.map(team => api.teamStats(team.id, season))),
-    results => {
-      const available = results.filter(result => result.status === "fulfilled").map(result => result.value);
-      renderHere("homeTeamBars", available.length ? leaderboard(available) : message("Historical statistics are unavailable.", true));
+  return display("homeTeamBars", () => api.leaderboard(season),
+    result => {
+      if (result.season !== season || result.snapshot_version !== state.config.snapshot_version) {
+        throw new Error("The statistics context changed. Reload XPECTA to see the current snapshot.");
+      }
+      renderHere("homeTeamBars", leaderboard(result.items));
     });
 }
 

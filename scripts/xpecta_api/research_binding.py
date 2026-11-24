@@ -1,6 +1,7 @@
 """Validate the server-selected real snapshot against operator pins and V3 lineage."""
 
 from scripts.inference.common import sha256
+from scripts.multisource.composite_history import database_digest
 from scripts.multisource.fixture_catalogue import refresh_metadata
 from scripts.multisource.match_registry import require
 from scripts.multisource.revision_review import POLICY_VERSION
@@ -9,7 +10,7 @@ from .settings import REAL_MANIFEST_SHA256, REAL_SHA256, REAL_VERSION
 
 
 def verify_pins(store, database_sha256, manifest_sha256):
-    require(sha256(store.path) == database_sha256
+    require(database_digest(store.path) == database_sha256
             and sha256(store.path.with_name("manifest.json")) == manifest_sha256,
             "HISTORY_CORRUPT", "Snapshot and manifest must match the server pins")
 
@@ -43,7 +44,7 @@ def verify_real_snapshot(engine, store, settings):
             "INVALID_SNAPSHOT", "Successor is missing candidate-bound review receipts")
         version = parent
         store = engine.open(version)
-        require(sha256(store.path) == refresh["parent_sha256"],
+        require(database_digest(store.path) == refresh["parent_sha256"],
                 "HISTORY_CORRUPT", "Successor parent hash mismatch")
     verify_pins(store, REAL_SHA256, REAL_MANIFEST_SHA256)
     return expected

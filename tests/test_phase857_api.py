@@ -151,8 +151,9 @@ class Phase857HttpTests(unittest.TestCase):
             self.assertEqual(client.get("/assets/phase9.css").status_code, 200)
             self.assertIn("default-src 'none'", ready.headers["content-security-policy"])
             routes = client.get("/openapi.json").json()["paths"]
-            self.assertEqual(len(routes), 16)
+            self.assertEqual(len(routes), 17)
             self.assertIn("post", routes["/api/v1/simulations"])
+            self.assertIn("get", routes["/api/v1/historical/season-leaderboard"])
 
     def test_team_fixture_identity_pagination_and_query_limits(self):
         with self.client() as client:
@@ -362,6 +363,21 @@ class Phase857HttpTests(unittest.TestCase):
             self.assertEqual(zero["status"], "ZERO_HISTORY")
             self.assertEqual(zero["overall"]["verified_fixtures"], 0)
             self.assertIsNone(zero["overall"]["mean_xg"])
+
+    def test_leaderboard_matches_individual_statistics_with_one_integrity_check(self):
+        with self.client("incomplete") as client:
+            service = client.app.state.service
+            with patch.object(service, "_verify_bound_snapshot", wraps=service._verify_bound_snapshot) as verify:
+                leaderboard = client.get(BASE + "/historical/season-leaderboard", params={"season": 2026})
+                self.assertEqual(leaderboard.status_code, 200)
+                verify.assert_called_once()
+            payload = leaderboard.json()
+            self.assertEqual(payload["snapshot_version"], "incomplete")
+            teams = {row["id"] for row in service.teams.values() if 2026 in row["seasons"]}
+            self.assertEqual({row["team"] for row in payload["items"]}, teams)
+            for row in payload["items"]:
+                stats = client.get(BASE + "/historical/team-stats", params={"team": row["team"], "season": 2026})
+                self.assertEqual(row["overall"], stats.json()["overall"])
 
     def test_historical_reference_and_real_namespace_isolation(self):
         with self.client() as synthetic:

@@ -6,6 +6,7 @@ import re
 import secrets
 from typing import Annotated
 
+from anyio import CapacityLimiter, to_thread
 from fastapi import APIRouter, Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -193,8 +194,8 @@ def fixtures(query: Annotated[s.FixtureQuery, Query()], service: Service) -> s.P
 
 
 @router.get("/eligibility")
-def eligibility(query: Annotated[s.KeyQuery, Query()], service: Service) -> s.Eligibility:
-    return service.eligibility(query.fixture_key)
+async def eligibility(query: Annotated[s.KeyQuery, Query()], service: Service, request: Request) -> s.Eligibility:
+    return await to_thread.run_sync(service.eligibility, query.fixture_key, limiter=request.app.state.forecast_slots)
 
 
 @router.get("/data-status")
@@ -203,13 +204,13 @@ def data_status(service: Service) -> s.DataStatus:
 
 
 @router.post("/forecasts/preview")
-def preview(body: s.ForecastRequest, service: Service) -> s.ForecastAction:
-    return service.preview(body.fixture_key)
+async def preview(body: s.ForecastRequest, service: Service, request: Request) -> s.ForecastAction:
+    return await to_thread.run_sync(service.preview, body.fixture_key, limiter=request.app.state.forecast_slots)
 
 
 @router.post("/simulations")
-def simulate(body: s.SimulationRequest, service: Service) -> s.Simulation:
-    return service.simulate(body.home, body.away)
+async def simulate(body: s.SimulationRequest, service: Service, request: Request) -> s.Simulation:
+    return await to_thread.run_sync(service.simulate, body.home, body.away, limiter=request.app.state.forecast_slots)
 
 
 @router.post("/forecasts/publish", dependencies=[Depends(require_operator)], responses={
@@ -239,6 +240,11 @@ def team_stats(query: Annotated[s.TeamStatsQuery, Query()], service: Service) ->
     return service.team_stats(query.team, query.season)
 
 
+@router.get("/historical/season-leaderboard")
+def season_leaderboard(query: Annotated[s.SeasonQuery, Query()], service: Service) -> s.SeasonLeaderboard:
+    return service.season_leaderboard(query.season)
+
+
 @router.get("/historical/match-analysis")
 def match_analysis(query: Annotated[s.AnalysisQuery, Query()], service: Service) -> s.MatchAnalysis:
     return service.match_analysis(query)
@@ -262,6 +268,7 @@ def create_app(settings=None):
     @asynccontextmanager
     async def lifespan(app):
         app.state.service = None
+        app.state.forecast_slots = CapacityLimiter(2) if settings.render_hostname else None
         try:
             app.state.service = ResearchService(settings)
         except (InferenceError, OSError, ValueError, RuntimeError, KeyError, TypeError):
