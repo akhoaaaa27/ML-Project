@@ -132,6 +132,8 @@ def build(source, directory=PREPARED):
                           "", text, flags=re.MULTILINE)
     if count != 3:
         raise ValueError("Unexpected font includes in the reference")
+    text = replace_once(text, "</head>",
+                        '<link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon.png">\n</head>')
     text = replace_once(text, "</style>", """
 @font-face{font-family:Montserrat;src:url('/assets/montserrat.ttf') format('truetype');font-weight:100 900;font-display:swap}
 [aria-busy="true"] .indicator{opacity:.8}

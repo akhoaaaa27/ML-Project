@@ -320,6 +320,7 @@ def create_app(settings=None):
         "simulations.js": (FRONTEND / "simulations.js", "text/javascript"),
         "evaluation-charts.js": (FRONTEND / "evaluation-charts.js", "text/javascript"),
         "montserrat.ttf": (FRONTEND / "montserrat.ttf", "font/ttf"),
+        "favicon.png": (FRONTEND / "favicon.png", "image/png"),
     }
 
     @app.get("/assets/{asset}", include_in_schema=False)
@@ -328,6 +329,10 @@ def create_app(settings=None):
             return error_response("NOT_FOUND")
         path, media_type = assets[asset]
         return FileResponse(path, media_type=media_type)
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():
+        return frontend_asset("favicon.png")
 
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.origins), allow_credentials=False,
                        allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
