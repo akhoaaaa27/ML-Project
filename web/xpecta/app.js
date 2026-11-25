@@ -17,6 +17,8 @@ const pending = new Map();
 let scheduleTimer;
 let statusReceivedAt;
 const cardBatches = new Map();
+const cardForecasts = new Map();
+const CARD_FORECAST_REUSE_MS = 120000;
 const pickers = {};
 let historyPending;
 const seasons = ["homeSeason", "analysisSeason", "statsSeason"];
@@ -159,38 +161,27 @@ function matchesForecastContext(fixture, preview) {
 async function loadCardForecast(fixture, slot, batch) {
   const key = fixture.canonical_fixture_key;
   const signal = batch.controller.signal;
+  const kickoff = Date.parse(fixture.kickoff_utc);
   const render = result => {
     if (cardBatches.get(batch.region) === batch && batch.data === state.data) slot.innerHTML = cardForecast(result);
+  };
+  const expire = () => render({status: Date.parse(catalogueTime()) >= kickoff ? "UNAVAILABLE" : "WAITING_DATA"});
+  const show = (result, expires) => {
+    render(result);
+    if (state.config.mode === "REAL_RESEARCH") batch.timers.push(setTimeout(expire, expires - Date.parse(catalogueTime())));
   };
   try {
     const {data} = batch;
     if (!data || data.mode !== state.config.mode || data.snapshot_version !== state.config.snapshot_version) {
       throw new Error("The active snapshot could not be verified.");
     }
-    const eligibility = await api.eligibility(key, signal);
-    if (signal.aborted) return;
-    const {eligibility_status: status, target, fixture_reviewed_at_utc: reviewed, history_cutoff: cutoff} = eligibility;
-    if (eligibility.canonical_fixture_key !== key || eligibility.snapshot_version !== data.snapshot_version) {
-      throw new Error("The fixture context changed.");
-    }
-    if (status === "WAITING_DATA" || status === "UNAVAILABLE") {
-      render({status});
+    const cached = cardForecasts.get(key);
+    if (cached?.data === data && cached.kickoff === kickoff && cached.expires > Date.parse(catalogueTime())
+        && cached.reuseUntil > performance.now()) {
+      show(cached.result, cached.expires);
       return;
     }
-
-    // The preview response omits schedule evidence. Keep the checked fixture's own expiry.
-    const kickoff = Date.parse(fixture.kickoff_utc);
-    const freshnessEnds = Date.parse(reviewed) + data.schedule_max_age_hours * 3600000;
-    // The eligibility policy includes the final millisecond of the schedule freshness window.
-    const expires = Math.min(kickoff, freshnessEnds + 1, Date.parse(cutoff) + 86400000);
-    if (!Number.isFinite(expires) || target?.canonical_fixture_key !== key || Date.parse(target.kickoff_utc) !== kickoff) {
-      throw new Error("Forecast timing could not be verified.");
-    }
-    const expire = () => render({status: Date.parse(catalogueTime()) >= kickoff ? "UNAVAILABLE" : "WAITING_DATA"});
-    if (Date.parse(catalogueTime()) >= expires) {
-      expire();
-      return;
-    }
+    cardForecasts.delete(key);
 
     const result = await api.preview(key, signal);
     if (signal.aborted) return;
@@ -203,17 +194,19 @@ async function loadCardForecast(fixture, slot, batch) {
     }
     const {preview} = result;
     const generated = Date.parse(preview.generated_at_utc);
+    const freshnessEnds = Date.parse(preview.fixture_reviewed_at_utc) + data.schedule_max_age_hours * 3600000;
+    // The eligibility policy includes the final millisecond of the schedule freshness window.
+    const expires = Math.min(kickoff, freshnessEnds + 1, Date.parse(preview.history_cutoff) + 86400000);
     if (!matchesForecastContext(fixture, preview) || preview.history_database_sha256 !== data.database_sha256 ||
-        !Number.isFinite(generated)) {
+        Date.parse(preview.target_kickoff_utc) !== kickoff || !Number.isFinite(expires) || !Number.isFinite(generated)) {
       throw new Error("The forecast context changed.");
     }
-    const remaining = expires - Math.max(generated, Date.parse(catalogueTime()));
-    if (preview.history_cutoff !== cutoff || remaining <= 0) {
+    if (expires <= Math.max(generated, Date.parse(catalogueTime()))) {
       expire();
       return;
     }
-    render(result);
-    if (state.config.mode === "REAL_RESEARCH") batch.timers.push(setTimeout(expire, remaining));
+    cardForecasts.set(key, {result, data, kickoff, expires, reuseUntil: performance.now() + CARD_FORECAST_REUSE_MS});
+    show(result, expires);
   } catch {
     if (!signal.aborted) render({status: "FORECAST_ERROR"});
   }
@@ -340,6 +333,7 @@ function renderFreshness(data) {
 
 function showFreshness(data) {
   clearTimeout(scheduleTimer);
+  cardForecasts.clear();
   state.data = data;
   statusReceivedAt = performance.now();
   renderFreshness(data);

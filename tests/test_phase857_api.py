@@ -273,6 +273,8 @@ class Phase857HttpTests(unittest.TestCase):
             self.assertEqual(result["status"], "EARLY_READY")
             for field in ("home_xg", "away_xg", "history_cutoff", "history_database_sha256", "model_artifact_sha256"):
                 self.assertEqual(result["preview"][field], original[field])
+            for field in ("target_kickoff_utc", "fixture_reviewed_at_utc"):
+                self.assertEqual(utc(result["preview"][field]), utc(original[field]))
             self.assertEqual(result["preview"]["model_artifact_sha256"], MODEL_SHA256)
             self.assertTrue({"features", "raw_predictions", "history_provenance"}.isdisjoint(result["preview"]))
             self.assertFalse(service.forecast.ledger.directory.exists())

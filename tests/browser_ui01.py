@@ -163,9 +163,14 @@ def mock_page(context, config, data, source, size, *, offline=False):
         calls["preview"].append(key)
         if index == 4:
             return route.fulfill(status=503, json={"error": {"message": "Forecast request failed."}})
+        if status in ("WAITING_DATA", "UNAVAILABLE"):
+            return route.fulfill(json=dict(status=status, eligibility=dict(
+                canonical_fixture_key=key, snapshot_version=config["snapshot_version"],
+                eligibility_status=status, reason=reason)))
         return route.fulfill(json=dict(status=status, preview=dict(
             canonical_fixture_key=key, history_snapshot_version=config["snapshot_version"],
             model_version=config["model_version"], dataset_kind="real", history_cutoff=CLOCK.date().isoformat(),
+            target_kickoff_utc=rows[index]["kickoff_utc"], fixture_reviewed_at_utc=CLOCK.isoformat(),
             history_database_sha256=data["database_sha256"] if index != 5 else "a" * 64,
             generated_at_utc=CLOCK.isoformat(), home_xg=0.0 if index == 0 else 1.15, away_xg=1.72,
             source_notice="Isolated UI test output.")))
@@ -220,18 +225,19 @@ def controlled_browser(browser, output, config, data, source):
                 expect(states(page, "UNAVAILABLE")).to_contain_text("Prediction unavailable")
                 expect(page.locator("#homeFixtures [data-overview-xg]")).to_have_count(2)
             checked = {row["canonical_fixture_key"] for row in rows[:6]}
-            assert set(calls["eligibility"]) == checked
-            assert set(calls["preview"]) <= checked
+            assert not calls["eligibility"]
+            assert set(calls["preview"]) == checked
             assert not calls["publish"]
             if size == 8:
-                assert len(calls["eligibility"]) == 12
-                assert set(calls["preview"]) == {rows[index]["canonical_fixture_key"] for index in (0, 1, 4, 5)}
                 capture_overview(page, output / "mock-forecast-states.png")
                 page.clock.fast_forward(32000)
                 expect(states(page, "READY")).to_have_count(0)
                 expect(states(page, "EARLY_READY")).to_have_count(1)
             if size == 4:
+                cached_keys = {row["canonical_fixture_key"] for row in rows[:2]}
                 page.locator("#page-home [data-jump=predict]").last.press("Enter")
+                expect(page.locator('#presetFixtures [data-overview-xg]')).to_have_count(2)
+                assert all(calls["preview"].count(key) == 1 for key in cached_keys)
                 start = page.get_by_label("From (UTC+0)")
                 end = page.get_by_label("To (UTC+0)")
                 start.fill("2026-11-24")

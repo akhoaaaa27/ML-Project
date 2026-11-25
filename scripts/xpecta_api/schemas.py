@@ -245,10 +245,15 @@ class PublishedForecast(Candidate):
     target_match_date: date
 
 
+class ForecastPreview(Candidate):
+    target_kickoff_utc: datetime
+    fixture_reviewed_at_utc: datetime
+
+
 class ForecastAction(BaseModel):
     status: Literal["READY", "EARLY_READY", "WAITING_DATA", "UNAVAILABLE", "PUBLISHED", "NO_CHANGE", "FORECAST_ERROR"]
     eligibility: Eligibility | None = None
-    preview: Candidate | None = None
+    preview: ForecastPreview | None = None
     forecast: PublishedForecast | None = None
     evaluated_eligibility_status: EligibilityStatus | None = None
     evaluated_snapshot_version: str | None = None

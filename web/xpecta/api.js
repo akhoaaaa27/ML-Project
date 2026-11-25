@@ -63,7 +63,6 @@ export const api = {
   dataStatus: () => request("/data-status", {validate: value =>
     hasKeys("schedule_freshness", "verified_completed", "evaluated_at_utc", "database_sha256")(value)
     && Array.isArray(value.schedule_evidence)}),
-  eligibility: (fixture_key, signal) => request("/eligibility", {query: {fixture_key}, validate: isEligibility, signal, timeoutMs: 30000}),
   preview: (fixture_key, signal) => request("/forecasts/preview", {body: {fixture_key}, validate: isPreview, signal, timeoutMs: 30000}),
   simulate: (home, away) => request("/simulations", {body: {home, away}}),
   history: () => allPages("/forecasts"),
